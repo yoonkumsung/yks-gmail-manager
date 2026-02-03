@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node *)",
+      "Bash(powershell *)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(cat *)",
+      "Bash(test *)",
+      "Bash(wc *)",
+      "Bash(echo *)",
+      "Bash(cd *)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Task",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(del /f *)",
+      "Bash(del /s *)",
+      "Bash(rmdir /s *)",
+      "Bash(format *)"
+    ]
+  }
+}

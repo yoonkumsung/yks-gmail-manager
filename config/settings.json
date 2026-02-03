@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "gmail": {
+    "user_id": "me",
+    "max_results_per_query": 100
+  },
+  "processing": {
+    "summary_length": {
+      "min": 200,
+      "max": 500
+    },
+    "longform_threshold_lines": 100,
+    "longform_threshold_chars": 3000,
+    "cluster_max_size": 10,
+    "cluster_min_similarity": 0.6
+  },
+  "output": {
+    "root": "./output",
+    "timezone": "Asia/Seoul"
+  },
+  "context_management": {
+    "max_items_per_batch": 20,
+    "use_subagent_threshold": 50
+  },
+  "translation": {
+    "target_language": "ko",
+    "translate_english": true,
+    "preserve_proper_nouns": true,
+    "proper_noun_format": "한글(원어)"
+  }
+}

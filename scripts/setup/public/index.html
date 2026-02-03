@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gmail Manager 설정 마법사</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Gmail Manager</h1>
+      <p class="subtitle">뉴스레터 다이제스트 설정 마법사</p>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="steps">
+        <span class="step active" data-step="1">1. 프로필</span>
+        <span class="step" data-step="2">2. 라벨</span>
+        <span class="step" data-step="3">3. 분석</span>
+        <span class="step" data-step="4">4. 생성</span>
+        <span class="step" data-step="5">5. 완료</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Profile -->
+    <section class="step-content active" id="step1">
+      <h2>사용자 프로필 설정</h2>
+      <p>개인화된 뉴스레터 분석을 위해 프로필을 입력해주세요.</p>
+
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="occupation">직업/역할 *</label>
+          <input type="text" id="occupation" placeholder="예: 소프트웨어 개발자, 마케터, 투자자" required>
+        </div>
+
+        <div class="form-group">
+          <label for="occupationDesc">역할 설명 (선택)</label>
+          <textarea id="occupationDesc" placeholder="예: AI 스타트업에서 백엔드 개발을 담당하고 있습니다."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>기술 관심사</label>
+          <input type="text" id="interestsTechnical" placeholder="예: AI, 클라우드, 웹개발 (쉼표로 구분)">
+        </div>
+
+        <div class="form-group">
+          <label>비즈니스 관심사</label>
+          <input type="text" id="interestsBusiness" placeholder="예: 스타트업, 투자, 마케팅 (쉼표로 구분)">
+        </div>
+
+        <div class="form-group">
+          <label>지적 관심사</label>
+          <input type="text" id="interestsIntellectual" placeholder="예: 철학, 역사, 심리학 (쉼표로 구분)">
+        </div>
+
+        <div class="form-group">
+          <label>창의적 관심사</label>
+          <input type="text" id="interestsCreative" placeholder="예: 디자인, 음악, 글쓰기 (쉼표로 구분)">
+        </div>
+
+        <div class="form-group">
+          <label>사회적 관심사</label>
+          <input type="text" id="interestsSocial" placeholder="예: 정치, 환경, 복지 (쉼표로 구분)">
+        </div>
+
+        <button type="submit" class="btn primary">다음 단계</button>
+      </form>
+    </section>
+
+    <!-- Step 2: Labels -->
+    <section class="step-content" id="step2">
+      <h2>뉴스레터 라벨 선택</h2>
+      <p>분석할 Gmail 라벨을 선택하세요. 선택한 라벨에 대해 Agent가 자동 생성됩니다.</p>
+
+      <div id="labelsContainer" class="labels-grid">
+        <p class="loading">라벨 목록을 불러오는 중...</p>
+      </div>
+
+      <div class="button-group">
+        <button class="btn secondary" onclick="goToStep(1)">이전</button>
+        <button class="btn primary" onclick="saveLabelsAndNext()">다음 단계</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Analysis -->
+    <section class="step-content" id="step3">
+      <h2>뉴스레터 구조 분석</h2>
+      <p>선택한 라벨의 뉴스레터를 분석하여 SKILL 문서를 생성합니다.</p>
+
+      <div id="analysisProgress" class="analysis-progress">
+        <div class="analysis-item" id="analysisStatus">
+          <span class="status-icon">...</span>
+          <span class="status-text">분석 대기 중</span>
+        </div>
+      </div>
+
+      <div id="analysisLog" class="log-container"></div>
+
+      <div class="button-group">
+        <button class="btn secondary" onclick="goToStep(2)">이전</button>
+        <button class="btn primary" id="startAnalysisBtn" onclick="startAnalysis()">분석 시작</button>
+        <button class="btn primary hidden" id="nextAfterAnalysisBtn" onclick="goToStep(4)">다음 단계</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Generation -->
+    <section class="step-content" id="step4">
+      <h2>Agent 문서 생성</h2>
+      <p>프로필과 라벨 정보를 기반으로 개인화된 Agent를 생성합니다.</p>
+
+      <div id="generationProgress" class="generation-progress">
+        <p class="loading">생성 준비 중...</p>
+      </div>
+
+      <div class="button-group">
+        <button class="btn secondary" onclick="goToStep(3)">이전</button>
+        <button class="btn primary" id="generateBtn" onclick="generateAgents()">Agent 생성</button>
+        <button class="btn primary hidden" id="nextAfterGenerateBtn" onclick="finalize()">완료</button>
+      </div>
+    </section>
+
+    <!-- Step 5: Complete -->
+    <section class="step-content" id="step5">
+      <h2>설정 완료</h2>
+      <div class="completion-summary">
+        <div class="summary-icon">&#10003;</div>
+        <p>Gmail Manager 설정이 완료되었습니다!</p>
+
+        <div class="summary-details" id="summaryDetails">
+          <!-- 동적으로 채워짐 -->
+        </div>
+
+        <div class="next-steps">
+          <h3>다음 단계</h3>
+          <ol>
+            <li>GitHub Actions 설정: <code>.github/workflows/daily-digest.yml</code></li>
+            <li>환경 변수 설정: <code>OPENROUTER_API_KEY</code>, <code>GMAIL_CREDENTIALS</code></li>
+            <li>수동 실행: <code>npm run digest</code></li>
+          </ol>
+        </div>
+      </div>
+
+      <button class="btn primary" onclick="closeWizard()">마법사 종료</button>
+    </section>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>오류 발생</h3>
+        <p id="errorMessage"></p>
+        <button class="btn secondary" onclick="closeModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

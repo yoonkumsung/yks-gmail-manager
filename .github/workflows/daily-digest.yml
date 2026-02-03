@@ -1,0 +1,168 @@
+name: Gmail 메일 정리
+
+on:
+  # 매일 오전 11시 KST = 02:00 UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+  # 수동 실행 버튼
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '실행 모드'
+        required: true
+        default: 'last-24h'
+        type: choice
+        options:
+          - today        # 오늘 0시부터 현재까지
+          - last-24h     # 24시간 전부터 현재까지
+          - custom       # 특정 날짜
+
+      custom_date:
+        description: '특정 날짜 (YYYY-MM-DD, custom 모드일 때만)'
+        required: false
+        default: ''
+
+      labels:
+        description: '처리할 라벨 (쉼표 구분, 비우면 전체)'
+        required: false
+        default: ''
+
+jobs:
+  process-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Gmail 메일 정리 실행
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
+          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+        run: |
+          # .env 파일 생성
+          echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
+
+          # Gmail credentials 저장 (config/credentials/ 경로로 통일)
+          mkdir -p config/credentials
+          echo "$GMAIL_CREDENTIALS" > config/credentials/client_secret.json
+          echo "$GMAIL_TOKEN" > config/credentials/token.json
+
+          # 실행 모드 결정
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # 자동 실행
+            node scripts/orchestrator.js --mode schedule
+
+          else
+            # 수동 실행
+            MODE="${{ github.event.inputs.mode }}"
+            CUSTOM_DATE="${{ github.event.inputs.custom_date }}"
+            LABELS="${{ github.event.inputs.labels }}"
+
+            ARGS="--mode $MODE"
+
+            if [ -n "$CUSTOM_DATE" ]; then
+              ARGS="$ARGS --date $CUSTOM_DATE"
+            fi
+
+            if [ -n "$LABELS" ]; then
+              ARGS="$ARGS --labels $LABELS"
+            fi
+
+            node scripts/orchestrator.js $ARGS
+          fi
+
+      - name: GitHub Pages용 파일 준비
+        if: success()
+        run: |
+          # docs 폴더에 통합 HTML 복사
+          mkdir -p docs
+
+          # 기존 HTML 파일 삭제
+          rm -f docs/*.html
+
+          # 통합 HTML 복사 (파일명을 index.html로)
+          COMBINED_HTML=$(find output/runs/*/final -name "*통합*메일정리.html" | head -1)
+          if [ -n "$COMBINED_HTML" ]; then
+            cp "$COMBINED_HTML" docs/index.html
+          fi
+
+      - name: GitHub Pages 배포
+        if: success()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+
+      - name: 결과물 업로드 (MD 파일)
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: mail-digest-md-${{ github.run_number }}
+          path: output/runs/*/final/*.md
+          retention-days: 30
+
+      - name: Telegram 알림
+        if: success() && env.TELEGRAM_TOKEN != ''
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          # 라벨별 MD 파일 수 (라벨 개수)
+          MD_COUNT=$(ls output/runs/*/final/*_메일정리.md 2>/dev/null | grep -v "통합" | wc -l)
+
+          # 라벨 목록 추출
+          LABELS=$(ls output/runs/*/final/*_메일정리.md 2>/dev/null | grep -v "통합" | xargs -I {} basename {} _메일정리.md | sed 's/^[0-9]*_//' | tr '\n' ', ' | sed 's/,$//')
+
+          # GitHub Pages URL (통합 HTML)
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
+          PAGES_URL="https://${OWNER}.github.io/${REPO_NAME}/"
+
+          # Artifacts URL (MD 파일)
+          ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # 날짜
+          TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+
+          MESSAGE="[완료] Gmail 메일 정리
+${TODAY}
+
+라벨: ${LABELS}
+(${MD_COUNT}개 라벨)
+
+[바로 보기] 통합 HTML
+${PAGES_URL}
+
+[다운로드] MD 파일 (라벨별)
+${ARTIFACTS_URL}"
+
+          curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="$MESSAGE"
+
+      - name: 에러 알림
+        if: failure() && env.TELEGRAM_TOKEN != ''
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          MESSAGE="[실패] Gmail 메일 정리 실패
+
+로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="$MESSAGE"

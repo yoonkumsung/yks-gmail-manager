@@ -1,0 +1,27 @@
+{
+  "name": "gmail-manager",
+  "version": "2.0.0",
+  "description": "Gmail 뉴스레터 다이제스트 시스템 (OpenRouter LLM + GitHub Actions)",
+  "type": "commonjs",
+  "scripts": {
+    "auth": "node scripts/auth.js",
+    "refresh": "node scripts/refresh_token.js",
+    "html2text": "node scripts/html_to_text.js",
+    "report": "node scripts/generate_html.js",
+    "digest": "node scripts/orchestrator.js",
+    "setup": "node scripts/setup/server.js",
+    "test": "node scripts/orchestrator.js --mode custom --date 2026-01-30 --labels IT"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5",
+    "p-limit": "^5.0.0",
+    "express": "^4.18.2",
+    "open": "^10.0.0",
+    "googleapis": "^126.0.0"
+  },
+  "private": true
+}

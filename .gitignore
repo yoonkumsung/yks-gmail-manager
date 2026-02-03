@@ -1,0 +1,35 @@
+# Credentials (민감 정보)
+config/credentials/
+*.json.bak
+
+# Output 디렉토리 (선택적)
+# output/runs/
+
+# Node.js
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 환경 변수
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.temp
