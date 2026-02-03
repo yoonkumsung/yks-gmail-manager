@@ -97,43 +97,16 @@ priority: lowest   # 다른 SKILL에 매칭되지 않을 때만 사용
 
 ```json
 {
-  "title": "본문에서 추출한 핵심 제목",
-  "summary": "300~700자 요약",
-  "keywords": ["키워드1", "키워드2", "키워드3"],
-  "urls": [
+  "items": [
     {
-      "text": "링크 텍스트",
-      "href": "정제된 URL"
+      "title": "본문에서 추출한 핵심 제목",
+      "summary": "300~500자 요약",
+      "keywords": ["키워드1", "키워드2", "키워드3"],
+      "link": "원문 URL (없으면 빈 문자열)",
+      "source": "뉴스레터 이름"
     }
-  ],
-  "is_longform": false,
-  "original_text": null,
-  "source_newsletter": "unknown",
-  "is_new_source": true
+  ]
 }
-```
-
----
-
-## 플래그
-
-이 SKILL로 처리된 아이템에는 다음 플래그 추가:
-
-```json
-{
-  "flags": ["new_newsletter"],
-  "source_email": "sender@example.com"
-}
-```
-
----
-
-## 출력 시 알림
-
-최종 마크다운 하단에 알림 추가:
-
-```markdown
-⚠️ **새 뉴스레터 감지**: `sender@example.com` - 범용 규칙으로 처리됨
 ```
 
 ---
@@ -142,5 +115,5 @@ priority: lowest   # 다른 SKILL에 매칭되지 않을 때만 사용
 
 새 뉴스레터가 자주 등장하면:
 1. 해당 뉴스레터의 구조 분석
-2. 전용 SKILL 파일 생성 요청
-3. `from_patterns` 등록
+2. 전용 SKILL 파일 자동 생성 (adaptive_learning.js)
+3. 카탈로그에 등록 (newsletters.json)

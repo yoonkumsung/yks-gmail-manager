@@ -1,9 +1,9 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 11시 KST = 02:00 UTC
+  # 매일 오전 10시 KST = 01:00 UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 1 * * *'
 
   # 수동 실행 버튼
   workflow_dispatch:
@@ -37,15 +37,56 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Check secrets
+        id: check-secrets
+        run: |
+          MISSING=""
+
+          if [ -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            MISSING="${MISSING}OPENROUTER_API_KEY, "
+          fi
+
+          if [ -z "${{ secrets.GMAIL_CREDENTIALS }}" ]; then
+            MISSING="${MISSING}GMAIL_CREDENTIALS, "
+          fi
+
+          if [ -z "${{ secrets.GMAIL_TOKEN }}" ]; then
+            MISSING="${MISSING}GMAIL_TOKEN, "
+          fi
+
+          if [ -n "$MISSING" ]; then
+            echo "=========================================="
+            echo "  GitHub Actions 설정이 필요합니다"
+            echo "=========================================="
+            echo ""
+            echo "누락된 Secrets: ${MISSING%,*}"
+            echo ""
+            echo "설정 방법:"
+            echo "1. Repository → Settings → Secrets and variables → Actions"
+            echo "2. 다음 Secrets 추가:"
+            echo "   - OPENROUTER_API_KEY: OpenRouter API 키"
+            echo "   - GMAIL_CREDENTIALS: client_secret.json 내용"
+            echo "   - GMAIL_TOKEN: token.json 내용"
+            echo ""
+            echo "자세한 내용은 README.md 참조"
+            echo "=========================================="
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Node.js
+        if: steps.check-secrets.outputs.skip != 'true'
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
+        if: steps.check-secrets.outputs.skip != 'true'
         run: npm install
 
       - name: Gmail 메일 정리 실행
+        if: steps.check-secrets.outputs.skip != 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
@@ -84,7 +125,7 @@ jobs:
           fi
 
       - name: GitHub Pages용 파일 준비
-        if: success()
+        if: success() && steps.check-secrets.outputs.skip != 'true'
         run: |
           # docs 폴더에 통합 HTML 복사
           mkdir -p docs
@@ -93,13 +134,13 @@ jobs:
           rm -f docs/*.html
 
           # 통합 HTML 복사 (파일명을 index.html로)
-          COMBINED_HTML=$(find output/runs/*/final -name "*통합*메일정리.html" | head -1)
+          COMBINED_HTML=$(find output/final -name "*통합*메일정리.html" 2>/dev/null | head -1)
           if [ -n "$COMBINED_HTML" ]; then
             cp "$COMBINED_HTML" docs/index.html
           fi
 
       - name: GitHub Pages 배포
-        if: success()
+        if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -107,24 +148,24 @@ jobs:
           publish_branch: gh-pages
 
       - name: 결과물 업로드 (MD 파일)
-        if: success()
+        if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: actions/upload-artifact@v3
         with:
           name: mail-digest-md-${{ github.run_number }}
-          path: output/runs/*/final/*.md
+          path: output/final/**/*.md
           retention-days: 30
 
       - name: Telegram 알림
-        if: success() && env.TELEGRAM_TOKEN != ''
+        if: success() && steps.check-secrets.outputs.skip != 'true' && secrets.TELEGRAM_TOKEN != ''
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           # 라벨별 MD 파일 수 (라벨 개수)
-          MD_COUNT=$(ls output/runs/*/final/*_메일정리.md 2>/dev/null | grep -v "통합" | wc -l)
+          MD_COUNT=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l)
 
           # 라벨 목록 추출
-          LABELS=$(ls output/runs/*/final/*_메일정리.md 2>/dev/null | grep -v "통합" | xargs -I {} basename {} _메일정리.md | sed 's/^[0-9]*_//' | tr '\n' ', ' | sed 's/,$//')
+          LABELS=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
 
           # GitHub Pages URL (통합 HTML)
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
@@ -154,7 +195,7 @@ ${ARTIFACTS_URL}"
             -d text="$MESSAGE"
 
       - name: 에러 알림
-        if: failure() && env.TELEGRAM_TOKEN != ''
+        if: failure() && secrets.TELEGRAM_TOKEN != ''
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

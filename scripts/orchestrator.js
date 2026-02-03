@@ -2,19 +2,295 @@
  * Orchestrator - 메일 정리 파이프라인 실행
  */
 
-require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const fs = require('fs');
+const os = require('os');
 const { execSync } = require('child_process');
 const { AgentRunner } = require('./agent_runner');
 const { AdaptiveLearning } = require('./adaptive_learning');
-const pLimit = require('p-limit');
+
+/**
+ * ProgressManager - 증분 처리를 위한 진행 상태 관리
+ */
+class ProgressManager {
+  constructor(progressPath) {
+    this.progressPath = progressPath;
+    this.progress = this.load();
+  }
+
+  load() {
+    if (fs.existsSync(this.progressPath)) {
+      return JSON.parse(fs.readFileSync(this.progressPath, 'utf8'));
+    }
+    return { labels: {}, started_at: new Date().toISOString() };
+  }
+
+  save() {
+    const dir = path.dirname(this.progressPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    this.progress.updated_at = new Date().toISOString();
+    fs.writeFileSync(this.progressPath, JSON.stringify(this.progress, null, 2), 'utf8');
+  }
+
+  initLabel(labelName) {
+    if (!this.progress.labels[labelName]) {
+      this.progress.labels[labelName] = {
+        gmail_fetch: 'pending',
+        html_to_text: 'pending',
+        llm_extract: 'pending',
+        merge: 'pending',
+        insight: 'pending'
+      };
+    }
+  }
+
+  setStepStatus(labelName, step, status) {
+    this.initLabel(labelName);
+    this.progress.labels[labelName][step] = status;
+    this.save();
+  }
+
+  isStepCompleted(labelName, step) {
+    return this.progress.labels?.[labelName]?.[step] === 'completed';
+  }
+
+  getStepStatus(labelName, step) {
+    return this.progress.labels?.[labelName]?.[step] || 'pending';
+  }
+
+  markCompleted() {
+    this.progress.completed_at = new Date().toISOString();
+    this.save();
+  }
+}
+
+/**
+ * FailedBatchManager - 실패한 배치 관리 및 복구
+ */
+class FailedBatchManager {
+  constructor(failedBatchesPath) {
+    this.failedBatchesPath = failedBatchesPath;
+    this.failedBatches = this.load();
+  }
+
+  load() {
+    if (fs.existsSync(this.failedBatchesPath)) {
+      return JSON.parse(fs.readFileSync(this.failedBatchesPath, 'utf8'));
+    }
+    return { batches: [] };
+  }
+
+  save() {
+    const dir = path.dirname(this.failedBatchesPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    this.failedBatches.updated_at = new Date().toISOString();
+    fs.writeFileSync(this.failedBatchesPath, JSON.stringify(this.failedBatches, null, 2), 'utf8');
+  }
+
+  recordFailure(labelName, step, batchIndex, error, context = {}) {
+    this.failedBatches.batches.push({
+      label: labelName,
+      step,
+      batch_index: batchIndex,
+      error: error.message || error,
+      context,
+      failed_at: new Date().toISOString(),
+      retry_count: 0
+    });
+    this.save();
+  }
+
+  getFailedBatches(labelName, step) {
+    return this.failedBatches.batches.filter(
+      b => b.label === labelName && b.step === step
+    );
+  }
+
+  markResolved(labelName, step, batchIndex) {
+    this.failedBatches.batches = this.failedBatches.batches.filter(
+      b => !(b.label === labelName && b.step === step && b.batch_index === batchIndex)
+    );
+    this.save();
+  }
+
+  hasFailures() {
+    return this.failedBatches.batches.length > 0;
+  }
+
+  clear() {
+    this.failedBatches.batches = [];
+    this.save();
+  }
+}
+
+/**
+ * 임시 폴더 경로 생성
+ */
+function getTempDir(runId) {
+  return path.join(os.tmpdir(), 'gmail-manager', runId);
+}
+
+/**
+ * 임시 폴더 정리 (성공 시)
+ */
+function cleanupTempDir(tempDir) {
+  if (fs.existsSync(tempDir)) {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    console.log(`  임시 폴더 삭제됨: ${tempDir}`);
+  }
+}
+
+/**
+ * 최종 결과물을 영구 저장소로 복사
+ */
+function copyToFinalOutput(tempDir, runId, projectRoot) {
+  const finalOutputDir = path.join(projectRoot, 'output', 'final', runId);
+  const tempFinalDir = path.join(tempDir, 'final');
+
+  if (!fs.existsSync(tempFinalDir)) {
+    return;
+  }
+
+  if (!fs.existsSync(finalOutputDir)) {
+    fs.mkdirSync(finalOutputDir, { recursive: true });
+  }
+
+  // HTML 파일만 복사
+  const files = fs.readdirSync(tempFinalDir);
+  for (const file of files) {
+    if (file.endsWith('.html')) {
+      fs.copyFileSync(
+        path.join(tempFinalDir, file),
+        path.join(finalOutputDir, file)
+      );
+    }
+  }
+
+  console.log(`  결과물 복사됨: ${finalOutputDir}`);
+}
+
+// 간단한 concurrency limiter 구현 (p-limit 대체)
+function createLimiter(concurrency) {
+  let running = 0;
+  const queue = [];
+
+  const next = () => {
+    if (running >= concurrency || queue.length === 0) return;
+    running++;
+    const { fn, resolve, reject } = queue.shift();
+    fn().then(resolve).catch(reject).finally(() => {
+      running--;
+      next();
+    });
+  };
+
+  return (fn) => new Promise((resolve, reject) => {
+    queue.push({ fn, resolve, reject });
+    next();
+  });
+}
 
 const CONFIG = {
-  concurrencyLimit: 3,    // 동시 처리 라벨 수
-  openrouterModel: 'upstage/solar-pro',
-  outputRoot: './output'
+  concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
+  openrouterModel: 'upstage/solar-pro-3:free',
+  mergeBatchSize: 15,     // 병합 배치 크기
+  insightBatchSize: 8     // 인사이트 배치 크기
 };
+
+/**
+ * 초기 설정 체크
+ * @returns {Object} { ok: boolean, errors: string[] }
+ */
+function checkSetup() {
+  const projectRoot = path.join(__dirname, '..');
+  const errors = [];
+
+  // 1. Gmail 인증 (token.json)
+  const tokenPath = path.join(projectRoot, 'config', 'credentials', 'token.json');
+  if (!fs.existsSync(tokenPath)) {
+    errors.push({
+      type: 'Gmail 인증',
+      message: 'token.json 파일이 없습니다.',
+      solution: 'npm run auth'
+    });
+  }
+
+  // 2. 환경 변수 (.env + OPENROUTER_API_KEY)
+  const envPath = path.join(projectRoot, '.env');
+  if (!fs.existsSync(envPath)) {
+    errors.push({
+      type: '환경 변수',
+      message: '.env 파일이 없습니다.',
+      solution: '.env 파일 생성 후 OPENROUTER_API_KEY=sk-or-v1-xxx 추가'
+    });
+  } else if (!process.env.OPENROUTER_API_KEY) {
+    errors.push({
+      type: '환경 변수',
+      message: 'OPENROUTER_API_KEY가 설정되지 않았습니다.',
+      solution: '.env 파일에 OPENROUTER_API_KEY=sk-or-v1-xxx 추가'
+    });
+  }
+
+  // 3. 라벨 설정 (labels.json)
+  const labelsPath = path.join(projectRoot, 'config', 'labels.json');
+  if (!fs.existsSync(labelsPath)) {
+    errors.push({
+      type: '라벨 설정',
+      message: 'labels.json 파일이 없습니다.',
+      solution: 'npm run setup 또는 config/labels.json 수동 생성'
+    });
+  }
+
+  // 4. 사용자 프로필 (user_profile.json) - 선택적이지만 권장
+  const profilePath = path.join(projectRoot, 'config', 'user_profile.json');
+  const hasProfile = fs.existsSync(profilePath);
+
+  // 5. Agent 파일 존재 여부
+  const agentsLabelsDir = path.join(projectRoot, 'agents', 'labels');
+  let hasAgents = false;
+  if (fs.existsSync(agentsLabelsDir)) {
+    const agentFiles = fs.readdirSync(agentsLabelsDir).filter(f => f.endsWith('.md'));
+    hasAgents = agentFiles.length > 0;
+  }
+
+  if (!hasProfile && !hasAgents) {
+    errors.push({
+      type: '초기 설정',
+      message: '사용자 프로필과 Agent가 설정되지 않았습니다.',
+      solution: 'npm run setup'
+    });
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * 설정 오류 출력
+ */
+function printSetupErrors(errors) {
+  console.log('\n========================================');
+  console.log('     초기 설정이 필요합니다');
+  console.log('========================================\n');
+
+  errors.forEach((err, i) => {
+    console.log(`[${i + 1}] ${err.type}`);
+    console.log(`    문제: ${err.message}`);
+    console.log(`    해결: ${err.solution}`);
+    console.log('');
+  });
+
+  console.log('----------------------------------------');
+  console.log('설정 완료 후 다시 실행해주세요.');
+  console.log('----------------------------------------\n');
+}
 
 /**
  * 메인 함수
@@ -23,6 +299,17 @@ async function main() {
   console.log('\n========================================');
   console.log('     Gmail 메일 정리 시스템');
   console.log('========================================\n');
+
+  // 0. 초기 설정 체크
+  const setup = checkSetup();
+  if (!setup.ok) {
+    printSetupErrors(setup.errors);
+    process.exit(1);
+  }
+
+  let tempDir = null;
+  let runId = null;
+  let success = false;
 
   try {
     // 1. 인자 파싱
@@ -39,19 +326,33 @@ async function main() {
     const labels = getLabels(args.labels);
     console.log(`라벨: ${labels.map(l => l.name).join(', ')} (${labels.length}개)\n`);
 
-    // 4. Run ID 생성
-    const runId = generateRunId();
-    const runDir = path.join(CONFIG.outputRoot, 'runs', runId);
+    // 4. Run ID 및 임시 폴더 생성
+    runId = generateRunId();
+    tempDir = getTempDir(runId);
+    const projectRoot = path.join(__dirname, '..');
 
-    console.log(`Run ID: ${runId}\n`);
+    console.log(`Run ID: ${runId}`);
+    console.log(`임시 폴더: ${tempDir}\n`);
 
-    // 5. 메일 정리 실행
-    const results = await processAllLabels(labels, timeRange, runDir);
+    // 임시 폴더 생성
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
 
-    // 6. 통합 HTML 생성
+    // 5. Progress 및 FailedBatch 관리자 초기화
+    const progressManager = new ProgressManager(path.join(tempDir, 'progress.json'));
+    const failedBatchManager = new FailedBatchManager(path.join(tempDir, 'failed_batches.json'));
+
+    // 6. AdaptiveLearning 인스턴스 생성 (전역으로 공유)
+    const adaptiveLearning = new AdaptiveLearning();
+
+    // 7. 메일 정리 실행
+    const results = await processAllLabels(labels, timeRange, tempDir, progressManager, failedBatchManager, adaptiveLearning);
+
+    // 9. 통합 HTML 생성
     console.log('\n--- 통합 HTML 생성 ---');
-    const mergedDir = path.join(runDir, 'merged');
-    const finalDir = path.join(runDir, 'final');
+    const mergedDir = path.join(tempDir, 'merged');
+    const finalDir = path.join(tempDir, 'final');
     const dateStr = timeRange.start.toISOString().split('T')[0].replace(/-/g, '').substring(2);
     const combinedHtmlPath = path.join(finalDir, `${dateStr}_통합_메일정리.html`);
 
@@ -61,31 +362,50 @@ async function main() {
       generateCombinedFromMergedFiles(mergedDir, combinedHtmlPath, dateFormatted);
     }
 
-    // 7. 결과 요약
+    // 10. AdaptiveLearning 캐시 플러시 (같은 인스턴스 사용)
+    adaptiveLearning.flush();
+
+    // 12. 결과 요약
     printSummary(results);
 
-    // 8. 성공 메시지
+    // 13. 최종 결과물을 영구 저장소로 복사
+    copyToFinalOutput(tempDir, runId, projectRoot);
+
+    // 14. Progress 완료 표시
+    progressManager.markCompleted();
+
+    // 15. 성공 메시지
+    const finalOutputDir = path.join(projectRoot, 'output', 'final', runId);
     console.log('\n[완료] 전체 처리 완료!');
-    console.log(`\n결과물: ${runDir}/final/\n`);
+    console.log(`\n결과물: ${finalOutputDir}\n`);
+
+    success = true;
 
   } catch (error) {
     console.error('\n[오류] 발생:', error.message);
     console.error(error.stack);
     process.exit(1);
+  } finally {
+    // 성공 시 임시 폴더 삭제, 실패 시 유지 (디버깅용)
+    if (success && tempDir) {
+      cleanupTempDir(tempDir);
+    } else if (tempDir) {
+      console.log(`\n[디버깅] 임시 폴더 유지됨: ${tempDir}`);
+    }
   }
 }
 
 /**
  * 모든 라벨 처리 (병렬)
  */
-async function processAllLabels(labels, timeRange, runDir) {
-  const limit = pLimit(CONFIG.concurrencyLimit);
+async function processAllLabels(labels, timeRange, runDir, progressManager, failedBatchManager, adaptiveLearning) {
+  const limit = createLimiter(CONFIG.concurrencyLimit);
 
   const results = await Promise.all(
     labels.map(label =>
       limit(async () => {
         try {
-          return await processLabel(label, timeRange, runDir);
+          return await processLabel(label, timeRange, runDir, progressManager, failedBatchManager, adaptiveLearning);
         } catch (error) {
           console.error(`\n${label.name} 라벨 처리 실패:`, error.message);
           return {
@@ -104,8 +424,11 @@ async function processAllLabels(labels, timeRange, runDir) {
 /**
  * 단일 라벨 처리
  */
-async function processLabel(label, timeRange, runDir) {
+async function processLabel(label, timeRange, runDir, progressManager, failedBatchManager, adaptiveLearning) {
   console.log(`\n--- ${label.name} 라벨 처리 시작 ---`);
+
+  // Progress 초기화
+  progressManager.initLabel(label.name);
 
   const labelDir = path.join(runDir, 'labels', label.name);
   const rawDir = path.join(labelDir, 'raw');
@@ -119,12 +442,18 @@ async function processLabel(label, timeRange, runDir) {
     }
   });
 
-  // 1. Gmail API 호출 (Node.js)
-  console.log('  Gmail API 호출 중...');
-  const fetchResult = await fetchGmailMessages(label, timeRange, rawDir);
+  // 1. Gmail API 호출 (Node.js) - 증분 처리 지원
+  let fetchResult = null;
+  if (!progressManager.isStepCompleted(label.name, 'gmail_fetch')) {
+    console.log('  Gmail API 호출 중...');
+    progressManager.setStepStatus(label.name, 'gmail_fetch', 'in_progress');
+    fetchResult = await fetchGmailMessages(label, timeRange, rawDir);
+    progressManager.setStepStatus(label.name, 'gmail_fetch', 'completed');
+  } else {
+    console.log('  Gmail API 호출 (이미 완료, 건너뜀)');
+  }
 
   // 2. 새 뉴스레터 감지 (적응형 학습)
-  const adaptiveLearning = new AdaptiveLearning();
   const newNewsletters = await adaptiveLearning.processNewSenders(fetchResult, label.name);
 
   if (newNewsletters.newCount > 0) {
@@ -146,52 +475,139 @@ async function processLabel(label, timeRange, runDir) {
 
   console.log(`  메일 ${msgFiles.length}개 수집 완료`);
 
-  // 2. HTML → Text
-  console.log('  HTML → Text 변환 중...');
-  await convertHtmlToText(rawDir, cleanDir);
+  // 2. HTML → Text - 증분 처리 지원
+  if (!progressManager.isStepCompleted(label.name, 'html_to_text')) {
+    console.log('  HTML → Text 변환 중...');
+    progressManager.setStepStatus(label.name, 'html_to_text', 'in_progress');
+    await convertHtmlToText(rawDir, cleanDir);
+    progressManager.setStepStatus(label.name, 'html_to_text', 'completed');
+  } else {
+    console.log('  HTML → Text 변환 (이미 완료, 건너뜀)');
+  }
 
-  // 3. LLM 에이전트 실행
+  // 3. LLM 에이전트 실행 - 증분 처리 지원
   const runner = new AgentRunner(
     process.env.OPENROUTER_API_KEY,
     CONFIG.openrouterModel,
     { logDir: path.join(runDir, 'logs') }
   );
 
-  console.log('  아이템 추출 중 (LLM)...');
+  let successCount = 0;
+  let failCount = 0;
+  let newSkillCount = 0;
 
-  // clean 파일 목록
-  const cleanFiles = fs.readdirSync(cleanDir).filter(f => f.startsWith('clean_'));
+  if (!progressManager.isStepCompleted(label.name, 'llm_extract')) {
+    console.log('  아이템 추출 중 (LLM)...');
+    progressManager.setStepStatus(label.name, 'llm_extract', 'in_progress');
 
-  // 각 메일 처리
-  for (const cleanFile of cleanFiles) {
-    const messageId = cleanFile.replace('clean_', '').replace('.json', '');
-    const cleanPath = path.join(cleanDir, cleanFile);
-    const itemsPath = path.join(itemsDir, `items_${messageId}.json`);
+    // clean 파일 목록
+    const cleanFiles = fs.readdirSync(cleanDir).filter(f => f.startsWith('clean_'));
 
-    // 발신자 기반 SKILL 자동 매칭
-    let skills = ['SKILL_작성규칙.md'];
-    try {
-      const cleanData = JSON.parse(fs.readFileSync(cleanPath, 'utf8'));
-      const senderEmail = extractSenderEmail(cleanData.from);
-      const skillPath = adaptiveLearning.getSkillPath(senderEmail);
+    for (let idx = 0; idx < cleanFiles.length; idx++) {
+      const cleanFile = cleanFiles[idx];
+      const messageId = cleanFile.replace('clean_', '').replace('.json', '');
+      const cleanPath = path.join(cleanDir, cleanFile);
+      const itemsPath = path.join(itemsDir, `items_${messageId}.json`);
 
-      if (skillPath && fs.existsSync(skillPath)) {
-        const skillFile = path.basename(skillPath);
-        skills = [skillFile, 'SKILL_작성규칙.md'];
+      // 이미 처리된 파일 건너뛰기 (증분 처리)
+      if (fs.existsSync(itemsPath)) {
+        successCount++;
+        continue;
       }
-    } catch (e) {
-      // SKILL 매칭 실패 시 기본값 사용
+
+      // 발신자 정보 확인
+      let senderEmail = '';
+      let isNewSender = false;
+      let skills = ['SKILL_작성규칙.md'];
+
+      try {
+        const cleanData = JSON.parse(fs.readFileSync(cleanPath, 'utf8'));
+        senderEmail = extractSenderEmail(cleanData.from);
+
+        // SKILL이 생성되어 있는지 확인
+        const skillGenerated = adaptiveLearning.isSkillGenerated(senderEmail);
+        const skillPath = adaptiveLearning.getSkillPath(senderEmail);
+
+        if (skillGenerated && skillPath && fs.existsSync(skillPath)) {
+          // 기존 SKILL 사용
+          const skillFile = path.basename(skillPath);
+          skills = [skillFile, 'SKILL_작성규칙.md'];
+        } else {
+          // 새 발신자 - 구조 분석 필요
+          isNewSender = true;
+        }
+      } catch (e) {
+        // SKILL 매칭 실패 시 기본값 사용
+      }
+
+      try {
+        if (isNewSender) {
+          // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
+          console.log(`    [분석] ${senderEmail} (첫 수신)`);
+
+          const result = await runner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
+            skills: ['SKILL_작성규칙.md'],
+            inputs: cleanPath,
+            output: itemsPath
+          });
+
+          // 분석 결과로 SKILL 저장
+          if (result && result.analysis) {
+            adaptiveLearning.saveAnalyzedSkill(senderEmail, result.analysis);
+            newSkillCount++;
+          }
+
+          // items만 저장 (analysis 제외, 메타데이터 추가)
+          if (result && result.items) {
+            const enrichedItems = result.items.map(item => ({
+              ...item,
+              source_email: senderEmail,
+              message_id: messageId
+            }));
+            fs.writeFileSync(itemsPath, JSON.stringify({ items: enrichedItems }, null, 2), 'utf8');
+          }
+        } else {
+          // 기존 발신자: 일반 추출
+          const result = await runner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
+            skills,
+            inputs: cleanPath,
+            output: itemsPath
+          });
+
+          // 결과에 메타데이터 추가하여 저장
+          if (result && result.items) {
+            const enrichedItems = result.items.map(item => ({
+              ...item,
+              source_email: senderEmail,
+              message_id: messageId
+            }));
+            fs.writeFileSync(itemsPath, JSON.stringify({ items: enrichedItems }, null, 2), 'utf8');
+          }
+        }
+        successCount++;
+      } catch (error) {
+        failCount++;
+        failedBatchManager.recordFailure(label.name, 'llm_extract', idx, error, { messageId, senderEmail });
+        console.warn(`    [실패] ${messageId}: ${error.message}`);
+        // 실패해도 계속 진행
+      }
     }
 
-    await runner.runAgent(`agents/labels/${label.name}.md`, {
-      skills,
-      inputs: cleanPath,
-      output: itemsPath
-    });
+    progressManager.setStepStatus(label.name, 'llm_extract', 'completed');
+  } else {
+    console.log('  아이템 추출 (이미 완료, 건너뜀)');
+    // 이미 추출된 아이템 수 계산
+    const itemFiles = fs.readdirSync(itemsDir).filter(f => f.startsWith('items_'));
+    successCount = itemFiles.length;
   }
 
-  // 4. 병합
-  console.log('  병합 중 (LLM)...');
+  if (newSkillCount > 0) {
+    console.log(`  새 SKILL ${newSkillCount}개 생성됨`);
+  }
+
+  console.log(`  LLM 처리 완료: 성공 ${successCount}개, 실패 ${failCount}개`);
+
+  // 4. 병합 (배치 처리) - 증분 처리 지원
   const mergedDir = path.join(runDir, 'merged');
   if (!fs.existsSync(mergedDir)) {
     fs.mkdirSync(mergedDir, { recursive: true });
@@ -209,103 +625,184 @@ async function processLabel(label, timeRange, runDir) {
     }
   }
 
-  // 병합 Agent 호출 (중복 제거)
+  console.log(`    총 ${allItems.length}개 아이템`);
+
+  // 병합 Agent 호출 (배치 처리)
   let merged;
   const mergeAgentPath = path.join(__dirname, '..', 'agents', '병합.md');
 
-  if (fs.existsSync(mergeAgentPath) && allItems.length > 1) {
-    console.log('  병합 에이전트 실행 중 (중복 제거)...');
-    try {
-      const runner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
-        logDir: path.join(runDir, 'logs')
-      });
+  if (!progressManager.isStepCompleted(label.name, 'merge')) {
+    progressManager.setStepStatus(label.name, 'merge', 'in_progress');
 
-      merged = await runner.runAgent(mergeAgentPath, {
-        inputs: {
-          label: label.name,
-          items: allItems
-        },
-        schema: {
-          required: ['items']
+    if (fs.existsSync(mergeAgentPath) && allItems.length > 1) {
+      console.log(`  배치 병합 시작 (${CONFIG.mergeBatchSize}개씩)...`);
+      try {
+        const mergeRunner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
+          logDir: path.join(runDir, 'logs')
+        });
+
+        const MERGE_BATCH_SIZE = CONFIG.mergeBatchSize;
+        let mergedItems = [];
+        let totalDuplicates = 0;
+
+        for (let i = 0; i < allItems.length; i += MERGE_BATCH_SIZE) {
+          const batch = allItems.slice(i, i + MERGE_BATCH_SIZE);
+          const batchNum = Math.floor(i / MERGE_BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(allItems.length / MERGE_BATCH_SIZE);
+
+          console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
+
+          try {
+            const batchResult = await mergeRunner.runAgent(mergeAgentPath, {
+              inputs: {
+                label: label.name,
+                items: batch
+              },
+              schema: {
+                required: ['items']
+              }
+            });
+
+            if (batchResult && batchResult.items) {
+              const batchDuplicates = batch.length - batchResult.items.length;
+              totalDuplicates += batchDuplicates;
+              mergedItems.push(...batchResult.items);
+              console.log(`      → ${batch.length}개 → ${batchResult.items.length}개 (${batchDuplicates}개 중복 제거)`);
+            } else {
+              // 배치 실패 시 원본 유지 및 기록
+              mergedItems.push(...batch);
+              failedBatchManager.recordFailure(label.name, 'merge', batchNum, new Error('Empty result'));
+              console.warn(`      → 실패, 원본 유지`);
+            }
+          } catch (batchError) {
+            failedBatchManager.recordFailure(label.name, 'merge', batchNum, batchError);
+            console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
+            mergedItems.push(...batch);
+          }
         }
-      });
 
-      // 필수 필드 보정
-      if (!merged.label) merged.label = label.name;
-      if (!merged.merged_at) merged.merged_at = new Date().toISOString();
-      if (!merged.stats) {
-        merged.stats = {
-          total_items: merged.items.length,
-          original_count: allItems.length,
-          duplicates_removed: allItems.length - merged.items.length
+        merged = {
+          label: label.name,
+          merged_at: new Date().toISOString(),
+          total_items: mergedItems.length,
+          items: mergedItems,
+          stats: {
+            original_count: allItems.length,
+            total_items: mergedItems.length,
+            duplicates_removed: totalDuplicates
+          }
+        };
+
+        console.log(`  병합 완료: ${allItems.length}개 → ${mergedItems.length}개 (${totalDuplicates}개 중복 제거)`);
+      } catch (error) {
+        console.warn(`  병합 실패, 원본 유지: ${error.message}`);
+        merged = {
+          label: label.name,
+          merged_at: new Date().toISOString(),
+          total_items: allItems.length,
+          items: allItems,
+          stats: { original_count: allItems.length, total_items: allItems.length, duplicates_removed: 0 }
         };
       }
-
-      console.log(`    → ${allItems.length}개 → ${merged.items.length}개 (${allItems.length - merged.items.length}개 중복 제거)`);
-    } catch (error) {
-      console.warn(`  병합 에이전트 실패, 단순 병합으로 대체: ${error.message}`);
+    } else {
+      console.log('  병합 Agent 없음 또는 아이템 1개 이하, 건너뜀');
       merged = {
         label: label.name,
         merged_at: new Date().toISOString(),
         total_items: allItems.length,
         items: allItems,
-        stats: { total_items: allItems.length, duplicates_removed: 0 }
+        stats: { original_count: allItems.length, total_items: allItems.length, duplicates_removed: 0 }
       };
     }
+
+    fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
+    progressManager.setStepStatus(label.name, 'merge', 'completed');
   } else {
-    // 아이템이 1개 이하거나 병합 Agent가 없으면 단순 병합
-    merged = {
-      label: label.name,
-      merged_at: new Date().toISOString(),
-      total_items: allItems.length,
-      items: allItems,
-      stats: { total_items: allItems.length, duplicates_removed: 0 }
-    };
+    console.log('  병합 (이미 완료, 건너뜀)');
+    // 기존 병합 결과 로드
+    merged = JSON.parse(fs.readFileSync(mergedPath, 'utf8'));
   }
 
-  fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
-
-  // 5. 인사이트 생성 (이중 관점)
-  console.log('  인사이트 생성 중 (LLM)...');
+  // 5. 인사이트 생성 (배치 처리) - 증분 처리 지원
   const insightAgentPath = path.join(__dirname, '..', 'agents', '인사이트.md');
   const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
 
-  if (fs.existsSync(insightAgentPath) && merged.items.length > 0) {
-    try {
-      // 사용자 프로필 로드
-      let profile = null;
-      if (fs.existsSync(profilePath)) {
-        profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-      }
+  if (!progressManager.isStepCompleted(label.name, 'insight')) {
+    progressManager.setStepStatus(label.name, 'insight', 'in_progress');
 
-      const insightRunner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
-        logDir: path.join(runDir, 'logs')
-      });
-
-      const insightResult = await insightRunner.runAgent(insightAgentPath, {
-        inputs: {
-          profile: profile?.user || null,
-          label: label.name,
-          items: merged.items
-        },
-        schema: {
-          required: ['items']
+    if (fs.existsSync(insightAgentPath) && merged.items.length > 0) {
+      console.log('  인사이트 생성 중 (LLM 배치 처리)...');
+      try {
+        // 사용자 프로필 로드
+        let profile = null;
+        if (fs.existsSync(profilePath)) {
+          profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
         }
-      });
 
-      // 인사이트가 추가된 아이템으로 교체
-      if (insightResult && insightResult.items) {
-        merged.items = insightResult.items;
-        merged.has_insights = true;
+        const insightRunner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
+          logDir: path.join(runDir, 'logs')
+        });
+
+        const INSIGHT_BATCH_SIZE = CONFIG.insightBatchSize;
+        const itemsWithInsights = [];
+        let insightSuccessCount = 0;
+
+        console.log(`  배치 인사이트 시작 (${CONFIG.insightBatchSize}개씩)...`);
+
+        for (let i = 0; i < merged.items.length; i += INSIGHT_BATCH_SIZE) {
+          const batch = merged.items.slice(i, i + INSIGHT_BATCH_SIZE);
+          const batchNum = Math.floor(i / INSIGHT_BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(merged.items.length / INSIGHT_BATCH_SIZE);
+
+          console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
+
+          try {
+            const batchResult = await insightRunner.runAgent(insightAgentPath, {
+              inputs: {
+                profile: profile?.user || null,
+                label: label.name,
+                items: batch
+              },
+              schema: {
+                required: ['items']
+              }
+            });
+
+            if (batchResult && batchResult.items) {
+              itemsWithInsights.push(...batchResult.items);
+              insightSuccessCount += batchResult.items.length;
+              console.log(`      → 성공 (${batchResult.items.length}개 인사이트 추가)`);
+            } else {
+              // 실패 시 원본 유지 및 기록
+              itemsWithInsights.push(...batch);
+              failedBatchManager.recordFailure(label.name, 'insight', batchNum, new Error('Empty result'));
+              console.warn(`      → 실패, 원본 유지`);
+            }
+          } catch (batchError) {
+            failedBatchManager.recordFailure(label.name, 'insight', batchNum, batchError);
+            console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
+            itemsWithInsights.push(...batch);
+          }
+        }
+
+        // 인사이트가 추가된 아이템으로 교체
+        merged.items = itemsWithInsights;
+        merged.has_insights = insightSuccessCount > 0;
         fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
-        console.log(`    → ${merged.items.length}개 아이템에 인사이트 추가`);
+        console.log(`  인사이트 완료: ${insightSuccessCount}/${merged.items.length}개 아이템에 추가`);
+      } catch (error) {
+        console.warn(`  인사이트 생성 실패 (무시): ${error.message}`);
+        merged.has_insights = false;
       }
-    } catch (error) {
-      console.warn(`  인사이트 생성 실패 (무시): ${error.message}`);
+    } else {
+      console.log('  인사이트 Agent 없음 또는 아이템 없음, 건너뜀');
       merged.has_insights = false;
     }
+
+    progressManager.setStepStatus(label.name, 'insight', 'completed');
   } else {
-    merged.has_insights = false;
+    console.log('  인사이트 생성 (이미 완료, 건너뜀)');
+    // 기존 결과에 이미 인사이트가 있을 수 있음
   }
 
   // 6. MD 파일 생성 (라벨별 개별 파일 - 옵시디언용)
@@ -369,10 +866,11 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
  * HTML → Text 변환
  */
 async function convertHtmlToText(rawDir, cleanDir) {
+  const htmlToTextPath = path.join(__dirname, 'html_to_text.js').replace(/\\/g, '\\\\');
   const processScript = `
 const fs = require('fs');
 const path = require('path');
-const { htmlToText, cleanNewsletterText } = require('./scripts/html_to_text.js');
+const { htmlToText, cleanNewsletterText } = require('${htmlToTextPath}');
 
 const rawDir = '${rawDir.replace(/\\/g, '\\\\')}';
 const cleanDir = '${cleanDir.replace(/\\/g, '\\\\')}';
@@ -432,6 +930,11 @@ function generateMarkdown(merged, date) {
 
     if (item.keywords && item.keywords.length > 0) {
       md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
+    }
+
+    // 링크 추가
+    if (item.link) {
+      md += `**링크**: [원문 보기](${item.link})\n\n`;
     }
 
     // 인사이트 추가
@@ -505,17 +1008,15 @@ function calculateTimeRange(mode, customDate) {
 
   switch (mode) {
     case 'schedule':
-      // 자동 실행: 전날 11:00 ~ 당일 11:00
-      const yesterday11 = new Date(now);
-      yesterday11.setDate(yesterday11.getDate() - 1);
-      yesterday11.setHours(11, 0, 0, 0);
-
-      const today11 = new Date(now);
-      today11.setHours(11, 0, 0, 0);
+      // 자동 실행: 전날 10:01 ~ 당일 10:00 (KST)
+      const todayKST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+      const todayStr = todayKST.toISOString().split('T')[0];
+      const yesterdayKST = new Date(todayKST.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = yesterdayKST.toISOString().split('T')[0];
 
       return {
-        start: yesterday11,
-        end: today11
+        start: new Date(yesterdayStr + 'T10:01:00+09:00'),
+        end: new Date(todayStr + 'T10:00:00+09:00')
       };
 
     case 'today':
@@ -535,13 +1036,25 @@ function calculateTimeRange(mode, customDate) {
       };
 
     case 'custom':
-      // 특정 날짜
+      // 특정 날짜 (KST 00:00 ~ 23:59)
       const date = new Date(customDate + 'T00:00:00+09:00');
-      const dateEnd = new Date(date);
-      dateEnd.setHours(23, 59, 59, 999);
+      const dateEnd = new Date(customDate + 'T23:59:59+09:00');
       return {
         start: date,
         end: dateEnd
+      };
+
+    default:
+      // 알 수 없는 모드: schedule과 동일하게 처리
+      console.warn(`알 수 없는 모드 '${mode}', 'schedule' 모드로 대체합니다.`);
+      const defaultTodayKST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+      const defaultTodayStr = defaultTodayKST.toISOString().split('T')[0];
+      const defaultYesterdayKST = new Date(defaultTodayKST.getTime() - 24 * 60 * 60 * 1000);
+      const defaultYesterdayStr = defaultYesterdayKST.toISOString().split('T')[0];
+
+      return {
+        start: new Date(defaultYesterdayStr + 'T10:01:00+09:00'),
+        end: new Date(defaultTodayStr + 'T10:00:00+09:00')
       };
   }
 }
@@ -550,7 +1063,8 @@ function calculateTimeRange(mode, customDate) {
  * 라벨 목록 가져오기
  */
 function getLabels(labelFilter) {
-  const labelsJson = JSON.parse(fs.readFileSync('config/labels.json', 'utf8'));
+  const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
+  const labelsJson = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
   let labels = labelsJson.labels.filter(l => l.enabled);
 
   if (labelFilter) {
@@ -602,10 +1116,10 @@ function printSummary(results) {
  */
 function generateRunId() {
   const now = new Date();
+  // 같은 날짜면 덮어쓰기 (날짜만 사용)
   return now.toISOString()
-    .replace(/[-:]/g, '')
-    .replace('T', '_')
-    .substring(0, 15);
+    .split('T')[0]
+    .replace(/-/g, '');  // 예: 20260203
 }
 
 function formatKST(date) {

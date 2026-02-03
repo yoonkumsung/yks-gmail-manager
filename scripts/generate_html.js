@@ -16,7 +16,7 @@ function generateHtmlReport(finalData, label, date) {
   const items = finalData.items || [];
   const stats = finalData.stats || {};
 
-  // 아이템 HTML 생성
+  // 기사 HTML 생성
   const itemsHtml = items.map((item, index) => {
     const isLongform = item.is_longform;
 
@@ -38,16 +38,30 @@ function generateHtmlReport(finalData, label, date) {
       </details>
     ` : '';
 
+    // 원문 링크 버튼
+    const articleLink = item.link ? `
+      <a href="${escapeHtml(item.link)}" target="_blank" class="link-btn article-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        원문 보기
+      </a>
+    ` : '';
+
     // Gmail 링크 버튼
-    const linkButton = gmailUrl ? `
-      <a href="${escapeHtml(gmailUrl)}" target="_blank" class="link-btn">
+    const gmailLink = gmailUrl ? `
+      <a href="${escapeHtml(gmailUrl)}" target="_blank" class="link-btn gmail-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
           <polyline points="22,6 12,13 2,6"></polyline>
         </svg>
-        Gmail에서 보기
+        Gmail
       </a>
-    ` : '<span class="no-link">메일 없음</span>';
+    ` : '';
+
+    const linkButtons = (articleLink || gmailLink) ? `${articleLink}${gmailLink}` : '<span class="no-link">링크 없음</span>';
 
     return `
       <article class="item ${isLongform ? 'longform-item' : ''}">
@@ -61,7 +75,7 @@ function generateHtmlReport(finalData, label, date) {
         <p class="item-summary">${escapeHtml(item.summary)}</p>
         <div class="item-meta">
           <div class="keywords">${keywordTags}</div>
-          ${linkButton}
+          <div class="links">${linkButtons}</div>
         </div>
         ${longformSection}
       </article>
@@ -73,7 +87,7 @@ function generateHtmlReport(finalData, label, date) {
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">${items.length}</div>
-        <div class="stat-label">총 아이템</div>
+        <div class="stat-label">총 기사</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">${stats.total_messages || 0}</div>
@@ -85,7 +99,7 @@ function generateHtmlReport(finalData, label, date) {
       </div>
       <div class="stat-card">
         <div class="stat-value">${items.filter(i => i.is_longform).length}</div>
-        <div class="stat-label">장문 아이템</div>
+        <div class="stat-label">장문 기사</div>
       </div>
     </div>
   `;
@@ -363,7 +377,7 @@ function generateHtmlReport(finalData, label, date) {
     </section>
 
     <section class="items-section">
-      <h2>정리된 아이템</h2>
+      <h2>정리된 기사</h2>
       ${itemsHtml}
     </section>
 
@@ -430,28 +444,26 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         .map(kw => `<span class="tag">${escapeHtml(kw)}</span>`)
         .join('');
 
-      // 인사이트 섹션
+      // 인사이트 섹션 (토글)
       let insightsHtml = '';
       if (item.insights) {
         if (item.insights.domain) {
           insightsHtml += `
-            <div class="insight domain-insight">
-              <div class="insight-header">실용적 인사이트</div>
-              ${item.insights.domain.perspective ? `<div class="insight-perspective">${escapeHtml(item.insights.domain.perspective)}</div>` : ''}
-              <p>${escapeHtml(item.insights.domain.content)}</p>
-              ${item.insights.domain.action_items && item.insights.domain.action_items.length > 0 ?
-                `<div class="action-items"><strong>액션:</strong> ${item.insights.domain.action_items.map(a => escapeHtml(a)).join(', ')}</div>` : ''}
-            </div>`;
+            <details class="insight-toggle">
+              <summary class="insight-summary domain-summary">💡 실용적 인사이트</summary>
+              <div class="insight domain-insight">
+                <p>${escapeHtml(item.insights.domain.content)}</p>
+              </div>
+            </details>`;
         }
         if (item.insights.cross_domain) {
           insightsHtml += `
-            <div class="insight cross-insight">
-              <div class="insight-header">확장 인사이트</div>
-              ${item.insights.cross_domain.perspective ? `<div class="insight-perspective">${escapeHtml(item.insights.cross_domain.perspective)}</div>` : ''}
-              <p>${escapeHtml(item.insights.cross_domain.content)}</p>
-              ${item.insights.cross_domain.connections && item.insights.cross_domain.connections.length > 0 ?
-                `<div class="connections"><strong>연결:</strong> ${item.insights.cross_domain.connections.map(c => escapeHtml(c)).join(', ')}</div>` : ''}
-            </div>`;
+            <details class="insight-toggle">
+              <summary class="insight-summary cross-summary">🌐 확장 인사이트</summary>
+              <div class="insight cross-insight">
+                <p>${escapeHtml(item.insights.cross_domain.content)}</p>
+              </div>
+            </details>`;
         }
       }
 
@@ -471,17 +483,17 @@ function generateCombinedHtmlReport(allLabelsData, date) {
     return `
       <div class="tab-content ${isActive}" id="tab-${data.label}">
         <div class="label-stats">
-          <span class="stat">아이템 ${items.length}개</span>
+          <span class="stat">기사 ${items.length}개</span>
           ${data.stats?.duplicates_removed ? `<span class="stat">중복 제거 ${data.stats.duplicates_removed}개</span>` : ''}
         </div>
         <div class="items-list">
-          ${itemsHtml || '<p class="no-items">아이템이 없습니다.</p>'}
+          ${itemsHtml || '<p class="no-items">기사이 없습니다.</p>'}
         </div>
       </div>
     `;
   }).join('\n');
 
-  // 총 아이템 수 계산
+  // 총 기사 수 계산
   const totalItems = allLabelsData.reduce((sum, data) => sum + (data.items?.length || 0), 0);
   const labelCount = allLabelsData.length;
 
@@ -737,10 +749,54 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       margin-bottom: 0.25rem;
     }
 
-    .action-items, .connections {
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .insight-toggle {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .insight-summary {
+      padding: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .insight-summary:hover {
+      background: var(--border);
+    }
+
+    .domain-summary {
+      background: #f5f3ff;
+      color: var(--domain);
+    }
+
+    .domain-summary:hover {
+      background: #ede9fe;
+    }
+
+    .cross-summary {
+      background: #fffbeb;
+      color: var(--cross);
+    }
+
+    .cross-summary:hover {
+      background: #fef3c7;
+    }
+
+    .insight-toggle[open] .insight-summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .insight-toggle[open] .domain-summary {
+      background: #ede9fe;
+    }
+
+    .insight-toggle[open] .cross-summary {
+      background: #fef3c7;
     }
 
     .no-items { color: var(--text-muted); text-align: center; padding: 2rem; }

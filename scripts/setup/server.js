@@ -310,10 +310,14 @@ function startServer() {
     console.log('========================================\n');
     console.log(`서버 실행 중: http://localhost:${PORT}/setup\n`);
 
-    // 브라우저 자동 열기
-    const open = require('open');
-    open(`http://localhost:${PORT}/setup`).catch(() => {
-      console.log(`브라우저에서 http://localhost:${PORT}/setup 을 열어주세요.`);
+    // 브라우저 자동 열기 (Windows/Mac/Linux 지원)
+    const { exec } = require('child_process');
+    const url = `http://localhost:${PORT}/setup`;
+    const cmd = process.platform === 'win32' ? `start ${url}`
+              : process.platform === 'darwin' ? `open ${url}`
+              : `xdg-open ${url}`;
+    exec(cmd, (err) => {
+      if (err) console.log(`브라우저에서 ${url} 을 열어주세요.`);
     });
   });
 }
