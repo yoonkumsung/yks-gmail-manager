@@ -9,6 +9,9 @@ gmail-digest.json
 # Claude Code 로컬 설정
 .claude/
 
+# Windows 예약어 파일
+nul
+
 # Node.js
 node_modules/
 package-lock.json
