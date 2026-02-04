@@ -156,7 +156,7 @@ jobs:
           retention-days: 30
 
       - name: Telegram 알림
-        if: success() && steps.check-secrets.outputs.skip != 'true' && secrets.TELEGRAM_TOKEN != ''
+        if: ${{ success() && steps.check-secrets.outputs.skip != 'true' && secrets.TELEGRAM_TOKEN != '' }}
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -185,7 +185,7 @@ jobs:
             -d text="$MESSAGE"
 
       - name: 에러 알림
-        if: failure() && secrets.TELEGRAM_TOKEN != ''
+        if: ${{ failure() && secrets.TELEGRAM_TOKEN != '' }}
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
