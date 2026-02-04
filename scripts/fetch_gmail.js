@@ -171,6 +171,7 @@ class GmailFetcher {
 
   /**
    * 날짜를 KST로 변환
+   * JavaScript Date()는 이미 타임존을 해석하므로 추가 변환 불필요
    */
   parseToKST(dateString) {
     if (!dateString) return null;
@@ -182,9 +183,26 @@ class GmailFetcher {
 
       if (isNaN(date.getTime())) return null;
 
-      // KST (UTC+9)로 변환
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const kstDate = new Date(date.getTime() + kstOffset);
+      // Date()가 이미 타임존을 해석함
+      // UTC 시간에서 KST(+9) 날짜/시간 계산
+      const utcYear = date.getUTCFullYear();
+      const utcMonth = date.getUTCMonth();
+      const utcDate = date.getUTCDate();
+      const utcHours = date.getUTCHours();
+
+      // KST = UTC + 9시간
+      const kstHours = utcHours + 9;
+      const dayOverflow = kstHours >= 24 ? 1 : 0;
+
+      // KST 날짜로 새 Date 생성 (UTC로 저장하여 일관성 유지)
+      const kstDate = new Date(Date.UTC(
+        utcYear,
+        utcMonth,
+        utcDate + dayOverflow,
+        kstHours % 24,
+        date.getUTCMinutes(),
+        date.getUTCSeconds()
+      ));
 
       return kstDate;
     } catch (error) {

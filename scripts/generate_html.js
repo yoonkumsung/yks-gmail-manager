@@ -445,27 +445,43 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         .join('');
 
       // 인사이트 섹션 (토글)
-      let insightsHtml = '';
+      let domainInsightHtml = '';
+      let crossInsightHtml = '';
       if (item.insights) {
         if (item.insights.domain) {
-          insightsHtml += `
-            <details class="insight-toggle">
-              <summary class="insight-summary domain-summary">💡 실용적 인사이트</summary>
+          domainInsightHtml = `
+            <details class="insight-toggle domain-toggle">
+              <summary class="insight-summary domain-summary">실용적 인사이트</summary>
               <div class="insight domain-insight">
                 <p>${escapeHtml(item.insights.domain.content)}</p>
               </div>
             </details>`;
         }
         if (item.insights.cross_domain) {
-          insightsHtml += `
-            <details class="insight-toggle">
-              <summary class="insight-summary cross-summary">🌐 확장 인사이트</summary>
+          crossInsightHtml = `
+            <details class="insight-toggle cross-toggle">
+              <summary class="insight-summary cross-summary">확장 인사이트</summary>
               <div class="insight cross-insight">
                 <p>${escapeHtml(item.insights.cross_domain.content)}</p>
               </div>
             </details>`;
         }
       }
+
+      // 원문 보기 버튼
+      const articleLinkHtml = item.link ? `
+        <a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>
+      ` : '';
+
+      // 버튼 행 (인사이트 + 원문 보기)
+      const hasButtons = domainInsightHtml || crossInsightHtml || articleLinkHtml;
+      const buttonsHtml = hasButtons ? `
+        <div class="action-buttons">
+          ${domainInsightHtml}
+          ${crossInsightHtml}
+          ${articleLinkHtml}
+        </div>
+      ` : '';
 
       return `
         <article class="item">
@@ -475,7 +491,7 @@ function generateCombinedHtmlReport(allLabelsData, date) {
           </div>
           <p class="item-summary">${escapeHtml(item.summary)}</p>
           <div class="keywords">${keywordTags}</div>
-          ${insightsHtml}
+          ${buttonsHtml}
         </article>
       `;
     }).join('\n');
@@ -717,56 +733,62 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       font-size: 0.7rem;
     }
 
-    .insight {
+    /* 버튼 행 - 한 줄에 나란히 */
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
       margin-top: 0.75rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      flex-wrap: wrap;
     }
 
-    .domain-insight {
-      background: #f5f3ff;
-      border-left: 3px solid var(--domain);
-    }
-
-    .cross-insight {
-      background: #fffbeb;
-      border-left: 3px solid var(--cross);
-    }
-
-    .insight-header {
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      margin-bottom: 0.25rem;
-      color: var(--text-muted);
-    }
-
-    .insight-perspective {
-      font-style: italic;
-      color: var(--text-muted);
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0.875rem;
+      border-radius: 6px;
       font-size: 0.8rem;
-      margin-bottom: 0.25rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .article-btn {
+      background: var(--primary);
+      color: white;
+    }
+
+    .article-btn:hover {
+      background: var(--primary-light);
     }
 
     .insight-toggle {
-      margin-top: 0.75rem;
+      flex: 1;
+      min-width: 0;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
     }
 
     .insight-summary {
-      padding: 0.75rem;
+      display: block;
+      padding: 0.5rem 0.875rem;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 0.85rem;
+      font-weight: 500;
+      font-size: 0.8rem;
       user-select: none;
       transition: background 0.2s;
+      text-align: center;
+      list-style: none;
     }
 
-    .insight-summary:hover {
-      background: var(--border);
+    .insight-summary::-webkit-details-marker {
+      display: none;
     }
 
     .domain-summary {
@@ -780,15 +802,25 @@ function generateCombinedHtmlReport(allLabelsData, date) {
 
     .cross-summary {
       background: #fffbeb;
-      color: var(--cross);
+      color: #b45309;
     }
 
     .cross-summary:hover {
       background: #fef3c7;
     }
 
-    .insight-toggle[open] .insight-summary {
-      border-bottom: 1px solid var(--border);
+    .insight {
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .domain-insight {
+      background: #faf5ff;
+    }
+
+    .cross-insight {
+      background: #fffbeb;
     }
 
     .insight-toggle[open] .domain-summary {
@@ -851,6 +883,36 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       .label-stats {
         padding: 0.5rem;
         font-size: 0.75rem;
+      }
+
+      /* 모바일에서 버튼 세로 배치 */
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action-btn,
+      .insight-toggle {
+        flex: none;
+        width: 100%;
+      }
+
+      .insight-summary,
+      .action-btn {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    /* 중간 크기 (태블릿 등) */
+    @media (min-width: 641px) and (max-width: 800px) {
+      .action-buttons {
+        flex-wrap: wrap;
+      }
+
+      .action-btn,
+      .insight-toggle {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: calc(50% - 0.25rem);
       }
     }
 

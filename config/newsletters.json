@@ -1,4 +1,293 @@
 {
-  "newsletters": [],
-  "last_scan": null
+  "newsletters": [
+    {
+      "id": "superhuman",
+      "sender": "superhuman@mail.joinsuperhuman.ai",
+      "name": "\"Superhuman – Zain Kahn\" <superhuman@mail.joinsuperhuman.ai>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_superhuman.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T19:59:14.461Z",
+      "skill_generated": true
+    },
+    {
+      "id": "yozm_help",
+      "sender": "yozm_help@wishket.com",
+      "name": "\"요즘IT\" <yozm_help@wishket.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_yozm_help.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T19:59:14.461Z",
+      "skill_generated": true
+    },
+    {
+      "id": "newsletter",
+      "sender": "newsletter@gpters.org",
+      "name": "\"지피터스 뉴스레터\" <newsletter@gpters.org>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_newsletter.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T19:59:14.461Z",
+      "skill_generated": true
+    },
+    {
+      "id": "svweekly",
+      "sender": "svweekly@substack.com",
+      "name": "\"Ian Park | 주간 실리콘밸리\" <svweekly@substack.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_svweekly.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 7
+      },
+      "detected_at": "2026-02-03T19:59:14.461Z",
+      "skill_generated": true
+    },
+    {
+      "id": "jinah",
+      "sender": "jinah@peaknco.com",
+      "name": "\"류진아\" <jinah@peaknco.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_jinah.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 8
+      },
+      "detected_at": "2026-02-03T19:59:14.461Z",
+      "skill_generated": true
+    },
+    {
+      "id": "hello",
+      "sender": "hello@mrdongnews.com",
+      "name": "\"미스터동 뉴스레터\" <hello@mrdongnews.com>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_hello.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-03T20:42:50.876Z",
+      "skill_generated": false
+    },
+    {
+      "id": "newsletter",
+      "sender": "newsletter@outstanding.kr",
+      "name": "\"아웃스탠딩\" <newsletter@outstanding.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_newsletter.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-03T20:42:52.811Z",
+      "skill_generated": true
+    },
+    {
+      "id": "no_reply",
+      "sender": "no-reply@startuprecipe.co.kr",
+      "name": "\"스타트업레시피\" <no-reply@startuprecipe.co.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_no_reply.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T20:42:52.811Z",
+      "skill_generated": true
+    },
+    {
+      "id": "news_noreply",
+      "sender": "news-noreply@thevc.kr",
+      "name": "\"더브이씨 (The VC)\" <news-noreply@thevc.kr>",
+      "labels": [
+        "투자"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_news_noreply.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-03T20:50:10.182Z",
+      "skill_generated": true
+    },
+    {
+      "id": "news",
+      "sender": "news@e.scmp.com",
+      "name": "South China Morning Post <news@e.scmp.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 8,
+      "skill_file": "skills/newsletters/SKILL_news.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-03T20:50:44.695Z",
+      "skill_generated": true
+    },
+    {
+      "id": "noreply",
+      "sender": "noreply@redditmail.com",
+      "name": "Reddit <noreply@redditmail.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_noreply.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T20:50:44.695Z",
+      "skill_generated": true
+    },
+    {
+      "id": "markets",
+      "sender": "markets@axios.com",
+      "name": "Axios Markets <markets@axios.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_markets.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-02-03T20:50:44.695Z",
+      "skill_generated": true
+    },
+    {
+      "id": "mike",
+      "sender": "mike@axios.com",
+      "name": "Mike Allen <mike@axios.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_mike.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T20:50:44.695Z",
+      "skill_generated": true
+    },
+    {
+      "id": "noreply",
+      "sender": "noreply@thewirechina.com",
+      "name": "The Wire <noreply@thewirechina.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_noreply.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T20:50:44.695Z",
+      "skill_generated": true
+    },
+    {
+      "id": "hey",
+      "sender": "hey@qletter.co.kr",
+      "name": "\"큐레터\" <hey@qletter.co.kr>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_hey.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T22:41:25.399Z",
+      "skill_generated": true
+    },
+    {
+      "id": "no_reply",
+      "sender": "no-reply@sportspromedia.com",
+      "name": "SportsPro Daily <no-reply@sportspromedia.com>",
+      "labels": [
+        "스포츠"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_no_reply.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-03T22:56:43.665Z",
+      "skill_generated": true
+    }
+  ],
+  "last_scan": "2026-02-03T22:59:58.020Z"
 }

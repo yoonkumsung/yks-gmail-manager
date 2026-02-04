@@ -2,8 +2,12 @@
 config/credentials/
 *.json.bak
 
-# Output 디렉토리 (선택적)
-# output/runs/
+# Output 디렉토리
+output/
+gmail-digest.json
+
+# Claude Code 로컬 설정
+.claude/
 
 # Node.js
 node_modules/
