@@ -132,34 +132,45 @@ class AgentRunner {
 
   /**
    * 청크 분할 처리 (긴 입력을 여러 청크로 나눠서 처리)
+   * - 각 청크 결과를 임시 파일에 저장 (안전성 확보)
+   * - 최종적으로 병합 후 임시 파일 삭제
    */
   async runChunkedPrompt(header, inputData, chunkSize, options) {
     // 1. 입력 데이터를 청크로 분할
     const chunks = this.splitTextIntoChunks(inputData, chunkSize);
     this.log(`${chunks.length}개 청크로 분할 처리`, 'info');
 
-    // 2. 각 청크 처리
-    const allItems = [];
+    // 2. 임시 파일 디렉토리 설정
+    const tempDir = options.output
+      ? path.dirname(options.output)
+      : path.join(this.logDir, 'temp');
+
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const tempFiles = [];
     let successCount = 0;
     let failCount = 0;
 
+    // 3. 각 청크 처리 및 임시 파일 저장
     for (let i = 0; i < chunks.length; i++) {
       this.log(`  청크 ${i + 1}/${chunks.length} 처리 중...`, 'info');
+
+      const tempFile = path.join(tempDir, `_chunk_${i + 1}_of_${chunks.length}_${Date.now()}.json`);
 
       try {
         const result = await this.runSinglePrompt(header, chunks[i], {
           ...options,
-          output: null // 청크별로는 저장하지 않음
+          output: null // 여기서는 저장하지 않음
         });
 
-        // items 배열 추출
-        if (result && result.items && Array.isArray(result.items)) {
-          allItems.push(...result.items);
+        // 임시 파일에 저장
+        if (result) {
+          fs.writeFileSync(tempFile, JSON.stringify(result, null, 2), 'utf8');
+          tempFiles.push(tempFile);
           successCount++;
-        } else if (result && typeof result === 'object') {
-          // items가 아닌 다른 구조인 경우 전체 결과 보존
-          allItems.push(result);
-          successCount++;
+          this.log(`  청크 ${i + 1} 저장: ${path.basename(tempFile)}`, 'debug');
         }
 
       } catch (error) {
@@ -171,12 +182,38 @@ class AgentRunner {
 
     this.log(`청크 처리 완료: 성공 ${successCount}, 실패 ${failCount}`, 'info');
 
-    // 3. 결과 병합
+    // 4. 임시 파일들에서 결과 읽어서 병합
+    const allItems = [];
+    for (const tempFile of tempFiles) {
+      try {
+        const content = fs.readFileSync(tempFile, 'utf8');
+        const data = JSON.parse(content);
+
+        if (data && data.items && Array.isArray(data.items)) {
+          allItems.push(...data.items);
+        } else if (data && typeof data === 'object') {
+          allItems.push(data);
+        }
+      } catch (error) {
+        this.log(`임시 파일 읽기 실패: ${tempFile}`, 'warn');
+      }
+    }
+
+    // 5. 결과 병합
     const mergedResult = this.mergeChunkResults(allItems, options);
 
-    // 4. 결과 저장
+    // 6. 최종 결과 저장
     if (options.output) {
       this.saveOutput(mergedResult, options.output);
+    }
+
+    // 7. 임시 파일 삭제
+    for (const tempFile of tempFiles) {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        // 삭제 실패 무시
+      }
     }
 
     this.log(`[완료] 총 ${mergedResult.items?.length || 0}개 아이템 추출`);
