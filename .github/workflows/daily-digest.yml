@@ -79,6 +79,24 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: 시작 알림
+        if: steps.check-secrets.outputs.skip != 'true'
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ]; then
+            echo "TELEGRAM_TOKEN이 설정되지 않아 시작 알림을 건너뜁니다."
+            exit 0
+          fi
+
+          TODAY=$(TZ='Asia/Seoul' date '+%y%m%d')
+          MESSAGE=$(printf "안녕하세요:) 당신의 Gmail 매니저입니다!\n%s 뉴스레터를 정리해 드릴게요.\n정상 작동 되었으니 잠시만 기다려주세요!" "$TODAY")
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="$MESSAGE"
+
       - name: Setup Node.js
         if: steps.check-secrets.outputs.skip != 'true'
         uses: actions/setup-node@v4
