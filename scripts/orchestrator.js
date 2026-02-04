@@ -199,7 +199,8 @@ const CONFIG = {
   concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
   openrouterModel: 'upstage/solar-pro-3:free',
   mergeBatchSize: 15,     // 병합 배치 크기
-  insightBatchSize: 8     // 인사이트 배치 크기
+  insightBatchSize: 6,    // 인사이트 배치 크기
+  insightBatchFallback: [6, 4, 2, 1]  // 실패 시 축소 순서
 };
 
 /**
@@ -743,18 +744,19 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           logDir: path.join(runDir, 'logs')
         });
 
-        const INSIGHT_BATCH_SIZE = CONFIG.insightBatchSize;
         const itemsWithInsights = [];
         let insightSuccessCount = 0;
+        let currentBatchSize = CONFIG.insightBatchSize;
 
-        console.log(`  배치 인사이트 시작 (${CONFIG.insightBatchSize}개씩)...`);
+        console.log(`  배치 인사이트 시작 (초기 ${currentBatchSize}개씩)...`);
 
-        for (let i = 0; i < merged.items.length; i += INSIGHT_BATCH_SIZE) {
-          const batch = merged.items.slice(i, i + INSIGHT_BATCH_SIZE);
-          const batchNum = Math.floor(i / INSIGHT_BATCH_SIZE) + 1;
-          const totalBatches = Math.ceil(merged.items.length / INSIGHT_BATCH_SIZE);
+        let i = 0;
+        while (i < merged.items.length) {
+          const batch = merged.items.slice(i, i + currentBatchSize);
+          const processedCount = itemsWithInsights.length;
+          const remainingCount = merged.items.length - processedCount;
 
-          console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
+          console.log(`    처리 중: ${processedCount}/${merged.items.length} (현재 배치 ${batch.length}개, 크기 ${currentBatchSize})...`);
 
           try {
             const batchResult = await insightRunner.runAgent(insightAgentPath, {
@@ -768,20 +770,51 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
               }
             });
 
-            if (batchResult && batchResult.items) {
+            if (batchResult && batchResult.items && batchResult.items.length > 0) {
               itemsWithInsights.push(...batchResult.items);
               insightSuccessCount += batchResult.items.length;
               console.log(`      → 성공 (${batchResult.items.length}개 인사이트 추가)`);
+              i += currentBatchSize;  // 다음 배치로 이동
+              // 성공하면 배치 크기 복원 시도 (현재보다 한 단계 위로)
+              const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
+              if (fallbackIdx > 0) {
+                currentBatchSize = CONFIG.insightBatchFallback[fallbackIdx - 1];
+                console.log(`      → 배치 크기 복원: ${currentBatchSize}`);
+              }
             } else {
-              // 실패 시 원본 유지 및 기록
-              itemsWithInsights.push(...batch);
-              failedBatchManager.recordFailure(label.name, 'insight', batchNum, new Error('Empty result'));
-              console.warn(`      → 실패, 원본 유지`);
+              // 빈 응답 - 배치 크기 축소 시도
+              const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
+              const nextIdx = fallbackIdx + 1;
+
+              if (nextIdx < CONFIG.insightBatchFallback.length) {
+                currentBatchSize = CONFIG.insightBatchFallback[nextIdx];
+                console.warn(`      → 빈 응답, 배치 크기 축소: ${currentBatchSize}`);
+                // i는 그대로 (같은 위치에서 더 작은 배치로 재시도)
+              } else {
+                // 최소 크기에서도 실패 - 원본 유지하고 다음으로
+                console.warn(`      → 최소 배치에서도 실패, 원본 유지`);
+                itemsWithInsights.push(...batch);
+                failedBatchManager.recordFailure(label.name, 'insight', i, new Error('Empty result at min batch'));
+                i += currentBatchSize;
+              }
             }
           } catch (batchError) {
-            failedBatchManager.recordFailure(label.name, 'insight', batchNum, batchError);
-            console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
-            itemsWithInsights.push(...batch);
+            // 에러 발생 - 배치 크기 축소 시도
+            const isTokenError = batchError.message?.includes('토큰') || batchError.message?.includes('빈 응답');
+            const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
+            const nextIdx = fallbackIdx + 1;
+
+            if (isTokenError && nextIdx < CONFIG.insightBatchFallback.length) {
+              currentBatchSize = CONFIG.insightBatchFallback[nextIdx];
+              console.warn(`      → 오류 (${batchError.message}), 배치 크기 축소: ${currentBatchSize}`);
+              // i는 그대로 (같은 위치에서 더 작은 배치로 재시도)
+            } else {
+              // 축소 불가 또는 다른 종류의 에러 - 원본 유지하고 다음으로
+              console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
+              itemsWithInsights.push(...batch);
+              failedBatchManager.recordFailure(label.name, 'insight', i, batchError);
+              i += currentBatchSize;
+            }
           }
         }
 
@@ -1036,12 +1069,14 @@ function calculateTimeRange(mode, customDate) {
       };
 
     case 'custom':
-      // 특정 날짜 (KST 00:00 ~ 23:59)
-      const date = new Date(customDate + 'T00:00:00+09:00');
-      const dateEnd = new Date(customDate + 'T23:59:59+09:00');
+      // 특정 날짜 (schedule과 동일한 로직: 전날 10:01 ~ 당일 10:00)
+      // 예: 2월 3일 입력 → 2월 2일 10:01 ~ 2월 3일 10:00
+      const targetDate = new Date(customDate + 'T00:00:00+09:00');
+      const prevDate = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
       return {
-        start: date,
-        end: dateEnd
+        start: new Date(prevDateStr + 'T10:01:00+09:00'),
+        end: new Date(customDate + 'T10:00:00+09:00')
       };
 
     default:
