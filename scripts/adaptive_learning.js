@@ -252,15 +252,85 @@ ${analysis.special_notes || '없음'}
   }
 
   /**
-   * ID 생성
+   * ID 생성 (도메인 우선, 중복 시 도메인_사용자)
+   *
+   * 규칙:
+   * 1. 도메인 추출 (일반명 제외)
+   * 2. 이미 같은 도메인이 있으면 도메인_사용자 조합
+   * 3. 사용자명이 일반명이면 도메인만 사용
    */
   generateId(email) {
-    // 이메일에서 ID 추출 (@ 앞부분, 특수문자 제거)
-    const localPart = email.split('@')[0];
-    return localPart
-      .replace(/[^a-zA-Z0-9]/g, '_')
-      .toLowerCase()
-      .substring(0, 30);
+    // 이메일 파싱
+    const emailClean = email.toLowerCase().trim();
+    const parts = emailClean.split('@');
+    if (parts.length !== 2) {
+      return emailClean.replace(/[^a-z0-9]/g, '_').substring(0, 30);
+    }
+
+    const localPart = parts[0];
+    const domain = parts[1];
+
+    // 도메인에서 ID 추출 (서브도메인 제외)
+    // 예: mail.joinsuperhuman.ai → joinsuperhuman
+    // 예: e.scmp.com → scmp
+    const domainParts = domain.split('.');
+    let mainDomain;
+    if (domainParts.length >= 2) {
+      // 서브도메인 제외 (mail, e, www, news 등)
+      const genericSubdomains = new Set(['mail', 'e', 'www', 'news', 'email', 'newsletter', 'send', 'bounce']);
+      if (domainParts.length > 2 && genericSubdomains.has(domainParts[0])) {
+        mainDomain = domainParts[1];
+      } else {
+        mainDomain = domainParts[0];
+      }
+    } else {
+      mainDomain = domainParts[0];
+    }
+    const domainId = mainDomain.replace(/[^a-z0-9]/g, '_');
+
+    // 일반적인 사용자명 목록 (의미 없는 이름들)
+    const genericNames = new Set([
+      'noreply', 'no_reply', 'no-reply', 'newsletter', 'newsletters',
+      'hello', 'info', 'news', 'support', 'team', 'mail', 'contact',
+      'admin', 'help', 'notification', 'notifications', 'updates',
+      'digest', 'alert', 'alerts', 'reply', 'mailer', 'sender',
+      'marketing', 'sales', 'service', 'customer', 'feedback'
+    ]);
+
+    // 사용자명 정리
+    const localId = localPart.replace(/[^a-z0-9]/g, '_');
+    const isGenericLocal = genericNames.has(localId) || genericNames.has(localPart);
+
+    // 이미 같은 도메인의 스킬이 있는지 확인
+    const existingIds = this.getExistingIds();
+    const domainExists = existingIds.has(domainId);
+
+    // ID 결정
+    let id;
+    if (!domainExists) {
+      // 도메인이 처음이면 도메인만 사용
+      id = domainId;
+    } else if (isGenericLocal) {
+      // 도메인 중복 + 일반명이면 도메인_숫자
+      let counter = 2;
+      while (existingIds.has(`${domainId}_${counter}`)) {
+        counter++;
+      }
+      id = `${domainId}_${counter}`;
+    } else {
+      // 도메인 중복 + 고유 사용자명이면 도메인_사용자
+      id = `${domainId}_${localId}`;
+    }
+
+    return id.substring(0, 40);
+  }
+
+  /**
+   * 기존 ID 목록 조회
+   */
+  getExistingIds() {
+    const catalog = this.loadCatalog();
+    return new Set(catalog.newsletters.map(n => n.id));
   }
 
   /**
