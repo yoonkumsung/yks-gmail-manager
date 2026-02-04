@@ -64,8 +64,11 @@ class AgentRunner {
 
       // 3. 입력 데이터가 없으면 단일 호출
       if (!inputData || inputData.length === 0) {
+        this.log(`입력 데이터 없음`, 'debug');
         return await this.runSinglePrompt(header, '', options);
       }
+
+      this.log(`입력 데이터: ${inputData.length}자`, 'debug');
 
       // 4. 입력 데이터 크기에 따라 청크 분할 여부 결정
       const availableChars = this.chunkSize - Math.min(header.length, this.maxHeaderSize);
@@ -512,6 +515,9 @@ ${agentContent}`;
   async callSolar3(prompt) {
     const fetch = (await import('node-fetch')).default;
 
+    // 프롬프트 크기 로깅
+    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자)`, 'debug');
+
     // 타임아웃 설정 (5분 - 긴 처리 대비)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -544,6 +550,7 @@ ${agentContent}`;
       });
 
       clearTimeout(timeoutId);
+      this.log(`API 응답 수신 (상태 ${response.status})`, 'debug');
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -649,7 +656,9 @@ ${agentContent}`;
     // 최소 요청 간격 유지
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.minRequestInterval) {
-      await this.sleep(this.minRequestInterval - timeSinceLastRequest);
+      const waitMs = this.minRequestInterval - timeSinceLastRequest;
+      this.log(`요청 간격 유지: ${Math.ceil(waitMs/1000)}초 대기`, 'debug');
+      await this.sleep(waitMs);
     }
 
     this.requestCount++;

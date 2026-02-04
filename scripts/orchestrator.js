@@ -510,8 +510,11 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       const cleanPath = path.join(cleanDir, cleanFile);
       const itemsPath = path.join(itemsDir, `items_${messageId}.json`);
 
+      console.log(`    [${idx + 1}/${cleanFiles.length}] ${messageId.substring(0, 12)}...`);
+
       // 이미 처리된 파일 건너뛰기 (증분 처리)
       if (fs.existsSync(itemsPath)) {
+        console.log(`      → 이미 처리됨 (건너뜀)`);
         successCount++;
         continue;
       }
@@ -544,7 +547,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       try {
         if (isNewSender) {
           // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
-          console.log(`    [분석] ${senderEmail} (첫 수신)`);
+          console.log(`      → 새 발신자: ${senderEmail} (뉴스레터분석 에이전트 실행)`);
 
           const result = await runner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
             skills: ['SKILL_작성규칙.md'],
@@ -569,6 +572,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           }
         } else {
           // 기존 발신자: 일반 추출
+          console.log(`      → 기존 발신자: ${senderEmail} (${label.name} 에이전트 실행)`);
           const result = await runner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
             skills,
             inputs: cleanPath,
