@@ -35,22 +35,26 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check secrets
         id: check-secrets
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
+          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
         run: |
           MISSING=""
 
-          if [ -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+          if [ -z "$OPENROUTER_API_KEY" ]; then
             MISSING="${MISSING}OPENROUTER_API_KEY, "
           fi
 
-          if [ -z "${{ secrets.GMAIL_CREDENTIALS }}" ]; then
+          if [ -z "$GMAIL_CREDENTIALS" ]; then
             MISSING="${MISSING}GMAIL_CREDENTIALS, "
           fi
 
-          if [ -z "${{ secrets.GMAIL_TOKEN }}" ]; then
+          if [ -z "$GMAIL_TOKEN" ]; then
             MISSING="${MISSING}GMAIL_TOKEN, "
           fi
 
@@ -77,7 +81,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.check-secrets.outputs.skip != 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -104,7 +108,6 @@ jobs:
           if [ "${{ github.event_name }}" = "schedule" ]; then
             # 자동 실행
             node scripts/orchestrator.js --mode schedule
-
           else
             # 수동 실행
             MODE="${{ github.event.inputs.mode }}"
@@ -141,7 +144,7 @@ jobs:
 
       - name: GitHub Pages 배포
         if: success() && steps.check-secrets.outputs.skip != 'true'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
@@ -149,18 +152,24 @@ jobs:
 
       - name: 결과물 업로드 (MD 파일)
         if: success() && steps.check-secrets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mail-digest-md-${{ github.run_number }}
           path: output/final/**/*.md
           retention-days: 30
 
       - name: Telegram 알림
-        if: ${{ success() && steps.check-secrets.outputs.skip != 'true' && secrets.TELEGRAM_TOKEN != '' }}
+        if: success() && steps.check-secrets.outputs.skip != 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          # TELEGRAM_TOKEN이 없으면 건너뛰기
+          if [ -z "$TELEGRAM_TOKEN" ]; then
+            echo "TELEGRAM_TOKEN이 설정되지 않아 알림을 건너뜁니다."
+            exit 0
+          fi
+
           # 라벨별 MD 파일 수 (라벨 개수)
           MD_COUNT=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l)
 
@@ -180,18 +189,24 @@ jobs:
 
           MESSAGE=$(printf "[완료] Gmail 메일 정리\n%s\n\n라벨: %s\n(%s개 라벨)\n\n[바로 보기] 통합 HTML\n%s\n\n[다운로드] MD 파일 (라벨별)\n%s" "$TODAY" "$LABELS" "$MD_COUNT" "$PAGES_URL" "$ARTIFACTS_URL")
 
-          curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d text="$MESSAGE"
 
       - name: 에러 알림
-        if: ${{ failure() && secrets.TELEGRAM_TOKEN != '' }}
+        if: failure()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          # TELEGRAM_TOKEN이 없으면 건너뛰기
+          if [ -z "$TELEGRAM_TOKEN" ]; then
+            echo "TELEGRAM_TOKEN이 설정되지 않아 에러 알림을 건너뜁니다."
+            exit 0
+          fi
+
           MESSAGE=$(printf "[실패] Gmail 메일 정리 실패\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
 
-          curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d text="$MESSAGE"
