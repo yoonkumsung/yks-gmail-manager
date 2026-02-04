@@ -1,6 +1,6 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
- * 현재 모델: upstage/solar-pro (2월까지 무료)
+ * 현재 모델: deepseek/deepseek-r1-0528:free
  *
  * 주요 기능:
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
