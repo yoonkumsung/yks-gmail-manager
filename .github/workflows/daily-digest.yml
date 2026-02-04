@@ -211,11 +211,12 @@ jobs:
             -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d text="$MESSAGE"
 
-      - name: 에러 알림
-        if: failure()
+      - name: 에러/타임아웃 알림
+        if: failure() || cancelled()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
@@ -223,7 +224,11 @@ jobs:
             exit 0
           fi
 
-          MESSAGE=$(printf "[실패] Gmail 메일 정리 실패\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          if [ "$JOB_STATUS" = "cancelled" ]; then
+            MESSAGE=$(printf "[타임아웃] Gmail 메일 정리가 시간 초과로 취소되었습니다.\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          else
+            MESSAGE=$(printf "[실패] Gmail 메일 정리 실패\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          fi
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
