@@ -680,24 +680,91 @@ ${agentContent}`;
         throw new Error('JSON 형식을 찾을 수 없습니다');
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      let jsonStr = jsonMatch[0];
 
-      // 스키마 검증 (선택적)
-      if (schema && schema.required) {
-        for (const field of schema.required) {
-          if (!(field in parsed)) {
-            throw new Error(`필수 필드 누락: ${field}`);
-          }
-        }
+      // 1차 시도: 원본 파싱
+      try {
+        const parsed = JSON.parse(jsonStr);
+        return this.validateSchema(parsed, schema);
+      } catch (firstError) {
+        // 2차 시도: JSON 자동 수정 후 파싱
+        this.log('JSON 파싱 실패, 자동 수정 시도...', 'warn');
+        const repaired = this.repairJson(jsonStr);
+        const parsed = JSON.parse(repaired);
+        this.log('JSON 자동 수정 성공', 'info');
+        return this.validateSchema(parsed, schema);
       }
-
-      return parsed;
 
     } catch (error) {
       this.log('응답 검증 실패: ' + error.message, 'error');
       this.log('응답 미리보기: ' + response.substring(0, 300), 'debug');
       throw error;
     }
+  }
+
+  /**
+   * 스키마 검증
+   */
+  validateSchema(parsed, schema) {
+    if (schema && schema.required) {
+      for (const field of schema.required) {
+        if (!(field in parsed)) {
+          throw new Error(`필수 필드 누락: ${field}`);
+        }
+      }
+    }
+    return parsed;
+  }
+
+  /**
+   * JSON 자동 수정 (흔한 LLM 오류 패턴 교정)
+   */
+  repairJson(jsonStr) {
+    let repaired = jsonStr;
+
+    // 1. 마지막 콤마 제거 (}, 뒤나 ], 뒤)
+    repaired = repaired.replace(/,(\s*[}\]])/g, '$1');
+
+    // 2. 따옴표 없는 키 → 따옴표 추가
+    repaired = repaired.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
+
+    // 3. 작은따옴표 → 큰따옴표 (문자열 값)
+    repaired = repaired.replace(/'([^']*?)'/g, '"$1"');
+
+    // 4. 배열이어야 할 곳에 문자열 나열된 경우 수정
+    // "key": "- item1", "- item2" → "key": ["- item1", "- item2"]
+    repaired = repaired.replace(
+      /"([^"]+)":\s*"(-[^"]*)"((?:\s*,\s*"-[^"]*")+)/g,
+      (match, key, firstItem, rest) => {
+        const items = [firstItem, ...rest.match(/"-[^"]*"/g).map(s => s.slice(1, -1))];
+        return `"${key}": [${items.map(i => `"${i}"`).join(', ')}]`;
+      }
+    );
+
+    // 5. 줄바꿈이 포함된 문자열 값 처리 (이스케이프)
+    repaired = repaired.replace(/"([^"]*)\n([^"]*)"/g, (match, p1, p2) => {
+      return `"${p1}\\n${p2}"`;
+    });
+
+    // 6. 불완전한 JSON 닫기 시도
+    const openBraces = (repaired.match(/{/g) || []).length;
+    const closeBraces = (repaired.match(/}/g) || []).length;
+    const openBrackets = (repaired.match(/\[/g) || []).length;
+    const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+    // 부족한 닫는 괄호 추가
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      repaired = repaired.trimEnd();
+      if (repaired.endsWith(',')) repaired = repaired.slice(0, -1);
+      repaired += ']';
+    }
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      repaired = repaired.trimEnd();
+      if (repaired.endsWith(',')) repaired = repaired.slice(0, -1);
+      repaired += '}';
+    }
+
+    return repaired;
   }
 
   /**
