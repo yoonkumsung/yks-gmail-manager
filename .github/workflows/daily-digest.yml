@@ -178,17 +178,7 @@ jobs:
           # 날짜
           TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
 
-          MESSAGE="[완료] Gmail 메일 정리
-${TODAY}
-
-라벨: ${LABELS}
-(${MD_COUNT}개 라벨)
-
-[바로 보기] 통합 HTML
-${PAGES_URL}
-
-[다운로드] MD 파일 (라벨별)
-${ARTIFACTS_URL}"
+          MESSAGE=$(printf "[완료] Gmail 메일 정리\n%s\n\n라벨: %s\n(%s개 라벨)\n\n[바로 보기] 통합 HTML\n%s\n\n[다운로드] MD 파일 (라벨별)\n%s" "$TODAY" "$LABELS" "$MD_COUNT" "$PAGES_URL" "$ARTIFACTS_URL")
 
           curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
@@ -200,9 +190,7 @@ ${ARTIFACTS_URL}"
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          MESSAGE="[실패] Gmail 메일 정리 실패
-
-로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE=$(printf "[실패] Gmail 메일 정리 실패\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
 
           curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
