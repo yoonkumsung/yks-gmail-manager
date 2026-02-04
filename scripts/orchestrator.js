@@ -197,7 +197,7 @@ function createLimiter(concurrency) {
 
 const CONFIG = {
   concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
-  openrouterModel: 'deepseek/deepseek-r1-0528:free',
+  openrouterModel: 'tngtech/deepseek-r1t2-chimera:free',
   mergeBatchSize: 15,     // 병합 배치 크기
   insightBatchSize: 6,    // 인사이트 배치 크기
   insightBatchFallback: [6, 4, 2, 1]  // 실패 시 축소 순서
