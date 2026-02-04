@@ -537,7 +537,7 @@ ${agentContent}`;
           messages: [
             {
               role: 'system',
-              content: 'Output ONLY a valid JSON object. No explanations, no reasoning text, no markdown. Start with { and end with }.'
+              content: 'Think briefly and concisely. Minimize internal reasoning. Go straight to the answer. Output ONLY a valid JSON object. No explanations, no reasoning text, no markdown. Start with { and end with }.'
             },
             {
               role: 'user',
