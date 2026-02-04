@@ -12,6 +12,13 @@ class AgentRunner {
     this.model = model;
     this.logDir = options.logDir || 'logs';
 
+    // 토큰 제한 설정 (128K 컨텍스트 - 출력 120K = 입력 8K 여유)
+    // 한글 기준 1토큰 ≈ 2-3자, 안전하게 20000자로 제한
+    this.maxInputChars = options.maxInputChars || 20000;
+
+    // 토큰 초과 시 텍스트 축소 비율
+    this.truncateRatios = [0.8, 0.6, 0.4];
+
     // 재시도 설정 (7회, 점진적 대기)
     this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
 
@@ -26,6 +33,34 @@ class AgentRunner {
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
+  }
+
+  /**
+   * 텍스트 truncate (토큰 초과 방지)
+   */
+  truncateText(text, maxChars = this.maxInputChars) {
+    if (!text || text.length <= maxChars) {
+      return text;
+    }
+
+    // 마지막 완전한 문장/문단에서 자르기 시도
+    const truncated = text.substring(0, maxChars);
+    const lastBreak = Math.max(
+      truncated.lastIndexOf('\n\n'),
+      truncated.lastIndexOf('.\n'),
+      truncated.lastIndexOf('. ')
+    );
+
+    const cutPoint = lastBreak > maxChars * 0.7 ? lastBreak : maxChars;
+    return truncated.substring(0, cutPoint) + '\n\n[... 텍스트가 너무 길어 일부 생략됨 ...]';
+  }
+
+  /**
+   * 토큰 초과 에러 여부 확인
+   */
+  isTokenLimitError(error) {
+    return error.message?.includes('context length') ||
+           error.message?.includes('maximum') && error.message?.includes('tokens');
   }
 
   /**
@@ -66,27 +101,45 @@ class AgentRunner {
     const agentName = path.basename(agentPath, '.md');
     this.log(`\n=== ${agentName} 에이전트 실행 ===`);
 
-    try {
-      // 1. 프롬프트 구성
-      const prompt = await this.buildPrompt(agentPath, options);
+    // 토큰 초과 시 재시도를 위한 설정
+    let currentMaxChars = options.maxInputChars || this.maxInputChars;
+    let truncateAttempt = 0;
 
-      // 2. Solar3 호출
-      const response = await this.callSolar3WithRetry(prompt);
+    while (truncateAttempt <= this.truncateRatios.length) {
+      try {
+        // 1. 프롬프트 구성 (현재 maxInputChars로)
+        const prompt = await this.buildPrompt(agentPath, {
+          ...options,
+          maxInputChars: currentMaxChars
+        });
 
-      // 3. 응답 검증
-      const validated = this.validateResponse(response, options.schema);
+        // 2. Solar3 호출
+        const response = await this.callSolar3WithRetry(prompt);
 
-      // 4. 결과 저장
-      if (options.output) {
-        this.saveOutput(validated, options.output);
+        // 3. 응답 검증
+        const validated = this.validateResponse(response, options.schema);
+
+        // 4. 결과 저장
+        if (options.output) {
+          this.saveOutput(validated, options.output);
+        }
+
+        this.log(`[완료] ${agentName}`);
+        return validated;
+
+      } catch (error) {
+        // 토큰 초과 에러인지 확인
+        if (this.isTokenLimitError(error) && truncateAttempt < this.truncateRatios.length) {
+          const ratio = this.truncateRatios[truncateAttempt];
+          currentMaxChars = Math.floor(this.maxInputChars * ratio);
+          truncateAttempt++;
+          this.log(`토큰 초과, 입력 텍스트 ${Math.round(ratio * 100)}%로 축소 후 재시도 (${truncateAttempt}/${this.truncateRatios.length})`, 'warn');
+          continue;
+        }
+
+        this.log(`✗ ${agentName} 실패: ${error.message}`, 'error');
+        throw error;
       }
-
-      this.log(`[완료] ${agentName}`);
-      return validated;
-
-    } catch (error) {
-      this.log(`✗ ${agentName} 실패: ${error.message}`, 'error');
-      throw error;
     }
   }
 
@@ -133,6 +186,14 @@ class AgentRunner {
         // 직접 전달된 데이터
         inputData = JSON.stringify(options.inputs, null, 2);
       }
+    }
+
+    // 토큰 초과 방지를 위한 텍스트 truncate
+    const maxChars = options.maxInputChars || this.maxInputChars;
+    if (inputData.length > maxChars) {
+      const originalLength = inputData.length;
+      inputData = this.truncateText(inputData, maxChars);
+      this.log(`입력 데이터 truncate: ${originalLength}자 → ${inputData.length}자`, 'warn');
     }
 
     // 전체 프롬프트 구성
