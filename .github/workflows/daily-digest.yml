@@ -11,7 +11,7 @@ on:
       mode:
         description: '실행 모드'
         required: true
-        default: 'last-24h'
+        default: 'today'
         type: choice
         options:
           - today        # 오늘 0시부터 현재까지
