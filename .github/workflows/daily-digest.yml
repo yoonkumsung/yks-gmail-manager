@@ -28,6 +28,17 @@ on:
         required: false
         default: ''
 
+# SKILL 파일 자동 커밋을 위한 권한
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# 동시 실행 방지 (이전 실행이 끝날 때까지 대기)
+concurrency:
+  group: gmail-digest
+  cancel-in-progress: false
+
 jobs:
   process-emails:
     runs-on: ubuntu-latest
@@ -143,6 +154,36 @@ jobs:
             fi
 
             node scripts/orchestrator.js $ARGS
+          fi
+
+      - name: SKILL 파일 및 설정 커밋
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        run: |
+          # Git 설정
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # 변경된 SKILL 파일과 newsletters.json 확인
+          SKILL_CHANGES=$(git status --porcelain skills/newsletters/ 2>/dev/null | wc -l)
+          CONFIG_CHANGES=$(git status --porcelain config/newsletters.json 2>/dev/null | wc -l)
+
+          if [ "$SKILL_CHANGES" -gt 0 ] || [ "$CONFIG_CHANGES" -gt 0 ]; then
+            echo "새로운 SKILL 파일 또는 설정 변경 감지됨"
+
+            # 파일 추가
+            git add skills/newsletters/*.md 2>/dev/null || true
+            git add config/newsletters.json 2>/dev/null || true
+
+            # 커밋 (변경사항이 있을 때만)
+            git diff --staged --quiet || git commit -m "chore: 새 뉴스레터 SKILL 자동 생성
+
+Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+            # 푸시
+            git push
+            echo "SKILL 파일 커밋 완료"
+          else
+            echo "새로운 SKILL 파일 없음, 건너뜀"
           fi
 
       - name: GitHub Pages용 파일 준비
