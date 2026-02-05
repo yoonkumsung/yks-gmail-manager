@@ -12,6 +12,15 @@
 const fs = require('fs');
 const path = require('path');
 
+// node-fetch 캐싱 (모듈 레벨에서 한 번만 로드)
+let fetchModule = null;
+async function getFetch() {
+  if (!fetchModule) {
+    fetchModule = (await import('node-fetch')).default;
+  }
+  return fetchModule;
+}
+
 class AgentRunner {
   constructor(apiKey, model = 'upstage/solar-pro', options = {}) {
     this.apiKey = apiKey;
@@ -513,7 +522,7 @@ ${agentContent}`;
    * Solar3 API 호출 (단일)
    */
   async callSolar3(prompt) {
-    const fetch = (await import('node-fetch')).default;
+    const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
     this.log(`API 호출 시작 (프롬프트 ${prompt.length}자)`, 'debug');
@@ -838,7 +847,7 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * 로그
+   * 로그 (비동기 파일 쓰기)
    */
   log(message, level = 'info') {
     const timestamp = new Date().toISOString();
@@ -846,13 +855,9 @@ ${agentContent}`;
 
     console.log(logMessage);
 
-    // 파일에도 저장
-    try {
-      const logFile = path.join(this.logDir, `${this.getToday()}.log`);
-      fs.appendFileSync(logFile, logMessage + '\n', 'utf8');
-    } catch (e) {
-      // 로그 파일 쓰기 실패 무시
-    }
+    // 파일에도 저장 (비동기, 에러 무시)
+    const logFile = path.join(this.logDir, `${this.getToday()}.log`);
+    fs.appendFile(logFile, logMessage + '\n', 'utf8', () => {});
   }
 
   sleep(ms) {

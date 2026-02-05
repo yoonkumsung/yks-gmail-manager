@@ -6,7 +6,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const fs = require('fs');
 const os = require('os');
-const { execSync } = require('child_process');
 const { AgentRunner } = require('./agent_runner');
 const { AdaptiveLearning } = require('./adaptive_learning');
 
@@ -443,6 +442,13 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     }
   });
 
+  // AgentRunner 인스턴스 (라벨 내에서 공유 - Rate Limit 카운터 유지)
+  const runner = new AgentRunner(
+    process.env.OPENROUTER_API_KEY,
+    CONFIG.openrouterModel,
+    { logDir: path.join(runDir, 'logs') }
+  );
+
   // 1. Gmail API 호출 (Node.js) - 증분 처리 지원
   let fetchResult = null;
   if (!progressManager.isStepCompleted(label.name, 'gmail_fetch')) {
@@ -487,12 +493,6 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   }
 
   // 3. LLM 에이전트 실행 - 증분 처리 지원
-  const runner = new AgentRunner(
-    process.env.OPENROUTER_API_KEY,
-    CONFIG.openrouterModel,
-    { logDir: path.join(runDir, 'logs') }
-  );
-
   let successCount = 0;
   let failCount = 0;
   let newSkillCount = 0;
@@ -642,10 +642,6 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     if (fs.existsSync(mergeAgentPath) && allItems.length > 1) {
       console.log(`  배치 병합 시작 (${CONFIG.mergeBatchSize}개씩)...`);
       try {
-        const mergeRunner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
-          logDir: path.join(runDir, 'logs')
-        });
-
         const MERGE_BATCH_SIZE = CONFIG.mergeBatchSize;
         let mergedItems = [];
         let totalDuplicates = 0;
@@ -658,7 +654,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
 
           try {
-            const batchResult = await mergeRunner.runAgent(mergeAgentPath, {
+            const batchResult = await runner.runAgent(mergeAgentPath, {
               inputs: {
                 label: label.name,
                 items: batch
@@ -744,10 +740,6 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
         }
 
-        const insightRunner = new AgentRunner(process.env.OPENROUTER_API_KEY, CONFIG.openrouterModel, {
-          logDir: path.join(runDir, 'logs')
-        });
-
         const itemsWithInsights = [];
         let insightSuccessCount = 0;
         let currentBatchSize = CONFIG.insightBatchSize;
@@ -763,7 +755,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           console.log(`    처리 중: ${processedCount}/${merged.items.length} (현재 배치 ${batch.length}개, 크기 ${currentBatchSize})...`);
 
           try {
-            const batchResult = await insightRunner.runAgent(insightAgentPath, {
+            const batchResult = await runner.runAgent(insightAgentPath, {
               inputs: {
                 profile: profile?.user || null,
                 label: label.name,
@@ -900,51 +892,38 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
 }
 
 /**
- * HTML → Text 변환
+ * HTML → Text 변환 (직접 호출)
  */
 async function convertHtmlToText(rawDir, cleanDir) {
-  const htmlToTextPath = path.join(__dirname, 'html_to_text.js').replace(/\\/g, '\\\\');
-  const processScript = `
-const fs = require('fs');
-const path = require('path');
-const { htmlToText, cleanNewsletterText } = require('${htmlToTextPath}');
+  const { htmlToText, cleanNewsletterText } = require('./html_to_text');
 
-const rawDir = '${rawDir.replace(/\\/g, '\\\\')}';
-const cleanDir = '${cleanDir.replace(/\\/g, '\\\\')}';
+  const msgFiles = fs.readdirSync(rawDir).filter(f => f.startsWith('msg_'));
 
-const msgFiles = fs.readdirSync(rawDir).filter(f => f.startsWith('msg_'));
+  for (const file of msgFiles) {
+    const msgData = JSON.parse(fs.readFileSync(path.join(rawDir, file), 'utf8'));
+    const messageId = file.replace('msg_', '').replace('.json', '');
 
-for (const file of msgFiles) {
-  const msgData = JSON.parse(fs.readFileSync(path.join(rawDir, file), 'utf8'));
-  const messageId = file.replace('msg_', '').replace('.json', '');
+    let cleanText = '';
+    if (msgData.html_body) {
+      cleanText = htmlToText(msgData.html_body);
+      cleanText = cleanNewsletterText(cleanText);
+    }
 
-  let cleanText = '';
-  if (msgData.html_body) {
-    cleanText = htmlToText(msgData.html_body);
-    cleanText = cleanNewsletterText(cleanText);
+    const cleanData = {
+      message_id: messageId,
+      from: msgData.from,
+      subject: msgData.subject,
+      date: msgData.date,
+      labels: msgData.labels,
+      clean_text: cleanText
+    };
+
+    fs.writeFileSync(
+      path.join(cleanDir, 'clean_' + messageId + '.json'),
+      JSON.stringify(cleanData, null, 2),
+      'utf8'
+    );
   }
-
-  const cleanData = {
-    message_id: messageId,
-    from: msgData.from,
-    subject: msgData.subject,
-    date: msgData.date,
-    labels: msgData.labels,
-    clean_text: cleanText
-  };
-
-  fs.writeFileSync(
-    path.join(cleanDir, 'clean_' + messageId + '.json'),
-    JSON.stringify(cleanData, null, 2),
-    'utf8'
-  );
-}
-`;
-
-  const tempScript = path.join(__dirname, 'temp_convert.js');
-  fs.writeFileSync(tempScript, processScript, 'utf8');
-  execSync(`node "${tempScript}"`, { stdio: 'pipe' });
-  fs.unlinkSync(tempScript);
 }
 
 /**

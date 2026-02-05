@@ -11,6 +11,58 @@ class GmailFetcher {
   constructor(credentialsDir) {
     this.credentialsDir = credentialsDir || path.join(__dirname, '..', 'config', 'credentials');
     this.gmail = null;
+    // 재시도 설정
+    this.retryDelays = [1000, 2000, 4000, 8000, 16000];
+  }
+
+  /**
+   * 재시도 래퍼
+   */
+  async withRetry(operation, operationName) {
+    let lastError;
+    for (let i = 0; i <= this.retryDelays.length; i++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        const isRetryable = this.isRetryableError(error);
+
+        if (isRetryable && i < this.retryDelays.length) {
+          const delay = this.retryDelays[i];
+          console.log(`  ${operationName} 실패, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length}): ${error.message}`);
+          await this.sleep(delay);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw lastError;
+  }
+
+  /**
+   * 재시도 가능한 에러인지 확인
+   */
+  isRetryableError(error) {
+    const code = error.code;
+    const status = error.response?.status;
+    const msg = error.message || '';
+
+    return (
+      code === 'ECONNRESET' ||
+      code === 'ETIMEDOUT' ||
+      code === 'ENOTFOUND' ||
+      status === 429 ||
+      status === 500 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504 ||
+      msg.includes('timeout') ||
+      msg.includes('socket hang up')
+    );
+  }
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -45,7 +97,7 @@ class GmailFetcher {
   }
 
   /**
-   * 메시지 목록 가져오기
+   * 메시지 목록 가져오기 (재시도 포함)
    */
   async listMessages(options) {
     const { label, subLabels, dateStart, dateEnd, maxResults = 100 } = options;
@@ -64,12 +116,15 @@ class GmailFetcher {
     let pageToken = null;
 
     do {
-      const response = await this.gmail.users.messages.list({
-        userId: 'me',
-        q: query,
-        maxResults,
-        pageToken
-      });
+      const response = await this.withRetry(
+        () => this.gmail.users.messages.list({
+          userId: 'me',
+          q: query,
+          maxResults,
+          pageToken
+        }),
+        'messages.list'
+      );
 
       if (response.data.messages) {
         allMessages.push(...response.data.messages);
@@ -82,14 +137,17 @@ class GmailFetcher {
   }
 
   /**
-   * 단일 메시지 상세 정보 가져오기
+   * 단일 메시지 상세 정보 가져오기 (재시도 포함)
    */
   async getMessage(messageId) {
-    const response = await this.gmail.users.messages.get({
-      userId: 'me',
-      id: messageId,
-      format: 'full'
-    });
+    const response = await this.withRetry(
+      () => this.gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'full'
+      }),
+      `messages.get(${messageId.substring(0, 8)})`
+    );
     return response.data;
   }
 
