@@ -196,7 +196,13 @@ function createLimiter(concurrency) {
 
 const CONFIG = {
   concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
-  openrouterModel: 'tngtech/deepseek-r1t-chimera:free',
+
+  // 단계별 모델 설정
+  models: {
+    fast: 'tngtech/deepseek-r1t-chimera:free',    // 추출, 분석, 병합용 (빠름)
+    reasoning: 'upstage/solar-pro-3:free'          // 인사이트용 (추론)
+  },
+
   mergeBatchSize: 15,     // 병합 배치 크기
   insightBatchSize: 6,    // 인사이트 배치 크기
   insightBatchFallback: [6, 4, 2, 1]  // 실패 시 축소 순서
@@ -442,10 +448,15 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     }
   });
 
-  // AgentRunner 인스턴스 (라벨 내에서 공유 - Rate Limit 카운터 유지)
-  const runner = new AgentRunner(
+  // AgentRunner 인스턴스 (단계별 모델 사용)
+  const fastRunner = new AgentRunner(
     process.env.OPENROUTER_API_KEY,
-    CONFIG.openrouterModel,
+    CONFIG.models.fast,
+    { logDir: path.join(runDir, 'logs') }
+  );
+  const reasoningRunner = new AgentRunner(
+    process.env.OPENROUTER_API_KEY,
+    CONFIG.models.reasoning,
     { logDir: path.join(runDir, 'logs') }
   );
 
@@ -549,7 +560,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
           console.log(`      → 새 발신자: ${senderEmail} (뉴스레터분석 에이전트 실행)`);
 
-          const result = await runner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
+          const result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
             skills: ['SKILL_작성규칙.md'],
             inputs: cleanPath,
             output: itemsPath
@@ -573,7 +584,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         } else {
           // 기존 발신자: 일반 추출
           console.log(`      → 기존 발신자: ${senderEmail} (${label.name} 에이전트 실행)`);
-          const result = await runner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
+          const result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
             skills,
             inputs: cleanPath,
             output: itemsPath
@@ -654,7 +665,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
 
           try {
-            const batchResult = await runner.runAgent(mergeAgentPath, {
+            const batchResult = await fastRunner.runAgent(mergeAgentPath, {
               inputs: {
                 label: label.name,
                 items: batch
@@ -755,7 +766,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           console.log(`    처리 중: ${processedCount}/${merged.items.length} (현재 배치 ${batch.length}개, 크기 ${currentBatchSize})...`);
 
           try {
-            const batchResult = await runner.runAgent(insightAgentPath, {
+            const batchResult = await reasoningRunner.runAgent(insightAgentPath, {
               inputs: {
                 profile: profile?.user || null,
                 label: label.name,

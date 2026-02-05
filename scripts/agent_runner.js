@@ -1,6 +1,8 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
- * 현재 모델: tngtech/deepseek-r1t-chimera:free
+ * 모델: 단계별 다중 모델 사용
+ *   - 빠른 모델 (추출/분석/병합): tngtech/deepseek-r1t-chimera:free
+ *   - 추론 모델 (인사이트): upstage/solar-pro-3:free
  *
  * 주요 기능:
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
