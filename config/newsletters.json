@@ -283,11 +283,371 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 5
+        "item_count_avg": 9
       },
       "detected_at": "2026-02-03T22:56:43.665Z",
       "skill_generated": true
+    },
+    {
+      "id": "technologyreview",
+      "sender": "customer@technologyreview.kr",
+      "name": "\"MIT 테크놀로지 리뷰\" <customer@technologyreview.kr>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_technologyreview.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "themiilk",
+      "sender": "viewsletter@themiilk.com",
+      "name": "\"더밀크 박원익\" <viewsletter@themiilk.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_themiilk.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "byline",
+      "sender": "byline@byline.network",
+      "name": "\"바이라인네트워크\" <byline@byline.network>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_byline.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 10
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "selectstar",
+      "sender": "marketing@selectstar.ai",
+      "name": "\"셀렉트스타\" <marketing@selectstar.ai>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_selectstar.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "techcrunch",
+      "sender": "newsletters@techcrunch.com",
+      "name": "TechCrunch Daily News <newsletters@techcrunch.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 2,
+      "skill_file": "skills/newsletters/SKILL_techcrunch.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 8
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "ghost",
+      "sender": "ai-korea-community@ghost.io",
+      "name": "\"AI 코리아 커뮤니티 뉴스레터 팀\" <ai-korea-community@ghost.io>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_ghost.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "mk",
+      "sender": "miraklelab@mk.co.kr",
+      "name": "\"미라클레터🌞\" <miraklelab@mk.co.kr>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_mk.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T14:22:41.394Z",
+      "skill_generated": true
+    },
+    {
+      "id": "newneek",
+      "sender": "whatsup@newneek.co",
+      "name": "NEWNEEK <whatsup@newneek.co>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 2,
+      "skill_file": "skills/newsletters/SKILL_newneek.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 7
+      },
+      "detected_at": "2026-02-05T15:05:16.215Z",
+      "skill_generated": true
+    },
+    {
+      "id": "joongang",
+      "sender": "noreply@joongang.co.kr",
+      "name": "\"더중앙플러스\" <noreply@joongang.co.kr>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 2,
+      "skill_file": "skills/newsletters/SKILL_joongang.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-02-05T15:05:16.215Z",
+      "skill_generated": true
+    },
+    {
+      "id": "donga",
+      "sender": "newsletter@donga.com",
+      "name": "\"동아일보\" <newsletter@donga.com>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_donga.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-02-05T15:05:16.215Z",
+      "skill_generated": true
+    },
+    {
+      "id": "lawtimes",
+      "sender": "eatlaw@lawtimes.co.kr",
+      "name": "\"굿모닝로캣 by 법률신문\" <eatlaw@lawtimes.co.kr>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_lawtimes.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 10
+      },
+      "detected_at": "2026-02-05T15:05:16.215Z",
+      "skill_generated": true
+    },
+    {
+      "id": "hankyung",
+      "sender": "editor@hankyung.com",
+      "name": "\"한경 💌 CHO Insight\" <editor@hankyung.com>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_hankyung.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-05T15:05:16.215Z",
+      "skill_generated": true
+    },
+    {
+      "id": "m_block",
+      "sender": "newsletter@m-block.io",
+      "name": "\"엠블록레터\" <newsletter@m-block.io>",
+      "labels": [
+        "투자"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_m_block.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T15:58:03.406Z",
+      "skill_generated": true
+    },
+    {
+      "id": "morningbrew",
+      "sender": "crew@morningbrew.com",
+      "name": "Morning Brew <crew@morningbrew.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_morningbrew.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-05T15:59:03.386Z",
+      "skill_generated": false
+    },
+    {
+      "id": "axios_macro",
+      "sender": "macro@axios.com",
+      "name": "Axios Macro <macro@axios.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_axios_macro.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-05T15:59:03.386Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee",
+      "sender": "hello@stibee.com",
+      "name": "\"스티비 뉴스레터\" <hello@stibee.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-05T16:49:44.742Z",
+      "skill_generated": true
+    },
+    {
+      "id": "trendlite",
+      "sender": "editor@trendlite.news",
+      "name": "\"트렌드라이트(trendlite)\" <editor@trendlite.news>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_trendlite.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-05T16:49:44.742Z",
+      "skill_generated": true
+    },
+    {
+      "id": "munhak",
+      "sender": "lovepoem@munhak.com",
+      "name": "\"허연\" <lovepoem@munhak.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_munhak.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T16:57:12.341Z",
+      "skill_generated": true
+    },
+    {
+      "id": "newsooletter",
+      "sender": "zzan@newsooletter.com",
+      "name": "\"뉴술레터\" <zzan@newsooletter.com>",
+      "labels": [
+        "기타"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_newsooletter.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-05T17:12:31.843Z",
+      "skill_generated": true
+    },
+    {
+      "id": "gcn",
+      "sender": "kgcn@gcn.or.kr",
+      "name": "\"(사)녹색소비자연대\" <kgcn@gcn.or.kr>",
+      "labels": [
+        "기타"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_gcn.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T17:12:31.843Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-04T17:25:22.012Z"
+  "last_scan": "2026-02-05T17:13:42.219Z"
 }
