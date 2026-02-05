@@ -219,15 +219,15 @@ function createLimiter(concurrency) {
 const CONFIG = {
   concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
 
-  // 단계별 모델 설정
+  // 모델 설정 (모두 fast 모델 사용으로 속도 최적화)
   models: {
-    fast: 'tngtech/deepseek-r1t-chimera:free',    // 추출, 병합용 (빠름)
-    reasoning: 'upstage/solar-pro-3:free'          // 뉴스레터분석, 인사이트용 (추론)
+    fast: 'tngtech/deepseek-r1t-chimera:free',    // 추출, 뉴스레터분석, 병합, 인사이트 (전체)
+    reasoning: 'upstage/solar-pro-3:free'          // (미사용 - 필요시 활성화)
   },
 
   mergeBatchSize: 15,     // 병합 배치 크기
-  insightBatchSize: 6,    // 인사이트 배치 크기
-  insightBatchFallback: [6, 4, 2, 1]  // 실패 시 축소 순서
+  insightBatchSize: 10,   // 인사이트 배치 크기 (fast 모델이라 증가)
+  insightBatchFallback: [10, 6, 4, 2, 1]  // 실패 시 축소 순서
 };
 
 // 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유)
@@ -598,10 +598,10 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         let result;
 
         if (isNewSender) {
-          // 새 발신자: 구조 분석 + 아이템 추출 동시 수행 (reasoning 모델로 품질 확보)
-          console.log(`      → 새 발신자: ${senderEmail} (뉴스레터분석 에이전트 실행 - reasoning)`);
+          // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
+          console.log(`      → 새 발신자: ${senderEmail} (뉴스레터분석 에이전트 실행)`);
 
-          result = await reasoningRunner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
+          result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
             skills: ['SKILL_작성규칙.md'],
             inputs: cleanPath,
             output: itemsPath
@@ -798,7 +798,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           console.log(`    처리 중: ${processedCount}/${merged.items.length} (현재 배치 ${batch.length}개, 크기 ${currentBatchSize})...`);
 
           try {
-            const batchResult = await reasoningRunner.runAgent(insightAgentPath, {
+            const batchResult = await fastRunner.runAgent(insightAgentPath, {
               inputs: {
                 profile: profile?.user || null,
                 label: label.name,
