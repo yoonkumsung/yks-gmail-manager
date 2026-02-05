@@ -226,9 +226,45 @@ const CONFIG = {
   },
 
   mergeBatchSize: 15,     // 병합 배치 크기
-  insightBatchSize: 10,   // 인사이트 배치 크기 (fast 모델이라 증가)
-  insightBatchFallback: [10, 6, 4, 2, 1]  // 실패 시 축소 순서
+  insightBatchSize: 10,   // 인사이트 배치 크기 기본값
+  insightBatchFallback: [10, 8, 6, 4, 2, 1]  // 실패 시 축소 순서
 };
+
+/**
+ * 아이템 복잡도 기반 동적 배치 크기 계산
+ * 복잡한 아이템일수록 작은 배치로 처리하여 품질 확보
+ */
+function calculateOptimalBatchSize(items) {
+  if (!items || items.length === 0) return CONFIG.insightBatchSize;
+
+  // 각 아이템의 복잡도 점수 계산
+  const complexityScores = items.map(item => {
+    let score = 0;
+
+    // 요약 길이 기반 점수 (긴 요약 = 더 복잡한 내용)
+    const summaryLen = item.summary?.length || 0;
+    if (summaryLen > 400) score += 2;
+    else if (summaryLen > 250) score += 1;
+
+    // 키워드 수 기반 점수 (키워드 많음 = 다양한 주제)
+    const keywordCount = item.keywords?.length || 0;
+    if (keywordCount >= 5) score += 1;
+
+    // 제목 길이 기반 점수 (긴 제목 = 복잡한 내용)
+    const titleLen = item.title?.length || 0;
+    if (titleLen > 40) score += 1;
+
+    return score;
+  });
+
+  const avgComplexity = complexityScores.reduce((a, b) => a + b, 0) / items.length;
+
+  // 복잡도에 따른 배치 크기 결정 (품질 우선)
+  if (avgComplexity >= 3) return 4;   // 매우 복잡 → 소규모 배치
+  if (avgComplexity >= 2) return 6;   // 복잡 → 중소 배치
+  if (avgComplexity >= 1) return 8;   // 보통 → 중간 배치
+  return CONFIG.insightBatchSize;      // 단순 → 기본 배치
+}
 
 // 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유)
 let globalFastRunner = null;
@@ -785,10 +821,11 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
         const itemsWithInsights = [];
         let insightSuccessCount = 0;
-        let currentBatchSize = CONFIG.insightBatchSize;
+        // 아이템 복잡도 기반 동적 배치 크기 계산
+        let currentBatchSize = calculateOptimalBatchSize(merged.items);
         let consecutiveSuccesses = 0;  // 연속 성공 카운터
 
-        console.log(`  배치 인사이트 시작 (초기 ${currentBatchSize}개씩)...`);
+        console.log(`  배치 인사이트 시작 (복잡도 기반 초기 ${currentBatchSize}개씩)...`);
 
         let i = 0;
         while (i < merged.items.length) {

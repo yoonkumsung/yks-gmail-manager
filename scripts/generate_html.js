@@ -444,42 +444,63 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         .map(kw => `<span class="tag">${escapeHtml(kw)}</span>`)
         .join('');
 
-      // 인사이트 섹션 (토글)
-      let domainInsightHtml = '';
-      let crossInsightHtml = '';
-      if (item.insights) {
-        if (item.insights.domain) {
-          domainInsightHtml = `
-            <details class="insight-toggle domain-toggle">
-              <summary class="insight-summary domain-summary">실용적 인사이트</summary>
-              <div class="insight domain-insight">
-                <p>${escapeHtml(item.insights.domain.content)}</p>
-              </div>
-            </details>`;
-        }
-        if (item.insights.cross_domain) {
-          crossInsightHtml = `
-            <details class="insight-toggle cross-toggle">
-              <summary class="insight-summary cross-summary">확장 인사이트</summary>
-              <div class="insight cross-insight">
-                <p>${escapeHtml(item.insights.cross_domain.content)}</p>
-              </div>
-            </details>`;
-        }
-      }
+      // 인사이트 데이터 준비
+      const hasDomainInsight = item.insights?.domain?.content;
+      const hasCrossInsight = item.insights?.cross_domain?.content;
 
-      // 원문 보기 버튼
-      const articleLinkHtml = item.link ? `
-        <a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>
+      // 버튼 행 (항상 한 줄 유지)
+      const domainBtnHtml = hasDomainInsight ? `
+        <button class="action-btn insight-btn domain-btn" data-target="domain-${itemIndex}">실용적 인사이트</button>
       ` : '';
 
-      // 버튼 행 (인사이트 + 원문 보기)
-      const hasButtons = domainInsightHtml || crossInsightHtml || articleLinkHtml;
+      const crossBtnHtml = hasCrossInsight ? `
+        <button class="action-btn insight-btn cross-btn" data-target="cross-${itemIndex}">확장 인사이트</button>
+      ` : '';
+
+      // 원문 보기 버튼 (원문 링크 없으면 Gmail 링크로 fallback)
+      const gmailUrl = item.message_id ? `https://mail.google.com/mail/u/0/#all/${item.message_id}` : null;
+      let articleLinkHtml = '';
+      if (item.link) {
+        articleLinkHtml = `<a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>`;
+      } else if (gmailUrl) {
+        articleLinkHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" class="action-btn gmail-btn" title="본인 Gmail에서만 열립니다">Gmail에서 보기</a>`;
+      }
+
+      // 버튼 행 (버튼만, 펼침 영역 분리)
+      const hasButtons = domainBtnHtml || crossBtnHtml || articleLinkHtml;
       const buttonsHtml = hasButtons ? `
         <div class="action-buttons">
-          ${domainInsightHtml}
-          ${crossInsightHtml}
+          ${domainBtnHtml}
+          ${crossBtnHtml}
           ${articleLinkHtml}
+        </div>
+      ` : '';
+
+      // 인사이트 내용 영역 (버튼 아래 별도 영역)
+      const domainContentHtml = hasDomainInsight ? `
+        <div class="insight-content domain-content" id="domain-${itemIndex}" style="display:none;">
+          <div class="insight-header">
+            <span class="insight-label domain-label">실용적 인사이트</span>
+            <button class="insight-close" data-target="domain-${itemIndex}">&times;</button>
+          </div>
+          <p>${escapeHtml(item.insights.domain.content)}</p>
+        </div>
+      ` : '';
+
+      const crossContentHtml = hasCrossInsight ? `
+        <div class="insight-content cross-content" id="cross-${itemIndex}" style="display:none;">
+          <div class="insight-header">
+            <span class="insight-label cross-label">확장 인사이트</span>
+            <button class="insight-close" data-target="cross-${itemIndex}">&times;</button>
+          </div>
+          <p>${escapeHtml(item.insights.cross_domain.content)}</p>
+        </div>
+      ` : '';
+
+      const insightContentsHtml = (domainContentHtml || crossContentHtml) ? `
+        <div class="insight-contents">
+          ${domainContentHtml}
+          ${crossContentHtml}
         </div>
       ` : '';
 
@@ -492,6 +513,7 @@ function generateCombinedHtmlReport(allLabelsData, date) {
           <p class="item-summary">${escapeHtml(item.summary)}</p>
           <div class="keywords">${keywordTags}</div>
           ${buttonsHtml}
+          ${insightContentsHtml}
         </article>
       `;
     }).join('\n');
@@ -733,12 +755,11 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       font-size: 0.7rem;
     }
 
-    /* 버튼 행 - 한 줄에 나란히 */
+    /* 버튼 행 - 항상 한 줄 유지 */
     .action-buttons {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.75rem;
-      flex-wrap: wrap;
     }
 
     .action-btn {
@@ -767,68 +788,96 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       background: var(--primary-light);
     }
 
-    .insight-toggle {
-      flex: 1;
-      min-width: 0;
+    .gmail-btn {
+      background: #ea4335;
+      color: white;
+    }
+
+    .gmail-btn:hover {
+      background: #d33426;
+    }
+
+    .insight-btn {
       border: 1px solid var(--border);
-      border-radius: 6px;
-      overflow: hidden;
+      background: var(--card-bg);
     }
 
-    .insight-summary {
-      display: block;
-      padding: 0.5rem 0.875rem;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 0.8rem;
-      user-select: none;
-      transition: background 0.2s;
-      text-align: center;
-      list-style: none;
-    }
-
-    .insight-summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .domain-summary {
-      background: #f5f3ff;
+    .domain-btn {
       color: var(--domain);
+      border-color: var(--domain);
+      background: #f5f3ff;
     }
 
-    .domain-summary:hover {
+    .domain-btn:hover, .domain-btn.active {
       background: #ede9fe;
     }
 
-    .cross-summary {
-      background: #fffbeb;
+    .cross-btn {
       color: #b45309;
-    }
-
-    .cross-summary:hover {
-      background: #fef3c7;
-    }
-
-    .insight {
-      padding: 0.75rem;
-      font-size: 0.85rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .domain-insight {
-      background: #faf5ff;
-    }
-
-    .cross-insight {
+      border-color: #f59e0b;
       background: #fffbeb;
     }
 
-    .insight-toggle[open] .domain-summary {
-      background: #ede9fe;
+    .cross-btn:hover, .cross-btn.active {
+      background: #fef3c7;
     }
 
-    .insight-toggle[open] .cross-summary {
-      background: #fef3c7;
+    /* 인사이트 내용 영역 - 버튼 아래 별도 표시 */
+    .insight-contents {
+      margin-top: 0.75rem;
+    }
+
+    .insight-content {
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+      animation: slideDown 0.2s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 500px; }
+    }
+
+    .insight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .insight-label {
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .domain-label { color: var(--domain); }
+    .cross-label { color: #b45309; }
+
+    .insight-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0 0.25rem;
+      line-height: 1;
+    }
+
+    .insight-close:hover {
+      color: var(--text);
+    }
+
+    .domain-content {
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+    }
+
+    .cross-content {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
     }
 
     .no-items { color: var(--text-muted); text-align: center; padding: 2rem; }
@@ -875,7 +924,7 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         font-size: 0.65rem;
       }
 
-      .insight {
+      .insight-content {
         padding: 0.6rem;
         font-size: 0.8rem;
       }
@@ -885,34 +934,19 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         font-size: 0.75rem;
       }
 
-      /* 모바일에서 버튼 세로 배치 */
+      /* 모바일에서도 버튼 한 줄 유지 */
       .action-buttons {
-        flex-direction: column;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
-      .action-btn,
-      .insight-toggle {
-        flex: none;
-        width: 100%;
-      }
-
-      .insight-summary,
       .action-btn {
-        padding: 0.6rem 0.75rem;
-        font-size: 0.75rem;
-      }
-    }
-
-    /* 중간 크기 (태블릿 등) */
-    @media (min-width: 641px) and (max-width: 800px) {
-      .action-buttons {
-        flex-wrap: wrap;
-      }
-
-      .action-btn,
-      .insight-toggle {
-        flex: 1 1 calc(50% - 0.25rem);
-        min-width: calc(50% - 0.25rem);
+        flex: 0 0 auto;
+        min-width: auto;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
       }
     }
 
@@ -990,6 +1024,33 @@ function generateCombinedHtmlReport(allLabelsData, date) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+    });
+
+    // 인사이트 버튼 토글
+    document.querySelectorAll('.insight-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const content = document.getElementById(targetId);
+        if (content) {
+          const isVisible = content.style.display !== 'none';
+          content.style.display = isVisible ? 'none' : 'block';
+          btn.classList.toggle('active', !isVisible);
+        }
+      });
+    });
+
+    // 인사이트 닫기 버튼
+    document.querySelectorAll('.insight-close').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const content = document.getElementById(targetId);
+        if (content) {
+          content.style.display = 'none';
+          // 해당 버튼의 active 클래스 제거
+          const toggleBtn = document.querySelector('[data-target="' + targetId + '"].insight-btn');
+          if (toggleBtn) toggleBtn.classList.remove('active');
+        }
       });
     });
   </script>
