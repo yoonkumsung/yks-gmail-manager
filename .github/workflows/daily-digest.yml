@@ -28,11 +28,9 @@ on:
         required: false
         default: ''
 
-# SKILL 파일 자동 커밋을 위한 권한
+# SKILL 파일 및 결과물 자동 커밋을 위한 권한
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 # 동시 실행 방지 (이전 실행이 끝날 때까지 대기)
 concurrency:
@@ -184,29 +182,6 @@ jobs:
             echo "새로운 SKILL 파일 없음, 건너뜀"
           fi
 
-      - name: GitHub Pages용 파일 준비
-        if: success() && steps.check-secrets.outputs.skip != 'true'
-        run: |
-          # docs 폴더에 통합 HTML 복사
-          mkdir -p docs
-
-          # 기존 HTML 파일 삭제
-          rm -f docs/*.html
-
-          # 통합 HTML 복사 (파일명을 index.html로)
-          COMBINED_HTML=$(find output/final -name "*통합*메일정리.html" 2>/dev/null | head -1)
-          if [ -n "$COMBINED_HTML" ]; then
-            cp "$COMBINED_HTML" docs/index.html
-          fi
-
-      - name: GitHub Pages 배포
-        if: success() && steps.check-secrets.outputs.skip != 'true'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          publish_branch: gh-pages
-
       - name: 결과물 main 브랜치에 커밋
         if: success() && steps.check-secrets.outputs.skip != 'true'
         run: |
@@ -242,7 +217,7 @@ jobs:
           path: output/final/**/*.md
           retention-days: 30
 
-      - name: Telegram 알림
+      - name: Telegram 알림 및 파일 전송
         if: success() && steps.check-secrets.outputs.skip != 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -260,22 +235,30 @@ jobs:
           # 라벨 목록 추출
           LABELS=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
 
-          # GitHub Pages URL (통합 HTML)
-          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
-          OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-          PAGES_URL="https://${OWNER}.github.io/${REPO_NAME}/"
-
-          # Artifacts URL (MD 파일)
-          ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
           # 날짜
           TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
 
-          MESSAGE=$(printf "[완료] Gmail 메일 정리\n%s\n\n라벨: %s\n(%s개 라벨)\n\n[바로 보기] 통합 HTML\n%s\n\n[다운로드] MD 파일 (라벨별)\n%s" "$TODAY" "$LABELS" "$MD_COUNT" "$PAGES_URL" "$ARTIFACTS_URL")
+          # 통합 HTML 파일 찾기
+          HTML_FILE=$(find output/final -name "*통합*메일정리.html" 2>/dev/null | head -1)
 
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE"
+          if [ -n "$HTML_FILE" ]; then
+            # HTML 파일과 함께 메시지 전송
+            MESSAGE=$(printf "📬 Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)" "$TODAY" "$LABELS" "$MD_COUNT")
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F document=@"${HTML_FILE}" \
+              -F caption="${MESSAGE}"
+
+            echo "HTML 파일 전송 완료: ${HTML_FILE}"
+          else
+            # HTML 파일 없으면 메시지만 전송
+            MESSAGE=$(printf "📬 Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)\n\n(결과물 없음)" "$TODAY" "$LABELS" "$MD_COUNT")
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="$MESSAGE"
+          fi
 
       - name: 에러/타임아웃 알림
         if: failure() || cancelled()
