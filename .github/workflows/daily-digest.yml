@@ -207,6 +207,33 @@ jobs:
           publish_dir: ./docs
           publish_branch: gh-pages
 
+      - name: 결과물 main 브랜치에 커밋
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        run: |
+          # output/final 폴더 확인
+          if [ -d "output/final" ] && [ "$(ls -A output/final 2>/dev/null)" ]; then
+            echo "결과물 발견, main 브랜치에 커밋 시작"
+
+            # Git 설정 (이미 설정되어 있을 수 있지만 안전하게)
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+
+            # 결과물 추가 (-f: .gitignore 무시)
+            git add -f output/final/
+
+            # 커밋 (변경사항이 있을 때만)
+            if ! git diff --staged --quiet; then
+              TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+              git commit -m "chore: ${TODAY} 메일 정리 결과물 저장"
+              git push
+              echo "결과물 커밋 완료"
+            else
+              echo "새로운 결과물 없음"
+            fi
+          else
+            echo "output/final 폴더가 비어있음, 건너뜀"
+          fi
+
       - name: 결과물 업로드 (MD 파일)
         if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
