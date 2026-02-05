@@ -1064,10 +1064,10 @@ function calculateTimeRange(mode, customDate) {
 
     case 'custom':
       // 특정 날짜 (schedule과 동일한 로직: 전날 10:01 ~ 당일 10:00)
-      // 예: 2월 3일 입력 → 2월 2일 10:01 ~ 2월 3일 10:00
-      const targetDate = new Date(customDate + 'T00:00:00+09:00');
-      const prevDate = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000);
-      const prevDateStr = prevDate.toISOString().split('T')[0];
+      // 예: 2월 4일 입력 → 2월 3일 10:01 ~ 2월 4일 10:00
+      const [year, month, day] = customDate.split('-').map(Number);
+      const prevDay = new Date(year, month - 1, day - 1);  // JS Date는 자동으로 월 경계 처리
+      const prevDateStr = `${prevDay.getFullYear()}-${String(prevDay.getMonth() + 1).padStart(2, '0')}-${String(prevDay.getDate()).padStart(2, '0')}`;
       return {
         start: new Date(prevDateStr + 'T10:01:00+09:00'),
         end: new Date(customDate + 'T10:00:00+09:00')
