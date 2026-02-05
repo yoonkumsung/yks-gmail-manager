@@ -647,7 +647,133 @@
       },
       "detected_at": "2026-02-05T17:12:31.843Z",
       "skill_generated": true
+    },
+    {
+      "id": "uppity",
+      "sender": "moneyletter@uppity.co.kr",
+      "name": "UPPITY <moneyletter@uppity.co.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_uppity.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-02-05T18:30:39.486Z",
+      "skill_generated": true
+    },
+    {
+      "id": "newways",
+      "sender": "welcome@newways.kr",
+      "name": "\"뉴웨이즈 NEWWAYS\" <welcome@newways.kr>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_newways.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-05T18:35:42.152Z",
+      "skill_generated": true
+    },
+    {
+      "id": "selub",
+      "sender": "selub@selub.us",
+      "name": "SELUB <selub@selub.us>",
+      "labels": [
+        "시사"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_selub.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T18:35:42.152Z",
+      "skill_generated": true
+    },
+    {
+      "id": "substack_londoncentric",
+      "sender": "londoncentric@substack.com",
+      "name": "Jim Waterson from London Centric <londoncentric@substack.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_londoncentric.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T19:21:48.285Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stonebc",
+      "sender": "ana@stonebc.com",
+      "name": "\"STONE 뉴스레터\" <ana@stonebc.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stonebc.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-05T20:18:51.359Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_augustletter08_gmail_com",
+      "sender": "augustletter08-gmail.com@send.stibee.com",
+      "name": "\"한우물클럽\" <augustletter08-gmail.com@send.stibee.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_augustletter08_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-05T20:18:51.359Z",
+      "skill_generated": true
+    },
+    {
+      "id": "unesco",
+      "sender": "news@unesco.or.kr",
+      "name": "\"유네스코뉴스\" <news@unesco.or.kr>",
+      "labels": [
+        "기타"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_unesco.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-05T20:33:33.305Z",
+      "skill_generated": false
     }
   ],
-  "last_scan": "2026-02-05T17:13:42.219Z"
+  "last_scan": "2026-02-05T20:33:33.305Z"
 }
