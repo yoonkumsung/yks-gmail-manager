@@ -421,6 +421,45 @@ class GmailFetcher {
     const match = from.match(/<(.+?)>/);
     return match ? match[1] : from.trim();
   }
+
+  /**
+   * 메시지를 읽음으로 표시 (UNREAD 라벨 제거)
+   */
+  async markAsRead(messageId) {
+    return await this.withRetry(
+      () => this.gmail.users.messages.modify({
+        userId: 'me',
+        id: messageId,
+        requestBody: {
+          removeLabelIds: ['UNREAD']
+        }
+      }),
+      `markAsRead(${messageId.substring(0, 8)})`
+    );
+  }
+
+  /**
+   * 여러 메시지를 읽음으로 표시 (배치)
+   */
+  async markMessagesAsRead(messageIds) {
+    if (!messageIds || messageIds.length === 0) return { success: 0, failed: 0 };
+
+    let success = 0;
+    let failed = 0;
+
+    for (const messageId of messageIds) {
+      try {
+        await this.markAsRead(messageId);
+        success++;
+      } catch (error) {
+        console.log(`  읽음 표시 실패 (${messageId}): ${error.message}`);
+        failed++;
+      }
+    }
+
+    console.log(`읽음 표시 완료: 성공 ${success}개, 실패 ${failed}개`);
+    return { success, failed };
+  }
 }
 
 /**

@@ -217,7 +217,7 @@ function createLimiter(concurrency) {
 }
 
 const CONFIG = {
-  concurrencyLimit: 1,    // 순차 처리 (Rate Limit 준수)
+  concurrencyLimit: 3,    // 병렬 3개 처리 (분당 10개 제한에 맞춤)
 
   // 모델 설정 (모두 fast 모델 사용으로 속도 최적화)
   models: {
@@ -847,9 +847,18 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
             });
 
             if (batchResult && batchResult.items && batchResult.items.length > 0) {
-              itemsWithInsights.push(...batchResult.items);
-              insightSuccessCount += batchResult.items.length;
-              console.log(`      → 성공 (${batchResult.items.length}개 인사이트 추가)`);
+              // 원본의 message_id, source_email 유지 (인사이트 에이전트가 누락할 수 있음)
+              const enrichedItems = batchResult.items.map((resultItem, idx) => {
+                const originalItem = batch[idx];
+                return {
+                  ...resultItem,
+                  message_id: resultItem.message_id || originalItem?.message_id,
+                  source_email: resultItem.source_email || originalItem?.source_email
+                };
+              });
+              itemsWithInsights.push(...enrichedItems);
+              insightSuccessCount += enrichedItems.length;
+              console.log(`      → 성공 (${enrichedItems.length}개 인사이트 추가)`);
               i += currentBatchSize;  // 다음 배치로 이동
               consecutiveSuccesses++;
 
@@ -938,6 +947,21 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   // HTML은 통합 파일로 main()에서 생성됨
 
   console.log(`[완료] ${label.name} (${allItems.length}개 아이템)`);
+
+  // 8. 처리된 메시지 읽음 표시
+  console.log('  처리된 메일 읽음 표시 중...');
+  try {
+    const { GmailFetcher } = require('./fetch_gmail');
+    const fetcher = new GmailFetcher();
+    await fetcher.authenticate();
+
+    // 처리된 메시지 ID 목록 (raw 폴더의 msg_ 파일에서 추출)
+    const processedIds = msgFiles.map(f => f.replace('msg_', '').replace('.json', ''));
+    const markResult = await fetcher.markMessagesAsRead(processedIds);
+    console.log(`  읽음 표시: ${markResult.success}개 완료`);
+  } catch (error) {
+    console.warn(`  읽음 표시 실패 (무시): ${error.message}`);
+  }
 
   return {
     label: label.name,

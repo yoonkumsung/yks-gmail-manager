@@ -40,11 +40,11 @@ class AgentRunner {
     // 재시도 설정 (7회, 점진적 대기)
     this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
 
-    // Rate Limit 설정 (분당 20회)
+    // Rate Limit 설정 (분당 10회)
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
-    this.maxRequestsPerMinute = 20;
-    this.minRequestInterval = 4000; // 요청 간 최소 4초 대기
+    this.maxRequestsPerMinute = 10;
+    this.minRequestInterval = 2000; // 요청 간 최소 2초 대기 (분당 카운터로 추가 관리)
     this.lastRequestTime = 0;
 
     // 로그 디렉토리 생성
@@ -681,17 +681,63 @@ ${agentContent}`;
   // ============================================
 
   /**
+   * 첫 번째 완전한 JSON 객체 추출 (balanced bracket 기반)
+   */
+  extractFirstJson(str) {
+    if (!str || typeof str !== 'string') return null;
+
+    // JSON 시작 위치 찾기
+    const startIdx = str.indexOf('{');
+    if (startIdx === -1) return null;
+
+    let braceCount = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = startIdx; i < str.length; i++) {
+      const char = str[i];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"' && !escaped) {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) continue;
+
+      if (char === '{') braceCount++;
+      else if (char === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          // 첫 번째 완전한 JSON 객체 발견
+          return str.substring(startIdx, i + 1);
+        }
+      }
+    }
+
+    // 불완전한 JSON - 전체 반환 (repair에서 처리)
+    return str.substring(startIdx);
+  }
+
+  /**
    * 응답 검증
    */
   validateResponse(response, schema) {
     try {
-      // JSON 부분 추출
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
+      // 첫 번째 완전한 JSON 객체 추출 (중복 JSON 블록 문제 해결)
+      let jsonStr = this.extractFirstJson(response);
+      if (!jsonStr) {
         throw new Error('JSON 형식을 찾을 수 없습니다');
       }
-
-      let jsonStr = jsonMatch[0];
 
       // 1차 시도: 원본 파싱
       try {

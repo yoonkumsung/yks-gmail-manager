@@ -20,7 +20,8 @@ const TOKEN_PATH = path.join(__dirname, '..', 'config', 'credentials', 'token.js
 // OAuth 설정
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.labels'
+  'https://www.googleapis.com/auth/gmail.labels',
+  'https://www.googleapis.com/auth/gmail.modify'  // 읽음 표시용
 ];
 const REDIRECT_PORT = 3000;
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;

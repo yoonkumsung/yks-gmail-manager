@@ -437,6 +437,8 @@ function generateCombinedHtmlReport(allLabelsData, date) {
   const tabContents = allLabelsData.map((data, index) => {
     const isActive = index === 0 ? 'active' : '';
     const items = data.items || [];
+    // 라벨명을 ID에 사용 (특수문자 제거)
+    const labelId = data.label.replace(/[^a-zA-Z0-9가-힣]/g, '');
 
     const itemsHtml = items.map((item, itemIndex) => {
       const keywordTags = (item.keywords || [])
@@ -444,17 +446,20 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         .map(kw => `<span class="tag">${escapeHtml(kw)}</span>`)
         .join('');
 
+      // 고유 ID 생성 (라벨명 + 인덱스)
+      const uniqueId = `${labelId}-${itemIndex}`;
+
       // 인사이트 데이터 준비
       const hasDomainInsight = item.insights?.domain?.content;
       const hasCrossInsight = item.insights?.cross_domain?.content;
 
       // 버튼 행 (항상 한 줄 유지)
       const domainBtnHtml = hasDomainInsight ? `
-        <button class="action-btn insight-btn domain-btn" data-target="domain-${itemIndex}">실용적 인사이트</button>
+        <button class="action-btn insight-btn domain-btn" data-target="domain-${uniqueId}">실용적 인사이트</button>
       ` : '';
 
       const crossBtnHtml = hasCrossInsight ? `
-        <button class="action-btn insight-btn cross-btn" data-target="cross-${itemIndex}">확장 인사이트</button>
+        <button class="action-btn insight-btn cross-btn" data-target="cross-${uniqueId}">확장 인사이트</button>
       ` : '';
 
       // 원문 보기 버튼 (원문 링크 없으면 Gmail 링크로 fallback)
@@ -463,6 +468,7 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       if (item.link) {
         articleLinkHtml = `<a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>`;
       } else if (gmailUrl) {
+        // 원문 링크 없을 때만 Gmail 버튼 표시 (해당 뉴스레터로 이동)
         articleLinkHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" class="action-btn gmail-btn" title="본인 Gmail에서만 열립니다">Gmail에서 보기</a>`;
       }
 
@@ -478,20 +484,20 @@ function generateCombinedHtmlReport(allLabelsData, date) {
 
       // 인사이트 내용 영역 (버튼 아래 별도 영역)
       const domainContentHtml = hasDomainInsight ? `
-        <div class="insight-content domain-content" id="domain-${itemIndex}" style="display:none;">
+        <div class="insight-content domain-content" id="domain-${uniqueId}" style="display:none;">
           <div class="insight-header">
             <span class="insight-label domain-label">실용적 인사이트</span>
-            <button class="insight-close" data-target="domain-${itemIndex}">&times;</button>
+            <button class="insight-close" data-target="domain-${uniqueId}">&times;</button>
           </div>
           <p>${escapeHtml(item.insights.domain.content)}</p>
         </div>
       ` : '';
 
       const crossContentHtml = hasCrossInsight ? `
-        <div class="insight-content cross-content" id="cross-${itemIndex}" style="display:none;">
+        <div class="insight-content cross-content" id="cross-${uniqueId}" style="display:none;">
           <div class="insight-header">
             <span class="insight-label cross-label">확장 인사이트</span>
-            <button class="insight-close" data-target="cross-${itemIndex}">&times;</button>
+            <button class="insight-close" data-target="cross-${uniqueId}">&times;</button>
           </div>
           <p>${escapeHtml(item.insights.cross_domain.content)}</p>
         </div>
@@ -965,18 +971,64 @@ function generateCombinedHtmlReport(allLabelsData, date) {
         --text: #f1f5f9;
         --text-muted: #94a3b8;
         --border: #334155;
+        --domain: #a78bfa;
+        --cross: #fbbf24;
       }
 
       .tag {
         background: #334155;
+        color: #cbd5e1;
       }
 
-      .domain-insight {
+      .domain-content {
         background: #1e1b4b;
+        border-color: #4c1d95;
       }
 
-      .cross-insight {
+      .cross-content {
         background: #292524;
+        border-color: #78350f;
+      }
+
+      .domain-btn {
+        background: #1e1b4b;
+        color: var(--domain);
+        border-color: var(--domain);
+      }
+
+      .domain-btn:hover, .domain-btn.active {
+        background: #2e1065;
+      }
+
+      .cross-btn {
+        background: #292524;
+        color: var(--cross);
+        border-color: var(--cross);
+      }
+
+      .cross-btn:hover, .cross-btn.active {
+        background: #3f3f3f;
+      }
+
+      .article-btn {
+        background: #1d4ed8;
+      }
+
+      .gmail-btn {
+        background: #b91c1c;
+      }
+
+      .label-stats {
+        background: var(--card-bg);
+        border-color: var(--border);
+      }
+
+      .insight-close {
+        color: #94a3b8;
+      }
+
+      .insight-close:hover {
+        color: #f1f5f9;
       }
     }
   </style>
