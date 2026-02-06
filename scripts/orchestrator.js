@@ -445,9 +445,18 @@ async function main() {
     const combinedHtmlPath = path.join(finalDir, `${dateStr}_통합_메일정리.html`);
 
     if (fs.existsSync(mergedDir)) {
+      // HTML 통합 파일 생성
       const { generateCombinedFromMergedFiles } = require('./generate_html');
       const dateFormatted = formatKST(timeRange.end).split(' ')[0];
       generateCombinedFromMergedFiles(mergedDir, combinedHtmlPath, dateFormatted);
+
+      // MD 통합 파일 생성
+      const combinedMdPath = path.join(finalDir, `${dateStr}_통합_메일정리.md`);
+      const combinedMdContent = generateCombinedMarkdown(mergedDir, timeRange.end);
+      if (combinedMdContent) {
+        fs.writeFileSync(combinedMdPath, combinedMdContent, 'utf8');
+        console.log(`\n통합 MD 파일 생성 완료: ${combinedMdPath}`);
+      }
     }
 
     // 9. 캐시 플러시 (AdaptiveLearning, ProgressManager)
@@ -1105,6 +1114,106 @@ function generateMarkdown(merged, date) {
     }
 
     md += `---\n\n`;
+  });
+
+  return md;
+}
+
+/**
+ * 통합 마크다운 생성 (모든 라벨 통합)
+ */
+function generateCombinedMarkdown(mergedDir, date) {
+  const dateStr = formatKST(date).split(' ')[0];
+
+  // merged 폴더에서 모든 JSON 파일 읽기
+  const mergedFiles = fs.readdirSync(mergedDir)
+    .filter(f => f.endsWith('.json'))
+    .sort();
+
+  if (mergedFiles.length === 0) {
+    return '';
+  }
+
+  const allLabelsData = mergedFiles.map(file => {
+    return JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
+  });
+
+  // 전체 아이템 수 계산
+  const totalItems = allLabelsData.reduce((sum, data) => sum + (data.items?.length || 0), 0);
+  const hasInsights = allLabelsData.some(data => data.has_insights);
+
+  let md = `# 전체 메일 정리 (${dateStr})\n\n`;
+  md += `> 총 ${totalItems}개 아이템`;
+  if (hasInsights) {
+    md += ` | 인사이트 포함`;
+  }
+  md += `\n\n`;
+  md += `## 📊 라벨별 요약\n\n`;
+
+  allLabelsData.forEach(data => {
+    md += `- **${data.label}**: ${data.items?.length || 0}개\n`;
+  });
+
+  md += `\n---\n\n`;
+
+  // 각 라벨별 내용
+  allLabelsData.forEach((data, labelIndex) => {
+    const items = data.items || [];
+
+    md += `# ${data.label}\n\n`;
+    md += `> ${items.length}개 아이템\n\n`;
+
+    items.forEach((item, i) => {
+      md += `## ${i + 1}. ${item.title}\n\n`;
+      md += `${item.summary}\n\n`;
+
+      if (item.keywords && item.keywords.length > 0) {
+        md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
+      }
+
+      // 링크 추가
+      if (item.link) {
+        md += `**링크**: [원문 보기](${item.link})\n\n`;
+      }
+
+      // 인사이트 추가
+      if (item.insights) {
+        // 도메인 관련 인사이트
+        if (item.insights.domain) {
+          md += `### 💡 실용적 인사이트\n\n`;
+          if (item.insights.domain.perspective) {
+            md += `*${item.insights.domain.perspective}*\n\n`;
+          }
+          md += `${item.insights.domain.content}\n\n`;
+          if (item.insights.domain.action_items && item.insights.domain.action_items.length > 0) {
+            md += `**액션 아이템**:\n`;
+            item.insights.domain.action_items.forEach(action => {
+              md += `- ${action}\n`;
+            });
+            md += `\n`;
+          }
+        }
+
+        // 교차 도메인 인사이트
+        if (item.insights.cross_domain) {
+          md += `### 🌐 확장 인사이트\n\n`;
+          if (item.insights.cross_domain.perspective) {
+            md += `*${item.insights.cross_domain.perspective}*\n\n`;
+          }
+          md += `${item.insights.cross_domain.content}\n\n`;
+          if (item.insights.cross_domain.connections && item.insights.cross_domain.connections.length > 0) {
+            md += `**연결 키워드**: ${item.insights.cross_domain.connections.join(', ')}\n\n`;
+          }
+        }
+      }
+
+      md += `---\n\n`;
+    });
+
+    // 라벨 간 구분선 (마지막 라벨 제외)
+    if (labelIndex < allLabelsData.length - 1) {
+      md += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n\n`;
+    }
   });
 
   return md;
