@@ -1,7 +1,7 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
  * 모델: 단계별 다중 모델 사용
- *   - 빠른 모델 (추출/분석/병합): tngtech/deepseek-r1t-chimera:free
+ *   - 빠른 모델 (추출/분석/병합): tngtech/deepseek-r1t2-chimera:free
  *   - 추론 모델 (인사이트): upstage/solar-pro-3:free
  *
  * 주요 기능:
@@ -40,17 +40,97 @@ class AgentRunner {
     // 재시도 설정 (7회, 점진적 대기)
     this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
 
-    // Rate Limit 설정 (분당 10회)
+    // Rate Limit 설정 (OpenRouter: 분당 20회, 일 1000회)
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
-    this.maxRequestsPerMinute = 10;
-    this.minRequestInterval = 2000; // 요청 간 최소 2초 대기 (분당 카운터로 추가 관리)
+    this.maxRequestsPerMinute = 18;      // 20회 제한에 안전 마진 2회
+    this.minRequestInterval = 3200;       // 요청 간 최소 3.2초 대기 (~분당 18회)
     this.lastRequestTime = 0;
 
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
+  }
+
+  // ============================================
+  // 작업 유형별 최적 설정
+  // ============================================
+
+  /**
+   * 작업 유형별 최적 설정 반환
+   * - 추론 모델(R1T Chimera)의 reasoning 파라미터로 추론량 제어
+   * - 추출/병합: reasoning low (추론 최소화 → JSON 출력에 토큰 집중)
+   * - 인사이트: reasoning medium (적절한 추론 → 깊은 통찰)
+   */
+  getTaskConfig(taskType) {
+    const configs = {
+      extract: {
+        systemPrompt: `당신은 한국어 뉴스레터 분석 전문가입니다.
+
+[핵심 임무] 뉴스레터 본문에서 모든 뉴스 아이템을 빠짐없이 추출합니다.
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
+- 광고/푸터/구독안내만 제외, 나머지 모든 뉴스 콘텐츠 추출
+- 각 요약에 필수 포함: 핵심사실(WHO+WHAT) + 구체적 수치 + 배경맥락 + 시사점
+- 영문 콘텐츠는 자연스러운 한국어로 번역 (고유명사 원어 병기)`,
+        temperature: 0.1,
+        reasoningEffort: 'low',
+        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 하나라도 누락하면 안 됩니다.'
+      },
+      analyze: {
+        systemPrompt: `당신은 뉴스레터 구조 분석 전문가입니다.
+
+[핵심 임무] 새로운 뉴스레터의 구조를 분석하고, 동시에 아이템을 추출합니다.
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- analysis 필드 + items 필드 모두 포함
+- items의 모든 내용은 반드시 한국어로 작성
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
+        temperature: 0.1,
+        reasoningEffort: 'low',
+        tailInstruction: '위 지시사항에 따라 뉴스레터 구조를 분석하고 아이템을 추출하여 JSON으로 출력하세요.'
+      },
+      merge: {
+        systemPrompt: `당신은 뉴스 중복 탐지 전문가입니다.
+
+[핵심 임무] 동일한 사건/발표를 다루는 아이템만 병합합니다.
+
+[판단 기준]
+- 같은 사건/발표/수치 → 병합 (제목이 달라도 내용이 같으면 병합)
+- 같은 기업이지만 다른 뉴스 → 분리 유지
+- 애매하면 반드시 분리 유지 (잘못된 병합이 가장 나쁨)
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- 메타데이터(message_id, source_email) 반드시 보존
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
+        temperature: 0.1,
+        reasoningEffort: 'low',
+        tailInstruction: '위 지시사항에 따라 중복 아이템을 병합하고 JSON으로 출력하세요.'
+      },
+      insight: {
+        systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
+
+[핵심 임무] 각 뉴스 아이템에 2가지 인사이트를 추가합니다:
+1. domain: AI 스포츠 촬영/분석 로보틱스 회사 CEO에게 구체적 사업 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함.
+2. cross_domain: 실명의 철학자, 구체적 역사적 사건, 실제 심리학 실험명을 인용한 본질적 통찰. 이름/연도/출처를 반드시 명시.
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- 입력된 모든 필드(title, summary, keywords, link, source, message_id, source_email) 그대로 유지
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
+
+[금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
+        temperature: 0.3,
+        reasoningEffort: 'medium',
+        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
+      }
+    };
+    return configs[taskType] || configs.extract;
   }
 
   // ============================================
@@ -63,8 +143,9 @@ class AgentRunner {
    * - 각 청크 결과를 병합하여 반환
    */
   async runAgent(agentPath, options = {}) {
+    this.currentTaskType = options.taskType || 'extract';
     const agentName = path.basename(agentPath, '.md');
-    this.log(`\n=== ${agentName} 에이전트 실행 ===`);
+    this.log(`\n=== ${agentName} 에이전트 실행 (${this.currentTaskType}) ===`);
 
     try {
       // 1. 에이전트/스킬 문서 읽기 (헤더 부분)
@@ -466,7 +547,8 @@ ${agentContent}`;
       prompt += `\n\n# 처리할 데이터\n${inputData}`;
     }
 
-    prompt += '\n\n위 지시사항에 따라 작업을 수행하고 결과를 JSON 형식으로 출력하세요.';
+    const taskConfig = this.getTaskConfig(this.currentTaskType);
+    prompt += `\n\n${taskConfig.tailInstruction}`;
 
     return prompt;
   }
@@ -524,10 +606,11 @@ ${agentContent}`;
    * Solar3 API 호출 (단일)
    */
   async callSolar3(prompt) {
+    const taskConfig = this.getTaskConfig(this.currentTaskType);
     const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
-    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자)`, 'debug');
+    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자, 작업: ${this.currentTaskType}, reasoning: ${taskConfig.reasoningEffort})`, 'debug');
 
     // 타임아웃 설정 (5분 - 긴 처리 대비)
     const controller = new AbortController();
@@ -548,15 +631,16 @@ ${agentContent}`;
           messages: [
             {
               role: 'system',
-              content: 'Think briefly and concisely. Minimize internal reasoning. Go straight to the answer. Output ONLY a valid JSON object. No explanations, no reasoning text, no markdown. Start with { and end with }.'
+              content: taskConfig.systemPrompt
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          temperature: 0.1,
-          max_tokens: 100000  // 출력 토큰 (입력 여유 확보)
+          temperature: taskConfig.temperature,
+          max_tokens: 100000,
+          reasoning: { effort: taskConfig.reasoningEffort }
         })
       });
 

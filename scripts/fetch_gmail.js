@@ -269,9 +269,29 @@ class GmailFetcher {
   }
 
   /**
-   * KST 날짜 범위 필터링
+   * 시간 범위 필터링 (실제 시작/종료 시각 기준)
+   * @param {string} dateString - 메일의 Date 헤더
+   * @param {string} rangeStart - ISO 문자열 (예: '2025-02-05T10:01:00+09:00')
+   * @param {string} rangeEnd - ISO 문자열 (예: '2025-02-06T10:00:00+09:00')
+   * @param {string} targetDate - (하위 호환) YYYY-MM-DD 형식, rangeStart/rangeEnd 없을 때 사용
    */
-  isInKSTDateRange(dateString, targetDate) {
+  isInDateRange(dateString, rangeStart, rangeEnd, targetDate) {
+    // 실제 시간 범위가 있으면 정밀 비교
+    if (rangeStart && rangeEnd) {
+      try {
+        const cleanDate = dateString.replace(/\s*\(.*?\)\s*$/, '');
+        const msgDate = new Date(cleanDate);
+        if (isNaN(msgDate.getTime())) return false;
+
+        const start = new Date(rangeStart);
+        const end = new Date(rangeEnd);
+        return msgDate >= start && msgDate <= end;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // 하위 호환: targetDate만 있으면 기존 KST 날짜 비교
     if (!targetDate) return true;
 
     const kstDate = this.parseToKST(dateString);
@@ -292,7 +312,7 @@ class GmailFetcher {
    * 메시지 수집 및 저장
    */
   async fetchMessages(options) {
-    const { label, subLabels, dateStart, dateEnd, targetDate, outputDir } = options;
+    const { label, subLabels, dateStart, dateEnd, targetDate, rangeStart, rangeEnd, outputDir } = options;
 
     // 출력 디렉토리 생성
     if (!fs.existsSync(outputDir)) {
@@ -307,7 +327,9 @@ class GmailFetcher {
       dateEnd
     });
 
-    if (targetDate) {
+    if (rangeStart && rangeEnd) {
+      console.log(`Time Range: ${rangeStart} ~ ${rangeEnd}`);
+    } else if (targetDate) {
       console.log(`Target Date (KST): ${targetDate}`);
     }
 
@@ -326,11 +348,13 @@ class GmailFetcher {
         const headers = this.extractHeaders(msgData);
         const { subject, from, date } = headers;
 
-        // KST 날짜 필터링
-        if (targetDate && !this.isInKSTDateRange(date, targetDate)) {
-          console.log(`  Skipped (out of KST range)`);
-          skippedByDate.push(msgId);
-          continue;
+        // 시간 범위 필터링
+        if ((rangeStart && rangeEnd) || targetDate) {
+          if (!this.isInDateRange(date, rangeStart, rangeEnd, targetDate)) {
+            console.log(`  Skipped (out of range)`);
+            skippedByDate.push(msgId);
+            continue;
+          }
         }
 
         // HTML 본문 추출

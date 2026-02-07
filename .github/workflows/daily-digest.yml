@@ -1,9 +1,9 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 10시 KST = 01:00 UTC
+  # 매일 오전 10시 KST 목표 (GitHub Actions 지연 감안하여 08:30 KST = 23:30 UTC 설정)
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '30 23 * * *'
 
   # 수동 실행 버튼
   workflow_dispatch:
@@ -231,6 +231,8 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_DATE: ${{ github.event.inputs.custom_date }}
         run: |
           # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
@@ -238,21 +240,36 @@ jobs:
             exit 0
           fi
 
-          # 라벨별 MD 파일 수 (라벨 개수)
-          MD_COUNT=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l)
+          # 현재 실행의 RunID 계산 (YYYYMMDD)
+          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
+          else
+            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
+          fi
+          echo "현재 RunID: $RUN_ID"
 
-          # 라벨 목록 추출
-          LABELS=$(find output/final -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
+          # 현재 실행의 결과물 폴더만 검색 (이전 실행 결과 제외)
+          RUN_DIR="output/final/${RUN_ID}"
 
-          # 날짜
+          if [ ! -d "$RUN_DIR" ]; then
+            echo "결과물 폴더 없음: $RUN_DIR"
+            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n처리된 메일이 없습니다." "$(TZ='Asia/Seoul' date '+%Y-%m-%d')")
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="$MESSAGE"
+            exit 0
+          fi
+
+          # 현재 실행 결과물에서만 검색
+          MD_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l)
+          LABELS=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
           TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
 
-          # 통합 HTML 파일 찾기
-          HTML_FILE=$(find output/final -name "*통합*메일정리.html" 2>/dev/null | head -1)
+          # 현재 실행의 통합 HTML만 찾기
+          HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
 
           if [ -n "$HTML_FILE" ]; then
-            # HTML 파일과 함께 메시지 전송
-            MESSAGE=$(printf "📬 Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)" "$TODAY" "$LABELS" "$MD_COUNT")
+            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)" "$TODAY" "$LABELS" "$MD_COUNT")
 
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
@@ -261,8 +278,7 @@ jobs:
 
             echo "HTML 파일 전송 완료: ${HTML_FILE}"
           else
-            # HTML 파일 없으면 메시지만 전송
-            MESSAGE=$(printf "📬 Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)\n\n(결과물 없음)" "$TODAY" "$LABELS" "$MD_COUNT")
+            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)\n\n(HTML 파일 없음)" "$TODAY" "$LABELS" "$MD_COUNT")
 
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \

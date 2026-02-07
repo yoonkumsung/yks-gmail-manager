@@ -221,7 +221,7 @@ const CONFIG = {
 
   // 모델 설정 (모두 fast 모델 사용으로 속도 최적화)
   models: {
-    fast: 'tngtech/deepseek-r1t-chimera:free',    // 추출, 뉴스레터분석, 병합, 인사이트 (전체)
+    fast: 'tngtech/deepseek-r1t2-chimera:free',    // 추출, 뉴스레터분석, 병합, 인사이트 (전체) - R1T2: 20% 빠름
     reasoning: 'upstage/solar-pro-3:free'          // (미사용 - 필요시 활성화)
   },
 
@@ -264,6 +264,185 @@ function calculateOptimalBatchSize(items) {
   if (avgComplexity >= 2) return 6;   // 복잡 → 중소 배치
   if (avgComplexity >= 1) return 8;   // 보통 → 중간 배치
   return CONFIG.insightBatchSize;      // 단순 → 기본 배치
+}
+
+/**
+ * 병합 사전 필터링 - 코드 기반 유사도 계산으로 LLM 호출 최적화
+ * 유사한 아이템만 LLM에 보내고, 유사도 없는 아이템은 바로 통과
+ */
+function findMergeCandidates(items) {
+  const candidateMap = new Map(); // idx -> Set<idx>
+
+  for (let i = 0; i < items.length; i++) {
+    const kwA = new Set((items[i].keywords || []).map(k => k.toLowerCase()));
+    if (kwA.size === 0) continue;
+
+    for (let j = i + 1; j < items.length; j++) {
+      const kwB = new Set((items[j].keywords || []).map(k => k.toLowerCase()));
+      if (kwB.size === 0) continue;
+
+      // 키워드 Jaccard 유사도
+      const intersection = [...kwA].filter(x => kwB.has(x)).length;
+      const union = new Set([...kwA, ...kwB]).size;
+      const jaccard = union > 0 ? intersection / union : 0;
+
+      // 제목 단어 겹침
+      const wordsA = new Set(items[i].title.split(/[\s,·]+/).filter(w => w.length > 1));
+      const wordsB = new Set(items[j].title.split(/[\s,·]+/).filter(w => w.length > 1));
+      const maxWords = Math.max(wordsA.size, wordsB.size, 1);
+      const titleOverlap = [...wordsA].filter(x => wordsB.has(x)).length / maxWords;
+
+      // 다른 출처에서 같은 뉴스 = 병합 후보 가능성 높음
+      const diffSource = items[i].source_email !== items[j].source_email ? 0.05 : 0;
+
+      const similarity = jaccard * 0.55 + titleOverlap * 0.4 + diffSource;
+
+      if (similarity > 0.25) {
+        if (!candidateMap.has(i)) candidateMap.set(i, new Set());
+        if (!candidateMap.has(j)) candidateMap.set(j, new Set());
+        candidateMap.get(i).add(j);
+        candidateMap.get(j).add(i);
+      }
+    }
+  }
+
+  return candidateMap;
+}
+
+/**
+ * 출력 품질 검증 - 코드 기반 (API 호출 없음)
+ * 요약 길이, 키워드, 인사이트 품질, 금지 표현 등 검사
+ */
+function validateOutputQuality(items, labelName) {
+  const issues = [];
+  const banned = ['패러다임 전환', '혁신적', '새로운 지평', '가속화할 것', '핵심이 될 것', '시사점을 제공', '중요성을 보여준다'];
+
+  items.forEach((item, idx) => {
+    const itemRef = `[${labelName}] #${idx + 1} "${(item.title || '').substring(0, 20)}..."`;
+
+    // 요약 길이 검사
+    const summaryLen = item.summary?.length || 0;
+    if (summaryLen > 0 && summaryLen < 100) {
+      issues.push(`${itemRef}: 요약 너무 짧음 (${summaryLen}자, 최소 300자 권장)`);
+    }
+
+    // 키워드 검사
+    if (!item.keywords || item.keywords.length === 0) {
+      issues.push(`${itemRef}: 키워드 없음`);
+    }
+
+    // 인사이트 품질 검사
+    if (item.insights) {
+      const domainLen = item.insights.domain?.content?.length || 0;
+      const crossLen = item.insights.cross_domain?.content?.length || 0;
+
+      if (domainLen > 0 && domainLen < 50) {
+        issues.push(`${itemRef}: domain 인사이트 너무 짧음 (${domainLen}자)`);
+      }
+      if (crossLen > 0 && crossLen < 50) {
+        issues.push(`${itemRef}: cross_domain 인사이트 너무 짧음 (${crossLen}자)`);
+      }
+
+      // 금지 표현 검사
+      const allInsightText = (item.insights.domain?.content || '') + (item.insights.cross_domain?.content || '');
+      for (const phrase of banned) {
+        if (allInsightText.includes(phrase)) {
+          issues.push(`${itemRef}: 금지 표현 "${phrase}" 사용됨`);
+        }
+      }
+    }
+  });
+
+  if (issues.length > 0) {
+    console.warn(`\n  [품질 검증] ${labelName}: ${issues.length}개 이슈 발견`);
+    issues.forEach(issue => console.warn(`    - ${issue}`));
+  } else {
+    console.log(`  [품질 검증] ${labelName}: 통과`);
+  }
+
+  return issues;
+}
+
+/**
+ * 크로스 라벨 인사이트 생성
+ * 모든 라벨의 merged 결과를 모아 라벨 간 연결 인사이트와 메가트렌드를 생성
+ */
+async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
+  const mergedFiles = fs.readdirSync(mergedDir)
+    .filter(f => f.startsWith('merged_') && f.endsWith('.json'));
+
+  if (mergedFiles.length < 2) {
+    console.log('  라벨이 2개 미만이어서 크로스 인사이트 건너뜀');
+    return null;
+  }
+
+  // 각 라벨에서 아이템 수집 (title, summary, keywords만 전달하여 토큰 절약)
+  const labelsData = [];
+  let totalItems = 0;
+
+  for (const file of mergedFiles) {
+    const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
+    const items = (data.items || []).map(item => ({
+      title: item.title,
+      summary: (item.summary || '').substring(0, 200),  // 토큰 절약: 200자로 제한
+      keywords: item.keywords || []
+    }));
+
+    if (items.length > 0) {
+      labelsData.push({
+        label: data.label,
+        items: items
+      });
+      totalItems += items.length;
+    }
+  }
+
+  if (labelsData.length < 2 || totalItems < 3) {
+    console.log('  데이터 부족 (라벨 2개 이상, 아이템 3개 이상 필요)');
+    return null;
+  }
+
+  console.log(`  ${labelsData.length}개 라벨, ${totalItems}개 아이템으로 크로스 인사이트 생성 중...`);
+
+  // AgentRunner로 크로스 인사이트 에이전트 호출
+  const logDir = path.join(tempDir, 'logs');
+  const { fastRunner } = getRunners(logDir);
+  const crossAgentPath = path.join(__dirname, '..', 'agents', '크로스인사이트.md');
+
+  const dateFormatted = formatKST(timeRange.end).split(' ')[0];
+  const inputData = {
+    date: dateFormatted,
+    labels: labelsData
+  };
+
+  const outputPath = path.join(mergedDir, '_cross_insight_raw.json');
+
+  const result = await fastRunner.runAgent(crossAgentPath, {
+    skills: [],
+    input: JSON.stringify(inputData),
+    output: outputPath,
+    taskType: 'insight'
+  });
+
+  if (result && result.items) {
+    // 에이전트가 items 형식으로 반환한 경우 (비정상)
+    return result;
+  }
+
+  if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {
+    return result;
+  }
+
+  // 파일에서 읽기 시도
+  if (fs.existsSync(outputPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+    } catch (e) {
+      console.error('  크로스 인사이트 파싱 실패:', e.message);
+    }
+  }
+
+  return null;
 }
 
 // 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유)
@@ -435,10 +614,28 @@ async function main() {
     // 7. 메일 정리 실행
     const results = await processAllLabels(labels, timeRange, tempDir, progressManager, failedBatchManager, adaptiveLearning);
 
-    // 8. 통합 HTML 생성
-    console.log('\n--- 통합 HTML 생성 ---');
+    // 8. 크로스 라벨 인사이트 생성
     const mergedDir = path.join(tempDir, 'merged');
     const finalDir = path.join(tempDir, 'final');
+    let crossInsightData = null;
+
+    if (fs.existsSync(mergedDir)) {
+      console.log('\n--- 크로스 라벨 인사이트 생성 ---');
+      try {
+        crossInsightData = await generateCrossLabelInsight(mergedDir, tempDir, timeRange);
+        if (crossInsightData) {
+          console.log(`  메가트렌드 ${crossInsightData.mega_trends?.length || 0}개, 크로스 연결 ${crossInsightData.cross_connections?.length || 0}개, CEO 액션 ${crossInsightData.ceo_actions?.length || 0}개`);
+          // 크로스 인사이트 결과를 파일로 저장 (HTML/MD 생성에서 사용)
+          const crossInsightPath = path.join(mergedDir, '_cross_insight.json');
+          fs.writeFileSync(crossInsightPath, JSON.stringify(crossInsightData, null, 2), 'utf8');
+        }
+      } catch (error) {
+        console.error('  크로스 인사이트 생성 실패 (건너뜀):', error.message);
+      }
+    }
+
+    // 9. 통합 HTML 생성
+    console.log('\n--- 통합 HTML 생성 ---');
     // KST 기준 날짜로 파일명 생성 (timeRange.end = 사용자 요청 날짜)
     const kstDate = new Date(timeRange.end.getTime() + 9 * 60 * 60 * 1000);
     const dateStr = `${String(kstDate.getUTCFullYear()).slice(2)}${String(kstDate.getUTCMonth() + 1).padStart(2, '0')}${String(kstDate.getUTCDate()).padStart(2, '0')}`;
@@ -459,20 +656,20 @@ async function main() {
       }
     }
 
-    // 9. 캐시 플러시 (AdaptiveLearning, ProgressManager)
+    // 10. 캐시 플러시 (AdaptiveLearning, ProgressManager)
     adaptiveLearning.flush();
     progressManager.flush();
 
-    // 10. 결과 요약
+    // 11. 결과 요약
     printSummary(results);
 
-    // 11. 최종 결과물을 영구 저장소로 복사
+    // 12. 최종 결과물을 영구 저장소로 복사
     copyToFinalOutput(tempDir, runId, projectRoot);
 
-    // 12. Progress 완료 표시
+    // 13. Progress 완료 표시
     progressManager.markCompleted();
 
-    // 13. 성공 메시지
+    // 14. 성공 메시지
     const finalOutputDir = path.join(projectRoot, 'output', 'final', runId);
     console.log('\n[완료] 전체 처리 완료!');
     console.log(`\n결과물: ${finalOutputDir}\n`);
@@ -649,7 +846,8 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
             skills: ['SKILL_작성규칙.md'],
             inputs: cleanPath,
-            output: itemsPath
+            output: itemsPath,
+            taskType: 'analyze'
           });
 
           // 분석 결과로 SKILL 저장
@@ -663,7 +861,8 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
             skills,
             inputs: cleanPath,
-            output: itemsPath
+            output: itemsPath,
+            taskType: 'extract'
           });
         }
 
@@ -728,46 +927,58 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     progressManager.setStepStatus(label.name, 'merge', 'in_progress');
 
     if (fs.existsSync(mergeAgentPath) && allItems.length > 1) {
-      console.log(`  배치 병합 시작 (${CONFIG.mergeBatchSize}개씩)...`);
       try {
-        const MERGE_BATCH_SIZE = CONFIG.mergeBatchSize;
-        let mergedItems = [];
+        // 코드 기반 사전 필터링: 유사한 아이템만 LLM에 전달
+        const candidateMap = findMergeCandidates(allItems);
+        const candidateIdxs = new Set(candidateMap.keys());
+        const passThroughItems = allItems.filter((_, idx) => !candidateIdxs.has(idx));
+        const mergeCheckItems = allItems.filter((_, idx) => candidateIdxs.has(idx));
+
+        console.log(`  병합 사전 필터링: 총 ${allItems.length}개 중 후보 ${mergeCheckItems.length}개, 통과 ${passThroughItems.length}개`);
+
+        let mergedItems = [...passThroughItems];
         let totalDuplicates = 0;
 
-        for (let i = 0; i < allItems.length; i += MERGE_BATCH_SIZE) {
-          const batch = allItems.slice(i, i + MERGE_BATCH_SIZE);
-          const batchNum = Math.floor(i / MERGE_BATCH_SIZE) + 1;
-          const totalBatches = Math.ceil(allItems.length / MERGE_BATCH_SIZE);
+        if (mergeCheckItems.length > 1) {
+          // 후보 아이템만 배치로 LLM 병합
+          const MERGE_BATCH_SIZE = CONFIG.mergeBatchSize;
+          for (let i = 0; i < mergeCheckItems.length; i += MERGE_BATCH_SIZE) {
+            const batch = mergeCheckItems.slice(i, i + MERGE_BATCH_SIZE);
+            const batchNum = Math.floor(i / MERGE_BATCH_SIZE) + 1;
+            const totalBatches = Math.ceil(mergeCheckItems.length / MERGE_BATCH_SIZE);
 
-          console.log(`    배치 ${batchNum}/${totalBatches} (${batch.length}개)...`);
+            console.log(`    병합 배치 ${batchNum}/${totalBatches} (${batch.length}개 후보)...`);
 
-          try {
-            const batchResult = await fastRunner.runAgent(mergeAgentPath, {
-              inputs: {
-                label: label.name,
-                items: batch
-              },
-              schema: {
-                required: ['items']
+            try {
+              const batchResult = await fastRunner.runAgent(mergeAgentPath, {
+                inputs: {
+                  label: label.name,
+                  items: batch
+                },
+                schema: {
+                  required: ['items']
+                },
+                taskType: 'merge'
+              });
+
+              if (batchResult && batchResult.items) {
+                const batchDuplicates = batch.length - batchResult.items.length;
+                totalDuplicates += batchDuplicates;
+                mergedItems.push(...batchResult.items);
+                console.log(`      → ${batch.length}개 → ${batchResult.items.length}개 (${batchDuplicates}개 중복 제거)`);
+              } else {
+                mergedItems.push(...batch);
+                failedBatchManager.recordFailure(label.name, 'merge', batchNum, new Error('Empty result'));
+                console.warn(`      → 실패, 원본 유지`);
               }
-            });
-
-            if (batchResult && batchResult.items) {
-              const batchDuplicates = batch.length - batchResult.items.length;
-              totalDuplicates += batchDuplicates;
-              mergedItems.push(...batchResult.items);
-              console.log(`      → ${batch.length}개 → ${batchResult.items.length}개 (${batchDuplicates}개 중복 제거)`);
-            } else {
-              // 배치 실패 시 원본 유지 및 기록
+            } catch (batchError) {
+              failedBatchManager.recordFailure(label.name, 'merge', batchNum, batchError);
+              console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
               mergedItems.push(...batch);
-              failedBatchManager.recordFailure(label.name, 'merge', batchNum, new Error('Empty result'));
-              console.warn(`      → 실패, 원본 유지`);
             }
-          } catch (batchError) {
-            failedBatchManager.recordFailure(label.name, 'merge', batchNum, batchError);
-            console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
-            mergedItems.push(...batch);
           }
+        } else if (mergeCheckItems.length === 1) {
+          mergedItems.push(...mergeCheckItems);
         }
 
         merged = {
@@ -778,11 +989,12 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           stats: {
             original_count: allItems.length,
             total_items: mergedItems.length,
-            duplicates_removed: totalDuplicates
+            duplicates_removed: totalDuplicates,
+            pre_filtered: passThroughItems.length
           }
         };
 
-        console.log(`  병합 완료: ${allItems.length}개 → ${mergedItems.length}개 (${totalDuplicates}개 중복 제거)`);
+        console.log(`  병합 완료: ${allItems.length}개 → ${mergedItems.length}개 (${totalDuplicates}개 중복 제거, ${passThroughItems.length}개 사전 통과)`);
       } catch (error) {
         console.warn(`  병합 실패, 원본 유지: ${error.message}`);
         merged = {
@@ -852,7 +1064,8 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
               },
               schema: {
                 required: ['items']
-              }
+              },
+              taskType: 'insight'
             });
 
             if (batchResult && batchResult.items && batchResult.items.length > 0) {
@@ -922,6 +1135,12 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         merged.has_insights = insightSuccessCount > 0;
         fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
         console.log(`  인사이트 완료: ${insightSuccessCount}/${merged.items.length}개 아이템에 추가`);
+
+        // 품질 검증 (코드 기반, API 호출 없음)
+        const qualityIssues = validateOutputQuality(merged.items, label.name);
+        if (qualityIssues.length > 0) {
+          merged.quality_issues = qualityIssues.length;
+        }
       } catch (error) {
         console.warn(`  인사이트 생성 실패 (무시): ${error.message}`);
         merged.has_insights = false;
@@ -990,9 +1209,9 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
   const dateStart = formatGmailDate(new Date(timeRange.start.getTime() - 24 * 60 * 60 * 1000));
   const dateEnd = formatGmailDate(new Date(timeRange.end.getTime() + 24 * 60 * 60 * 1000));
 
-  // KST 기준 날짜 계산 (timeRange.end = 사용자 요청 날짜)
-  const kstEnd = new Date(timeRange.end.getTime() + 9 * 60 * 60 * 1000);
-  const targetDate = `${kstEnd.getUTCFullYear()}-${String(kstEnd.getUTCMonth() + 1).padStart(2, '0')}-${String(kstEnd.getUTCDate()).padStart(2, '0')}`;
+  // 실제 시간 범위를 ISO 문자열로 전달 (정밀 필터링용)
+  const rangeStart = timeRange.start.toISOString();
+  const rangeEnd = timeRange.end.toISOString();
 
   try {
     const fetcher = new GmailFetcher();
@@ -1003,7 +1222,8 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
       subLabels: (label.sub_labels || []).join(','),
       dateStart,
       dateEnd,
-      targetDate,
+      rangeStart,
+      rangeEnd,
       outputDir
     });
 
@@ -1084,32 +1304,14 @@ function generateMarkdown(merged, date) {
 
     // 인사이트 추가
     if (item.insights) {
-      // 도메인 관련 인사이트
-      if (item.insights.domain) {
+      if (item.insights.domain?.content) {
         md += `### 실용적 인사이트\n\n`;
-        if (item.insights.domain.perspective) {
-          md += `*${item.insights.domain.perspective}*\n\n`;
-        }
         md += `${item.insights.domain.content}\n\n`;
-        if (item.insights.domain.action_items && item.insights.domain.action_items.length > 0) {
-          md += `**액션 아이템**:\n`;
-          item.insights.domain.action_items.forEach(action => {
-            md += `- ${action}\n`;
-          });
-          md += `\n`;
-        }
       }
 
-      // 교차 도메인 인사이트
-      if (item.insights.cross_domain) {
+      if (item.insights.cross_domain?.content) {
         md += `### 확장 인사이트\n\n`;
-        if (item.insights.cross_domain.perspective) {
-          md += `*${item.insights.cross_domain.perspective}*\n\n`;
-        }
         md += `${item.insights.cross_domain.content}\n\n`;
-        if (item.insights.cross_domain.connections && item.insights.cross_domain.connections.length > 0) {
-          md += `**연결 키워드**: ${item.insights.cross_domain.connections.join(', ')}\n\n`;
-        }
       }
     }
 
@@ -1156,6 +1358,53 @@ function generateCombinedMarkdown(mergedDir, date) {
 
   md += `\n---\n\n`;
 
+  // 크로스 인사이트 섹션 (있으면 추가)
+  const crossInsightPath = path.join(mergedDir, '_cross_insight.json');
+  if (fs.existsSync(crossInsightPath)) {
+    try {
+      const crossInsight = JSON.parse(fs.readFileSync(crossInsightPath, 'utf8'));
+
+      if (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0) {
+        md += `# 종합 인사이트\n\n`;
+
+        if (crossInsight.mega_trends?.length > 0) {
+          md += `## 메가트렌드\n\n`;
+          crossInsight.mega_trends.forEach((trend, i) => {
+            md += `### ${i + 1}. ${trend.title}\n\n`;
+            md += `${trend.description}\n\n`;
+            if (trend.related_items?.length > 0) {
+              md += `**관련 뉴스**: ${trend.related_items.map(item => `[${item.label}] ${item.title}`).join(' / ')}\n\n`;
+            }
+          });
+        }
+
+        if (crossInsight.cross_connections?.length > 0) {
+          md += `## 크로스 연결\n\n`;
+          crossInsight.cross_connections.forEach((conn, i) => {
+            md += `### ${i + 1}. ${conn.title}\n\n`;
+            md += `${conn.description}\n\n`;
+            if (conn.connected_items?.length > 0) {
+              md += `**연결 뉴스**: ${conn.connected_items.map(item => `[${item.label}] ${item.title}`).join(' / ')}\n\n`;
+            }
+          });
+        }
+
+        if (crossInsight.ceo_actions?.length > 0) {
+          md += `## CEO 액션\n\n`;
+          crossInsight.ceo_actions.forEach((action, i) => {
+            const labels = action.related_labels?.join(', ') || '';
+            md += `${i + 1}. **[${action.timeline || ''}]** ${action.action}${labels ? ` (${labels})` : ''}\n`;
+          });
+          md += `\n`;
+        }
+
+        md += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n\n`;
+      }
+    } catch (e) {
+      // 크로스 인사이트 파싱 실패 시 무시
+    }
+  }
+
   // 각 라벨별 내용
   allLabelsData.forEach((data, labelIndex) => {
     const items = data.items || [];
@@ -1178,32 +1427,14 @@ function generateCombinedMarkdown(mergedDir, date) {
 
       // 인사이트 추가
       if (item.insights) {
-        // 도메인 관련 인사이트
-        if (item.insights.domain) {
-          md += `### 💡 실용적 인사이트\n\n`;
-          if (item.insights.domain.perspective) {
-            md += `*${item.insights.domain.perspective}*\n\n`;
-          }
+        if (item.insights.domain?.content) {
+          md += `### 실용적 인사이트\n\n`;
           md += `${item.insights.domain.content}\n\n`;
-          if (item.insights.domain.action_items && item.insights.domain.action_items.length > 0) {
-            md += `**액션 아이템**:\n`;
-            item.insights.domain.action_items.forEach(action => {
-              md += `- ${action}\n`;
-            });
-            md += `\n`;
-          }
         }
 
-        // 교차 도메인 인사이트
-        if (item.insights.cross_domain) {
-          md += `### 🌐 확장 인사이트\n\n`;
-          if (item.insights.cross_domain.perspective) {
-            md += `*${item.insights.cross_domain.perspective}*\n\n`;
-          }
+        if (item.insights.cross_domain?.content) {
+          md += `### 확장 인사이트\n\n`;
           md += `${item.insights.cross_domain.content}\n\n`;
-          if (item.insights.cross_domain.connections && item.insights.cross_domain.connections.length > 0) {
-            md += `**연결 키워드**: ${item.insights.cross_domain.connections.join(', ')}\n\n`;
-          }
         }
       }
 

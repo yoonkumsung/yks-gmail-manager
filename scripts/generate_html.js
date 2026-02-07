@@ -390,6 +390,81 @@ function generateHtmlReport(finalData, label, date) {
 }
 
 /**
+ * 크로스 인사이트 탭 콘텐츠 생성
+ */
+function generateCrossInsightTab(crossInsight) {
+  // 메가트렌드 섹션
+  const megaTrendsHtml = (crossInsight.mega_trends || []).map(trend => {
+    const relatedHtml = (trend.related_items || []).map(item =>
+      `<span class="related-item-tag"><span class="label-name">${escapeHtml(item.label)}</span> ${escapeHtml(item.title)}</span>`
+    ).join('');
+
+    return `
+      <div class="mega-trend-card">
+        <div class="card-title">${escapeHtml(trend.title)}</div>
+        <div class="card-description">${escapeHtml(trend.description)}</div>
+        ${relatedHtml ? `<div class="related-items">${relatedHtml}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  // 크로스 연결 섹션
+  const connectionsHtml = (crossInsight.cross_connections || []).map(conn => {
+    const connectedHtml = (conn.connected_items || []).map(item =>
+      `<span class="related-item-tag"><span class="label-name">${escapeHtml(item.label)}</span> ${escapeHtml(item.title)}</span>`
+    ).join('');
+
+    return `
+      <div class="cross-connection-card">
+        <div class="card-title">${escapeHtml(conn.title)}</div>
+        <div class="card-description">${escapeHtml(conn.description)}</div>
+        ${connectedHtml ? `<div class="related-items">${connectedHtml}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  // CEO 액션 섹션
+  const actionsHtml = (crossInsight.ceo_actions || []).map(action => {
+    const labelTags = (action.related_labels || []).map(label =>
+      `<span class="action-label-tag">${escapeHtml(label)}</span>`
+    ).join('');
+
+    return `
+      <div class="ceo-action-card">
+        <div class="card-description">
+          <span class="action-timeline">${escapeHtml(action.timeline || '')}</span>
+          ${escapeHtml(action.action)}
+        </div>
+        ${labelTags ? `<div class="action-labels">${labelTags}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="tab-content active" id="tab-종합인사이트">
+      ${megaTrendsHtml ? `
+        <div class="cross-insight-section">
+          <div class="cross-section-title">메가트렌드</div>
+          ${megaTrendsHtml}
+        </div>
+      ` : ''}
+      ${connectionsHtml ? `
+        <div class="cross-insight-section">
+          <div class="cross-section-title">크로스 연결</div>
+          ${connectionsHtml}
+        </div>
+      ` : ''}
+      ${actionsHtml ? `
+        <div class="cross-insight-section">
+          <div class="cross-section-title">CEO 액션</div>
+          ${actionsHtml}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+/**
  * HTML 이스케이프
  */
 function escapeHtml(text) {
@@ -425,17 +500,26 @@ function generateFromFinalJson(finalJsonPath, outputPath) {
 /**
  * 통합 HTML 리포트 생성 (모든 라벨 포함)
  */
-function generateCombinedHtmlReport(allLabelsData, date) {
+function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
+  // 크로스 인사이트 탭 버튼 (있으면 첫 번째)
+  const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0);
+  const crossTabButton = hasCrossInsight
+    ? `<button class="tab-btn active cross-tab-btn" data-tab="종합인사이트">종합 인사이트</button>\n`
+    : '';
+
   // 라벨별 탭 버튼 생성
-  const tabButtons = allLabelsData.map((data, index) => {
-    const isActive = index === 0 ? 'active' : '';
+  const tabButtons = crossTabButton + allLabelsData.map((data, index) => {
+    const isActive = (!hasCrossInsight && index === 0) ? 'active' : '';
     const itemCount = data.items?.length || 0;
     return `<button class="tab-btn ${isActive}" data-tab="${data.label}">${escapeHtml(data.label)}<span class="count">${itemCount}</span></button>`;
   }).join('\n');
 
+  // 크로스 인사이트 탭 콘텐츠
+  const crossTabContent = hasCrossInsight ? generateCrossInsightTab(crossInsight) : '';
+
   // 라벨별 콘텐츠 생성
-  const tabContents = allLabelsData.map((data, index) => {
-    const isActive = index === 0 ? 'active' : '';
+  const tabContents = crossTabContent + allLabelsData.map((data, index) => {
+    const isActive = (!hasCrossInsight && index === 0) ? 'active' : '';
     const items = data.items || [];
     // 라벨명을 ID에 사용 (특수문자 제거)
     const labelId = data.label.replace(/[^a-zA-Z0-9가-힣]/g, '');
@@ -888,6 +972,106 @@ function generateCombinedHtmlReport(allLabelsData, date) {
 
     .no-items { color: var(--text-muted); text-align: center; padding: 2rem; }
 
+    /* 크로스 인사이트 탭 */
+    .cross-tab-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2) !important;
+      color: white !important;
+    }
+
+    .cross-tab-btn .count {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .cross-insight-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .cross-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--text);
+    }
+
+    .mega-trend-card, .cross-connection-card, .ceo-action-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .mega-trend-card {
+      border-left: 4px solid #667eea;
+    }
+
+    .cross-connection-card {
+      border-left: 4px solid #f59e0b;
+    }
+
+    .ceo-action-card {
+      border-left: 4px solid #10b981;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .related-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .related-item-tag {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: var(--text-muted);
+    }
+
+    .related-item-tag .label-name {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .action-timeline {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: #ecfdf5;
+      color: #065f46;
+      margin-right: 0.5rem;
+    }
+
+    .action-labels {
+      display: inline-flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .action-label-tag {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      background: #eff6ff;
+      color: var(--primary);
+    }
+
     /* 반응형 - 모바일 */
     @media (max-width: 640px) {
       .header-inner {
@@ -1030,6 +1214,37 @@ function generateCombinedHtmlReport(allLabelsData, date) {
       .insight-close:hover {
         color: #f1f5f9;
       }
+
+      .related-item-tag {
+        background: #334155;
+        color: #cbd5e1;
+      }
+
+      .related-item-tag .label-name {
+        color: #93c5fd;
+      }
+
+      .action-timeline {
+        background: #064e3b;
+        color: #6ee7b7;
+      }
+
+      .action-label-tag {
+        background: #1e3a5f;
+        color: #93c5fd;
+      }
+
+      .mega-trend-card {
+        border-left-color: #818cf8;
+      }
+
+      .cross-connection-card {
+        border-left-color: #fbbf24;
+      }
+
+      .ceo-action-card {
+        border-left-color: #34d399;
+      }
     }
   </style>
 </head>
@@ -1127,7 +1342,18 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
   // 라벨 이름순 정렬
   allLabelsData.sort((a, b) => a.label.localeCompare(b.label, 'ko'));
 
-  const html = generateCombinedHtmlReport(allLabelsData, date);
+  // 크로스 인사이트 데이터 읽기
+  let crossInsight = null;
+  const crossInsightPath = path.join(mergedDir, '_cross_insight.json');
+  if (fs.existsSync(crossInsightPath)) {
+    try {
+      crossInsight = JSON.parse(fs.readFileSync(crossInsightPath, 'utf8'));
+    } catch (e) {
+      console.warn('크로스 인사이트 파일 읽기 실패:', e.message);
+    }
+  }
+
+  const html = generateCombinedHtmlReport(allLabelsData, date, crossInsight);
   fs.writeFileSync(outputPath, html, 'utf8');
 
   console.log(`통합 HTML 리포트 생성됨: ${outputPath}`);
