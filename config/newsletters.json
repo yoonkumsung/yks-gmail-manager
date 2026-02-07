@@ -773,7 +773,61 @@
       },
       "detected_at": "2026-02-05T20:33:33.305Z",
       "skill_generated": false
+    },
+    {
+      "id": "substack_2",
+      "sender": "no-reply@substack.com",
+      "name": "Substack <no-reply@substack.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_2.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-07T03:20:56.911Z",
+      "skill_generated": false
+    },
+    {
+      "id": "stibee_somewonlikesu_gmail_com",
+      "sender": "somewonlikesu-gmail.com@send.stibee.com",
+      "name": "\"썸원(somewon)\" <somewonlikesu-gmail.com@send.stibee.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_somewonlikesu_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-07T03:20:56.911Z",
+      "skill_generated": false
+    },
+    {
+      "id": "substack_edwardhan99",
+      "sender": "edwardhan99@substack.com",
+      "name": "\"ED 📙 대가들의 지혜\" <edwardhan99@substack.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_edwardhan99.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-07T03:20:56.911Z",
+      "skill_generated": false
     }
   ],
-  "last_scan": "2026-02-05T20:33:33.305Z"
+  "last_scan": "2026-02-07T03:20:56.911Z"
 }
