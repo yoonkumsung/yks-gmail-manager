@@ -170,7 +170,13 @@ class AgentRunner {
         return await this.runSinglePrompt(header, inputData, options);
       }
 
-      // 5. 청크 분할 처리
+      // 5. analyze 작업은 전체 컨텍스트가 필요하므로 청크 분할하지 않음
+      if (this.currentTaskType === 'analyze') {
+        this.log(`analyze 작업은 전체 컨텍스트 필요, 단일 처리 (${inputData.length}자)`, 'info');
+        return await this.runSinglePrompt(header, inputData, options);
+      }
+
+      // 6. 청크 분할 처리
       this.log(`입력 데이터가 큼 (${inputData.length}자), 청크 분할 처리`, 'info');
       return await this.runChunkedPrompt(header, inputData, availableChars, options);
 
@@ -308,6 +314,20 @@ class AgentRunner {
         fs.unlinkSync(tempFile);
       } catch (e) {
         // 삭제 실패 무시
+      }
+    }
+
+    // 8. 청크 처리 결과가 0건이면 전체 텍스트로 폴백 재시도
+    if ((mergedResult.items?.length || 0) === 0 && successCount > 0) {
+      this.log(`청크 처리 결과 0건, 전체 텍스트로 폴백 재시도`, 'warn');
+      try {
+        const fallbackResult = await this.runSinglePrompt(header, inputData, options);
+        if (fallbackResult && fallbackResult.items && fallbackResult.items.length > 0) {
+          this.log(`[완료] 폴백 성공, 총 ${fallbackResult.items.length}개 아이템 추출`);
+          return fallbackResult;
+        }
+      } catch (fallbackError) {
+        this.log(`폴백 재시도 실패: ${fallbackError.message}`, 'warn');
       }
     }
 
@@ -719,7 +739,8 @@ ${agentContent}`;
       msg.includes('timeout') ||
       msg.includes('ECONNRESET') ||
       msg.includes('ETIMEDOUT') ||
-      msg.includes('불완전')
+      msg.includes('불완전') ||
+      msg.includes('빈 응답')
     );
   }
 
