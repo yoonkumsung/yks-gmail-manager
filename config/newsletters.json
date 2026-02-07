@@ -804,11 +804,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 4
       },
       "detected_at": "2026-02-07T03:20:56.911Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "substack_edwardhan99",
@@ -827,7 +827,43 @@
       },
       "detected_at": "2026-02-07T03:20:56.911Z",
       "skill_generated": false
+    },
+    {
+      "id": "video_jockey",
+      "sender": "editor@video-jockey.com",
+      "name": "\"비디오쟈-키\" <editor@video-jockey.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_video_jockey.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-07T09:00:16.542Z",
+      "skill_generated": true
+    },
+    {
+      "id": "substack_philosophors",
+      "sender": "philosophors@substack.com",
+      "name": "Philosophors from Philosophy Quotes <philosophors@substack.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_philosophors.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-02-07T09:01:01.166Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-07T03:20:56.911Z"
+  "last_scan": "2026-02-07T09:02:53.734Z"
 }
