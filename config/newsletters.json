@@ -534,11 +534,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 5
       },
       "detected_at": "2026-02-05T15:59:03.386Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "axios_macro",
@@ -786,11 +786,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 3
       },
       "detected_at": "2026-02-07T03:20:56.911Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "stibee_somewonlikesu_gmail_com",
@@ -865,5 +865,5 @@
       "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-07T09:02:53.734Z"
+  "last_scan": "2026-02-08T00:00:30.861Z"
 }
