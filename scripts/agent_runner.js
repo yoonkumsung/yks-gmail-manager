@@ -581,12 +581,13 @@ ${agentContent}`;
    * Solar3 API 호출 (재시도 포함)
    */
   async callSolar3WithRetry(prompt) {
-    await this.checkRateLimit();
-
     let lastError;
 
     for (let i = 0; i < this.retryDelays.length; i++) {
       try {
+        // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
+        await this.checkRateLimit();
+
         const response = await this.callSolar3(prompt);
 
         // 불완전 JSON 감지 시 재시도
@@ -718,7 +719,8 @@ ${agentContent}`;
     const msg = error.message || '';
     return msg.includes('context length') ||
            (msg.includes('maximum') && msg.includes('tokens')) ||
-           (msg.includes('too long') || msg.includes('too many tokens'));
+           msg.includes('too many tokens') ||
+           (msg.includes('input') && msg.includes('too long'));
   }
 
   /**

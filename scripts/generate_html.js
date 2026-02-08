@@ -502,7 +502,7 @@ function generateFromFinalJson(finalJsonPath, outputPath) {
  */
 function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
   // 크로스 인사이트 탭 버튼 (있으면 첫 번째)
-  const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0);
+  const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0 || crossInsight.ceo_actions?.length > 0);
   const crossTabButton = hasCrossInsight
     ? `<button class="tab-btn active cross-tab-btn" data-tab="종합인사이트">종합 인사이트</button>\n`
     : '';
@@ -535,14 +535,14 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
 
       // 인사이트 데이터 준비
       const hasDomainInsight = item.insights?.domain?.content;
-      const hasCrossInsight = item.insights?.cross_domain?.content;
+      const hasCrossDomainInsight = item.insights?.cross_domain?.content;
 
       // 버튼 행 (항상 한 줄 유지)
       const domainBtnHtml = hasDomainInsight ? `
         <button class="action-btn insight-btn domain-btn" data-target="domain-${uniqueId}">실용적 인사이트</button>
       ` : '';
 
-      const crossBtnHtml = hasCrossInsight ? `
+      const crossBtnHtml = hasCrossDomainInsight ? `
         <button class="action-btn insight-btn cross-btn" data-target="cross-${uniqueId}">확장 인사이트</button>
       ` : '';
 
@@ -577,7 +577,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
         </div>
       ` : '';
 
-      const crossContentHtml = hasCrossInsight ? `
+      const crossContentHtml = hasCrossDomainInsight ? `
         <div class="insight-content cross-content" id="cross-${uniqueId}" style="display:none;">
           <div class="insight-header">
             <span class="insight-label cross-label">확장 인사이트</span>
@@ -615,7 +615,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
           ${data.stats?.duplicates_removed ? `<span class="stat">중복 제거 ${data.stats.duplicates_removed}개</span>` : ''}
         </div>
         <div class="items-list">
-          ${itemsHtml || '<p class="no-items">기사이 없습니다.</p>'}
+          ${itemsHtml || '<p class="no-items">기사가 없습니다.</p>'}
         </div>
       </div>
     `;
@@ -973,12 +973,12 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
     .no-items { color: var(--text-muted); text-align: center; padding: 2rem; }
 
     /* 크로스 인사이트 탭 */
-    .cross-tab-btn {
-      background: linear-gradient(135deg, #667eea, #764ba2) !important;
-      color: white !important;
+    .cross-tab-btn.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
     }
 
-    .cross-tab-btn .count {
+    .cross-tab-btn.active .count {
       background: rgba(255,255,255,0.3);
     }
 

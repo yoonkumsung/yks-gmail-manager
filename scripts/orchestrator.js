@@ -286,9 +286,9 @@ function findMergeCandidates(items) {
       const union = new Set([...kwA, ...kwB]).size;
       const jaccard = union > 0 ? intersection / union : 0;
 
-      // 제목 단어 겹침
-      const wordsA = new Set(items[i].title.split(/[\s,·]+/).filter(w => w.length > 1));
-      const wordsB = new Set(items[j].title.split(/[\s,·]+/).filter(w => w.length > 1));
+      // 제목 단어 겹침 (title이 없으면 빈 Set)
+      const wordsA = new Set((items[i].title || '').split(/[\s,·]+/).filter(w => w.length > 1));
+      const wordsB = new Set((items[j].title || '').split(/[\s,·]+/).filter(w => w.length > 1));
       const maxWords = Math.max(wordsA.size, wordsB.size, 1);
       const titleOverlap = [...wordsA].filter(x => wordsB.has(x)).length / maxWords;
 
@@ -322,7 +322,7 @@ function validateOutputQuality(items, labelName) {
 
     // 요약 길이 검사
     const summaryLen = item.summary?.length || 0;
-    if (summaryLen > 0 && summaryLen < 100) {
+    if (summaryLen > 0 && summaryLen < 300) {
       issues.push(`${itemRef}: 요약 너무 짧음 (${summaryLen}자, 최소 300자 권장)`);
     }
 
@@ -419,15 +419,10 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
 
   const result = await fastRunner.runAgent(crossAgentPath, {
     skills: [],
-    input: JSON.stringify(inputData),
+    inputs: inputData,
     output: outputPath,
     taskType: 'insight'
   });
-
-  if (result && result.items) {
-    // 에이전트가 items 형식으로 반환한 경우 (비정상)
-    return result;
-  }
 
   if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {
     return result;
@@ -751,8 +746,10 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     console.log('  Gmail API 호출 (이미 완료, 건너뜀)');
   }
 
-  // 2. 새 뉴스레터 감지 (적응형 학습)
-  const newNewsletters = await adaptiveLearning.processNewSenders(fetchResult, label.name);
+  // 2. 새 뉴스레터 감지 (적응형 학습) - fetchResult가 null이면 건너뜀 (재실행 시)
+  const newNewsletters = fetchResult
+    ? await adaptiveLearning.processNewSenders(fetchResult, label.name)
+    : { newCount: 0, newsletters: [] };
 
   if (newNewsletters.newCount > 0) {
     console.log(`  새 뉴스레터 ${newNewsletters.newCount}개 등록 완료`);
@@ -1329,7 +1326,7 @@ function generateCombinedMarkdown(mergedDir, date) {
 
   // merged 폴더에서 모든 JSON 파일 읽기
   const mergedFiles = fs.readdirSync(mergedDir)
-    .filter(f => f.endsWith('.json'))
+    .filter(f => f.startsWith('merged_') && f.endsWith('.json'))
     .sort();
 
   if (mergedFiles.length === 0) {
@@ -1401,7 +1398,7 @@ function generateCombinedMarkdown(mergedDir, date) {
         md += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n\n`;
       }
     } catch (e) {
-      // 크로스 인사이트 파싱 실패 시 무시
+      console.warn('  크로스 인사이트 MD 렌더링 실패:', e.message);
     }
   }
 
@@ -1496,11 +1493,11 @@ function calculateTimeRange(mode, customDate) {
       };
 
     case 'today':
-      // 오늘 0시 ~ 현재
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);
+      // 오늘 0시 ~ 현재 (KST 기준)
+      const todayKSTForToday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+      const todayStrForToday = todayKSTForToday.toISOString().split('T')[0];
       return {
-        start: todayStart,
+        start: new Date(todayStrForToday + 'T00:00:00+09:00'),
         end: now
       };
 
