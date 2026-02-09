@@ -1007,7 +1007,25 @@
       },
       "detected_at": "2026-02-09T07:08:36.063Z",
       "skill_generated": true
+    },
+    {
+      "id": "seekingalpha",
+      "sender": "account@seekingalpha.com",
+      "name": "Must Reads <account@seekingalpha.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_seekingalpha.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-02-09T09:19:29.104Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-09T07:09:53.239Z"
+  "last_scan": "2026-02-09T09:27:43.544Z"
 }
