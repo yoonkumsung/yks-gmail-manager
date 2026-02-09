@@ -1,5 +1,6 @@
 # Credentials (민감 정보)
 config/credentials/
+config/user_profile.json
 *.json.bak
 
 # Output 디렉토리

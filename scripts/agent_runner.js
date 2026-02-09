@@ -116,7 +116,7 @@ class AgentRunner {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
 [핵심 임무] 각 뉴스 아이템에 2가지 인사이트를 추가합니다:
-1. domain: AI 스포츠 촬영/분석 로보틱스 회사 CEO에게 구체적 사업 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함.
+1. domain: 사용자의 사업에 구체적 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함. (사용자 컨텍스트는 에이전트 지시사항 참고)
 2. cross_domain: 실명의 철학자, 구체적 역사적 사건, 실제 심리학 실험명을 인용한 본질적 통찰. 이름/연도/출처를 반드시 명시.
 
 [출력 규칙]
@@ -485,7 +485,13 @@ class AgentRunner {
    */
   async buildHeader(agentPath, options) {
     // Agent 문서 읽기
-    const agentContent = fs.readFileSync(agentPath, 'utf8');
+    let agentContent = fs.readFileSync(agentPath, 'utf8');
+
+    // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환)
+    if (agentContent.includes('{{USER_CONTEXT}}')) {
+      const userContext = this.loadUserContext();
+      agentContent = agentContent.replace('{{USER_CONTEXT}}', userContext);
+    }
 
     // SKILL 문서 읽기
     let skillsContent = '';
@@ -509,6 +515,36 @@ ${agentContent}`;
     }
 
     return header;
+  }
+
+  /**
+   * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환
+   */
+  loadUserContext() {
+    const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
+    try {
+      const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+      const user = profile.user;
+      const occ = user.occupation;
+      const interests = user.interests;
+
+      let context = `- **직업**: ${occ.title}\n- **상세**: ${occ.description}`;
+
+      if (interests.technical?.length > 0) {
+        context += `\n- **기술 관심**: ${interests.technical.join(', ')}`;
+      }
+      if (interests.business?.length > 0) {
+        context += `\n- **비즈니스 관심**: ${interests.business.join(', ')}`;
+      }
+      if (interests.intellectual?.length > 0) {
+        context += `\n- **지적 관심**: ${interests.intellectual.join(', ')}`;
+      }
+
+      return context;
+    } catch (e) {
+      this.log(`user_profile.json 로드 실패: ${e.message}`, 'warn');
+      return '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
+    }
   }
 
   /**
