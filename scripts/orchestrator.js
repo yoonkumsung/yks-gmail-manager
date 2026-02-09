@@ -153,7 +153,7 @@ class FailedBatchManager {
  * 임시 폴더 경로 생성
  */
 function getTempDir(runId) {
-  return path.join(os.tmpdir(), 'gmail-manager', runId);
+  return path.join(os.tmpdir(), 'yks-gmail-manager', runId);
 }
 
 /**

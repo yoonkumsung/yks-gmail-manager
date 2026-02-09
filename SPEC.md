@@ -62,7 +62,7 @@ Gmail 뉴스레터 소비를 수동적 읽기에서 능동적 인텔리전스 �
 ### 2.1 디렉토리 구조
 
 ```
-gmail-manager/
+yks-gmail-manager/
 ├── SPEC.md                              # 본 문서
 ├── README.md                            # 사용자 문서
 ├── package.json
@@ -952,18 +952,13 @@ app.listen(PORT, () => {
   "created_at": "2026-02-03T10:00:00Z",
   "user": {
     "occupation": {
-      "title": "AI 스포츠카메라 스타트업 CEO",
-      "description": "NPU 기반 엣지 AI 카메라 하드웨어 개발",
-      "industry": ["Sports Tech", "AI Hardware"]
+      "title": "소프트웨어 엔지니어",
+      "description": "AI 기반 서비스 개발"
     },
     "interests": {
-      "technical": ["NPU", "Edge AI", "Computer Vision"],
-      "business": ["Sports Tech", "Hardware Manufacturing"],
-      "intellectual": ["Phenomenology", "Systems Thinking"]
-    },
-    "goals": {
-      "short_term": "제품 시장 적합성 확보",
-      "long_term": "글로벌 스포츠 테크 Top 3"
+      "technical": ["AI", "LLM", "클라우드"],
+      "business": ["스타트업", "투자"],
+      "intellectual": ["철학", "역사"]
     }
   }
 }

@@ -28,7 +28,7 @@ on:
         required: false
         default: ''
 
-# SKILL 파일 및 결과물 자동 커밋을 위한 권한
+# SKILL 파일 자동 커밋을 위한 권한
 permissions:
   contents: write
 
@@ -89,27 +89,47 @@ jobs:
           fi
 
       - name: 시작 알림
+        id: start-notify
         if: steps.check-secrets.outputs.skip != 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          # 소요시간 계산용 시작 시각 저장
+          echo "start_epoch=$(date +%s)" >> $GITHUB_OUTPUT
+
           if [ -z "$TELEGRAM_TOKEN" ]; then
             echo "TELEGRAM_TOKEN이 설정되지 않아 시작 알림을 건너뜁니다."
             exit 0
           fi
 
-          # 요청한 날짜 결정 (custom 모드면 입력값, 아니면 오늘)
-          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
-            # YYYY-MM-DD → YYMMDD 변환
-            TARGET_DATE=$(echo "$INPUT_DATE" | sed 's/^20//' | tr -d '-')
+          # 모드 결정
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            MODE="schedule"
           else
-            TARGET_DATE=$(TZ='Asia/Seoul' date '+%y%m%d')
+            MODE="${INPUT_MODE:-today}"
           fi
 
-          MESSAGE=$(printf "안녕하세요:) 당신의 Gmail 매니저입니다!\n%s 뉴스레터를 정리해 드릴게요.\n잠시만 기다려주세요!" "$TARGET_DATE")
+          # 모드 한글 표시
+          case "$MODE" in
+            schedule) MODE_KR="스케줄 (전일)" ;;
+            today)    MODE_KR="오늘" ;;
+            last-24h) MODE_KR="최근 24시간" ;;
+            custom)   MODE_KR="지정일" ;;
+            *)        MODE_KR="$MODE" ;;
+          esac
+
+          # 대상 날짜
+          if [ "$MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            TARGET_DATE="$INPUT_DATE"
+          else
+            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          fi
+
+          MESSAGE=$(printf "[뉴스레터 정리 시작]\n날짜: %s\n모드: %s" "$TARGET_DATE" "$MODE_KR")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
@@ -197,39 +217,14 @@ jobs:
             echo "새로운 SKILL 파일 없음, 건너뜀"
           fi
 
-      - name: 결과물 main 브랜치에 커밋
-        if: success() && steps.check-secrets.outputs.skip != 'true'
-        run: |
-          # output/final 폴더 확인
-          if [ -d "output/final" ] && [ "$(ls -A output/final 2>/dev/null)" ]; then
-            echo "결과물 발견, main 브랜치에 커밋 시작"
-
-            # Git 설정 (이미 설정되어 있을 수 있지만 안전하게)
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-
-            # 결과물 추가 (-f: .gitignore 무시)
-            git add -f output/final/
-
-            # 커밋 (변경사항이 있을 때만)
-            if ! git diff --staged --quiet; then
-              TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
-              git commit -m "chore: ${TODAY} 메일 정리 결과물 저장"
-              git push
-              echo "결과물 커밋 완료"
-            else
-              echo "새로운 결과물 없음"
-            fi
-          else
-            echo "output/final 폴더가 비어있음, 건너뜀"
-          fi
-
-      - name: 결과물 업로드 (MD 파일)
+      - name: 결과물 업로드 (Artifacts)
         if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: mail-digest-md-${{ github.run_number }}
-          path: output/final/**/*.md
+          name: mail-digest-${{ github.run_number }}
+          path: |
+            output/final/**/*.md
+            output/final/**/*.html
           retention-days: 30
 
       - name: Telegram 알림 및 파일 전송
@@ -239,6 +234,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
+          START_EPOCH: ${{ steps.start-notify.outputs.start_epoch }}
         run: |
           # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
@@ -246,46 +242,55 @@ jobs:
             exit 0
           fi
 
+          # 소요시간 계산
+          END_EPOCH=$(date +%s)
+          ELAPSED=$(( END_EPOCH - START_EPOCH ))
+          ELAPSED_MIN=$(( ELAPSED / 60 ))
+          ELAPSED_SEC=$(( ELAPSED % 60 ))
+
           # 현재 실행의 RunID 계산 (YYYYMMDD)
           if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
             RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
+            TARGET_DATE="$INPUT_DATE"
           else
             RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
+            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
-          echo "현재 RunID: $RUN_ID"
 
-          # 현재 실행의 결과물 폴더만 검색 (이전 실행 결과 제외)
+          # 결과물 폴더 확인
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
-            echo "결과물 폴더 없음: $RUN_DIR"
-            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n처리된 메일이 없습니다." "$(TZ='Asia/Seoul' date '+%Y-%m-%d')")
+            MESSAGE=$(printf "[뉴스레터 정리 완료]\n날짜: %s\n소요: %d분 %d초\n\n처리된 뉴스레터가 없습니다." "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
               -d text="$MESSAGE"
             exit 0
           fi
 
-          # 현재 실행 결과물에서만 검색
-          MD_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l)
-          LABELS=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
-          TODAY=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          # 결과 집계
+          LABEL_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l | tr -d ' ')
+          LABEL_NAMES=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
 
-          # 현재 실행의 통합 HTML만 찾기
+          # 통합 파일 찾기
           HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
+          MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
+
+          MESSAGE=$(printf "[뉴스레터 정리 완료]\n날짜: %s\n라벨: %s (%s개)\n소요: %d분 %d초" "$TARGET_DATE" "$LABEL_NAMES" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
 
           if [ -n "$HTML_FILE" ]; then
-            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)" "$TODAY" "$LABELS" "$MD_COUNT")
-
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
               -F document=@"${HTML_FILE}" \
               -F caption="${MESSAGE}"
 
-            echo "HTML 파일 전송 완료: ${HTML_FILE}"
+            if [ -n "$MD_FILE" ]; then
+              curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+                -F chat_id="${TELEGRAM_CHAT_ID}" \
+                -F document=@"${MD_FILE}" \
+                -F caption="Markdown"
+            fi
           else
-            MESSAGE=$(printf "Gmail 메일 정리 완료\n%s\n\n라벨: %s\n(%s개 라벨)\n\n(HTML 파일 없음)" "$TODAY" "$LABELS" "$MD_COUNT")
-
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
               -d text="$MESSAGE"
@@ -297,18 +302,34 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           JOB_STATUS: ${{ job.status }}
+          START_EPOCH: ${{ steps.start-notify.outputs.start_epoch }}
         run: |
-          # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
             echo "TELEGRAM_TOKEN이 설정되지 않아 에러 알림을 건너뜁니다."
             exit 0
           fi
 
-          if [ "$JOB_STATUS" = "cancelled" ]; then
-            MESSAGE=$(printf "[타임아웃] Gmail 메일 정리가 시간 초과로 취소되었습니다.\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          # 소요시간 계산
+          END_EPOCH=$(date +%s)
+          if [ -n "$START_EPOCH" ]; then
+            ELAPSED=$(( END_EPOCH - START_EPOCH ))
+            ELAPSED_MIN=$(( ELAPSED / 60 ))
+            ELAPSED_SEC=$(( ELAPSED % 60 ))
+            ELAPSED_STR=$(printf "%d분 %d초" "$ELAPSED_MIN" "$ELAPSED_SEC")
           else
-            MESSAGE=$(printf "[실패] Gmail 메일 정리 실패\n\n로그 확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+            ELAPSED_STR="-"
           fi
+
+          TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          LOG_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$JOB_STATUS" = "cancelled" ]; then
+            STATUS="타임아웃"
+          else
+            STATUS="에러"
+          fi
+
+          MESSAGE=$(printf "[뉴스레터 정리 실패]\n날짜: %s\n상태: %s\n소요: %s\n\n로그: %s" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \

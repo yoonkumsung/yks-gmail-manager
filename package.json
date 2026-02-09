@@ -1,5 +1,5 @@
 {
-  "name": "gmail-manager",
+  "name": "yks-gmail-manager",
   "version": "2.0.0",
   "description": "Gmail 뉴스레터 다이제스트 시스템 (OpenRouter LLM + GitHub Actions)",
   "type": "commonjs",

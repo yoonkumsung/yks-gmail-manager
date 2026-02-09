@@ -493,6 +493,12 @@ class AgentRunner {
       agentContent = agentContent.replace('{{USER_CONTEXT}}', userContext);
     }
 
+    // 라벨별 우선순위 주제 주입 ({{FOCUS_TOPICS}} 플레이스홀더 치환)
+    if (agentContent.includes('{{FOCUS_TOPICS}}')) {
+      const focusTopics = this.loadFocusTopics(agentPath);
+      agentContent = agentContent.replace('{{FOCUS_TOPICS}}', focusTopics);
+    }
+
     // SKILL 문서 읽기
     let skillsContent = '';
     if (options.skills && Array.isArray(options.skills)) {
@@ -544,6 +550,26 @@ ${agentContent}`;
     } catch (e) {
       this.log(`user_profile.json 로드 실패: ${e.message}`, 'warn');
       return '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
+    }
+  }
+
+  /**
+   * 에이전트 파일 경로에서 라벨명을 추출하고 labels.json의 focus_topics를 반환
+   */
+  loadFocusTopics(agentPath) {
+    try {
+      const labelName = path.basename(agentPath, '.md');
+      const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
+      const labelsJson = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+      const labelConfig = labelsJson.labels.find(l => l.name === labelName);
+
+      if (labelConfig && labelConfig.focus_topics && labelConfig.focus_topics.length > 0) {
+        return `다음 주제를 우선 추출: ${labelConfig.focus_topics.join(', ')}`;
+      }
+      return '모든 주요 아이템 추출';
+    } catch (e) {
+      this.log(`focus_topics 로드 실패: ${e.message}`, 'warn');
+      return '모든 주요 아이템 추출';
     }
   }
 
@@ -695,7 +721,7 @@ ${agentContent}`;
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/gmail-manager',
+          'HTTP-Referer': 'https://github.com/yks-gmail-manager',
           'X-Title': 'Gmail Manager'
         },
         body: JSON.stringify({
