@@ -620,13 +620,14 @@ ${agentContent}`;
    */
   async callSolar3WithRetry(prompt) {
     let lastError;
+    let retryOverrides = {};
 
     for (let i = 0; i < this.retryDelays.length; i++) {
       try {
         // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
         await this.checkRateLimit();
 
-        const response = await this.callSolar3(prompt);
+        const response = await this.callSolar3(prompt, retryOverrides);
 
         // 불완전 JSON 감지 시 재시도
         if (!this.isJsonComplete(response)) {
@@ -649,6 +650,15 @@ ${agentContent}`;
 
         if (isRetryable && hasMoreRetries) {
           const delay = this.retryDelays[i];
+
+          // 빈 응답(추론 토큰만 소진)인 경우 reasoningEffort를 낮춰서 재시도
+          if (error.isEmptyResponse) {
+            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
+            await this.sleep(delay);
+            retryOverrides = { reasoningEffort: 'low' };
+            continue;
+          }
+
           this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length}): ${error.message}`, 'warn');
           await this.sleep(delay);
           continue;
@@ -663,13 +673,16 @@ ${agentContent}`;
 
   /**
    * Solar3 API 호출 (단일)
+   * @param {string} prompt - 프롬프트
+   * @param {object} overrides - 설정 오버라이드 (예: { reasoningEffort: 'low' })
    */
-  async callSolar3(prompt) {
+  async callSolar3(prompt, overrides = {}) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
+    const reasoningEffort = overrides.reasoningEffort || taskConfig.reasoningEffort;
     const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
-    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자, 작업: ${this.currentTaskType}, reasoning: ${taskConfig.reasoningEffort})`, 'debug');
+    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자, 작업: ${this.currentTaskType}, reasoning: ${reasoningEffort})`, 'debug');
 
     // 타임아웃 설정 (5분 - 긴 처리 대비)
     const controller = new AbortController();
@@ -699,7 +712,7 @@ ${agentContent}`;
           ],
           temperature: taskConfig.temperature,
           max_tokens: 100000,
-          reasoning: { effort: taskConfig.reasoningEffort }
+          reasoning: { effort: reasoningEffort }
         })
       });
 
@@ -731,7 +744,9 @@ ${agentContent}`;
 
       if (!content) {
         const reasoning = data.usage?.completion_tokens_details?.reasoning_tokens || 0;
-        throw new Error(`빈 응답 (추론 토큰: ${reasoning}개 사용됨)`);
+        const error = new Error(`빈 응답 (추론 토큰: ${reasoning}개 사용됨)`);
+        error.isEmptyResponse = true;
+        throw error;
       }
 
       return content;
