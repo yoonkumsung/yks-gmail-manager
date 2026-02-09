@@ -131,6 +131,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+          USER_PROFILE: ${{ secrets.USER_PROFILE }}
         run: |
           # .env 파일 생성
           echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
@@ -139,6 +140,11 @@ jobs:
           mkdir -p config/credentials
           echo "$GMAIL_CREDENTIALS" > config/credentials/client_secret.json
           echo "$GMAIL_TOKEN" > config/credentials/token.json
+
+          # 사용자 프로필 저장 (인사이트 개인화용)
+          if [ -n "$USER_PROFILE" ]; then
+            echo "$USER_PROFILE" > config/user_profile.json
+          fi
 
           # 실행 모드 결정
           if [ "${{ github.event_name }}" = "schedule" ]; then
