@@ -421,7 +421,8 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
     skills: [],
     inputs: inputData,
     output: outputPath,
-    taskType: 'insight'
+    taskType: 'insight',
+    skipChunking: true  // 크로스 인사이트는 모든 라벨 데이터 간 연결이 필요하므로 청크 분할 금지
   });
 
   if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {

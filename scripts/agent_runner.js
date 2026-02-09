@@ -170,9 +170,11 @@ class AgentRunner {
         return await this.runSinglePrompt(header, inputData, options);
       }
 
-      // 5. analyze 작업은 전체 컨텍스트가 필요하므로 청크 분할하지 않음
-      if (this.currentTaskType === 'analyze') {
-        this.log(`analyze 작업은 전체 컨텍스트 필요, 단일 처리 (${inputData.length}자)`, 'info');
+      // 5. 전체 컨텍스트가 필요한 작업은 청크 분할하지 않음
+      //    - analyze: 뉴스레터 구조 분석에 전체 본문 필요
+      //    - skipChunking: 크로스 인사이트 등 전체 데이터 간 연결이 필요한 작업
+      if (this.currentTaskType === 'analyze' || options.skipChunking) {
+        this.log(`전체 컨텍스트 필요, 단일 처리 (${inputData.length}자)`, 'info');
         return await this.runSinglePrompt(header, inputData, options);
       }
 
