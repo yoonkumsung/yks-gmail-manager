@@ -246,7 +246,7 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "single-topic",
         "item_count_avg": 5
       },
       "detected_at": "2026-02-03T20:50:44.695Z",
@@ -863,7 +863,151 @@
       },
       "detected_at": "2026-02-07T09:01:01.166Z",
       "skill_generated": true
+    },
+    {
+      "id": "ztop",
+      "sender": "info@ztop.kr",
+      "name": "\"제로투원미디어\" <info@ztop.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_ztop.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 25
+      },
+      "detected_at": "2026-02-09T05:33:38.814Z",
+      "skill_generated": true
+    },
+    {
+      "id": "sensible",
+      "sender": "joo@sensible.kr",
+      "name": "\"센서블박스\" <joo@sensible.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_sensible.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-09T05:33:38.814Z",
+      "skill_generated": true
+    },
+    {
+      "id": "glance",
+      "sender": "sungmin@glance.media",
+      "name": "STARTUP WEEKLY <sungmin@glance.media>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_glance.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 50
+      },
+      "detected_at": "2026-02-09T05:33:38.814Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_modulabs01_gmail_com",
+      "sender": "modulabs01-gmail.com@send.stibee.com",
+      "name": "\"모두레터\" <modulabs01-gmail.com@send.stibee.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_modulabs01_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-09T05:33:39.502Z",
+      "skill_generated": true
+    },
+    {
+      "id": "valueupsys",
+      "sender": "info@valueupsys.com",
+      "name": "\"밸류맵\" <info@valueupsys.com>",
+      "labels": [
+        "투자"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_valueupsys.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 9
+      },
+      "detected_at": "2026-02-09T06:37:03.530Z",
+      "skill_generated": true
+    },
+    {
+      "id": "trendlite_2",
+      "sender": "newsletter@trendlite.news",
+      "name": "\"트렌드라이트(trendlite)\" <newsletter@trendlite.news>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_trendlite_2.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-09T06:48:55.324Z",
+      "skill_generated": true
+    },
+    {
+      "id": "antiegg",
+      "sender": "editor@antiegg.kr",
+      "name": "ANTIEGG <editor@antiegg.kr>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_antiegg.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 15
+      },
+      "detected_at": "2026-02-09T06:54:10.716Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_newwordnewattitude_naver_com",
+      "sender": "newwordnewattitude-naver.com@send.stibee.com",
+      "name": "\"(사)새말새몸짓\" <newwordnewattitude-naver.com@send.stibee.com>",
+      "labels": [
+        "소셜포럼"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_newwordnewattitude_naver_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-09T07:08:36.063Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-08T00:00:30.861Z"
+  "last_scan": "2026-02-09T07:09:53.239Z"
 }
