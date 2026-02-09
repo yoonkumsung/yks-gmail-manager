@@ -129,7 +129,7 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
-          MESSAGE=$(printf "[뉴스레터 정리 시작]\n날짜: %s\n모드: %s" "$TARGET_DATE" "$MODE_KR")
+          MESSAGE=$(printf "안녕하세요, %s 뉴스레터 정리를 시작합니다.\n모드: %s\n완료되면 다시 알려드리겠습니다." "$TARGET_DATE" "$MODE_KR")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
@@ -261,7 +261,7 @@ jobs:
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
-            MESSAGE=$(printf "[뉴스레터 정리 완료]\n날짜: %s\n소요: %d분 %d초\n\n처리된 뉴스레터가 없습니다." "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
+            MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n오늘은 처리할 뉴스레터가 없었습니다.\n소요 시간: %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
               -d text="$MESSAGE"
@@ -276,24 +276,26 @@ jobs:
           HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
           MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
 
-          MESSAGE=$(printf "[뉴스레터 정리 완료]\n날짜: %s\n라벨: %s (%s개)\n소요: %d분 %d초" "$TARGET_DATE" "$LABEL_NAMES" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
+          # 완료 메시지 먼저 전송
+          MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n%s 등 %s개 라벨을 처리했습니다.\n소요 시간: %d분 %d초\n\n아래에 리포트를 보내드립니다." "$TARGET_DATE" "$LABEL_NAMES" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
 
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="$MESSAGE"
+
+          # 파일 전송
           if [ -n "$HTML_FILE" ]; then
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
               -F document=@"${HTML_FILE}" \
-              -F caption="${MESSAGE}"
+              -F caption="HTML 리포트"
+          fi
 
-            if [ -n "$MD_FILE" ]; then
-              curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
-                -F chat_id="${TELEGRAM_CHAT_ID}" \
-                -F document=@"${MD_FILE}" \
-                -F caption="Markdown"
-            fi
-          else
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-              -d chat_id="${TELEGRAM_CHAT_ID}" \
-              -d text="$MESSAGE"
+          if [ -n "$MD_FILE" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F document=@"${MD_FILE}" \
+              -F caption="Markdown 리포트"
           fi
 
       - name: 에러/타임아웃 알림
@@ -329,7 +331,7 @@ jobs:
             STATUS="에러"
           fi
 
-          MESSAGE=$(printf "[뉴스레터 정리 실패]\n날짜: %s\n상태: %s\n소요: %s\n\n로그: %s" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
+          MESSAGE=$(printf "뉴스레터 정리 중 문제가 발생했습니다.\n날짜: %s\n상태: %s\n소요: %s\n\n상세 로그를 확인해주세요.\n%s" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
