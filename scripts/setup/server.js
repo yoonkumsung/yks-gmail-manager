@@ -304,7 +304,7 @@ app.get('/setup', (req, res) => {
 
 // 서버 시작
 function startServer() {
-  app.listen(PORT, () => {
+  app.listen(PORT, 'localhost', () => {
     console.log('\n========================================');
     console.log('   Gmail Manager 설정 마법사');
     console.log('========================================\n');

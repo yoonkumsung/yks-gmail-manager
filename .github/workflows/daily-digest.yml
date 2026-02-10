@@ -152,6 +152,9 @@ jobs:
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
           USER_PROFILE: ${{ secrets.USER_PROFILE }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_CUSTOM_DATE: ${{ github.event.inputs.custom_date }}
+          INPUT_LABELS: ${{ github.event.inputs.labels }}
         run: |
           # .env 파일 생성
           echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
@@ -171,19 +174,15 @@ jobs:
             # 자동 실행
             node scripts/orchestrator.js --mode schedule
           else
-            # 수동 실행
-            MODE="${{ github.event.inputs.mode }}"
-            CUSTOM_DATE="${{ github.event.inputs.custom_date }}"
-            LABELS="${{ github.event.inputs.labels }}"
+            # 수동 실행 (env로 전달받아 쉘 인젝션 방지)
+            ARGS="--mode $INPUT_MODE"
 
-            ARGS="--mode $MODE"
-
-            if [ -n "$CUSTOM_DATE" ]; then
-              ARGS="$ARGS --date $CUSTOM_DATE"
+            if [ -n "$INPUT_CUSTOM_DATE" ]; then
+              ARGS="$ARGS --date $INPUT_CUSTOM_DATE"
             fi
 
-            if [ -n "$LABELS" ]; then
-              ARGS="$ARGS --labels $LABELS"
+            if [ -n "$INPUT_LABELS" ]; then
+              ARGS="$ARGS --labels $INPUT_LABELS"
             fi
 
             node scripts/orchestrator.js $ARGS
