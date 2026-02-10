@@ -21,7 +21,11 @@ class ProgressManager {
 
   load() {
     if (fs.existsSync(this.progressPath)) {
-      return JSON.parse(fs.readFileSync(this.progressPath, 'utf8'));
+      try {
+        return JSON.parse(fs.readFileSync(this.progressPath, 'utf8'));
+      } catch (e) {
+        console.warn(`  progress.json 파싱 실패, 초기화: ${e.message}`);
+      }
     }
     return { labels: {}, started_at: new Date().toISOString() };
   }
@@ -99,7 +103,11 @@ class FailedBatchManager {
 
   load() {
     if (fs.existsSync(this.failedBatchesPath)) {
-      return JSON.parse(fs.readFileSync(this.failedBatchesPath, 'utf8'));
+      try {
+        return JSON.parse(fs.readFileSync(this.failedBatchesPath, 'utf8'));
+      } catch (e) {
+        console.warn(`  failed_batches.json 파싱 실패, 초기화: ${e.message}`);
+      }
     }
     return { batches: [] };
   }
@@ -227,7 +235,11 @@ const CONFIG = {
 
   mergeBatchSize: 15,     // 병합 배치 크기
   insightBatchSize: 10,   // 인사이트 배치 크기 기본값
-  insightBatchFallback: [10, 8, 6, 4, 2, 1]  // 실패 시 축소 순서
+  insightBatchFallback: [10, 8, 6, 4, 2, 1],  // 실패 시 축소 순서
+
+  // 시간 예산 (ms)
+  crossInsightBudgetMs: 15 * 60 * 1000,  // 크로스 인사이트 전체: 15분
+  insightBudgetMs: 45 * 60 * 1000         // 인사이트 전체: 45분
 };
 
 /**
@@ -310,6 +322,83 @@ function findMergeCandidates(items) {
 }
 
 /**
+ * 클러스터링 함수 - 키워드 유사도 기반 아이템 그룹화 (API 호출 없음)
+ * findMergeCandidates()의 Jaccard 유사도 로직 재사용 + Union-Find 알고리즘
+ * @param {Array} items - 아이템 배열 (title, keywords 필수)
+ * @param {number} threshold - Jaccard 유사도 임계값 (기본 0.2)
+ * @returns {Array} 클러스터 배열 [{representative_title, keywords, items_count, item_titles}]
+ */
+function clusterItemsByKeyword(items, threshold = 0.2) {
+  if (!items || items.length === 0) return [];
+
+  // Union-Find
+  const parent = items.map((_, i) => i);
+  const rank = items.map(() => 0);
+
+  function find(x) {
+    if (parent[x] !== x) parent[x] = find(parent[x]);
+    return parent[x];
+  }
+
+  function unite(a, b) {
+    const ra = find(a), rb = find(b);
+    if (ra === rb) return;
+    if (rank[ra] < rank[rb]) parent[ra] = rb;
+    else if (rank[ra] > rank[rb]) parent[rb] = ra;
+    else { parent[rb] = ra; rank[ra]++; }
+  }
+
+  // Jaccard 유사도 기반 Union
+  for (let i = 0; i < items.length; i++) {
+    const kwA = new Set((items[i].keywords || []).map(k => k.toLowerCase()));
+    if (kwA.size === 0) continue;
+
+    for (let j = i + 1; j < items.length; j++) {
+      const kwB = new Set((items[j].keywords || []).map(k => k.toLowerCase()));
+      if (kwB.size === 0) continue;
+
+      const intersection = [...kwA].filter(x => kwB.has(x)).length;
+      const union = new Set([...kwA, ...kwB]).size;
+      const jaccard = union > 0 ? intersection / union : 0;
+
+      if (jaccard >= threshold) {
+        unite(i, j);
+      }
+    }
+  }
+
+  // 클러스터 수집
+  const clusterMap = new Map();
+  for (let i = 0; i < items.length; i++) {
+    const root = find(i);
+    if (!clusterMap.has(root)) clusterMap.set(root, []);
+    clusterMap.get(root).push(i);
+  }
+
+  // 클러스터 출력 구성
+  const clusters = [];
+  for (const [root, memberIdxs] of clusterMap) {
+    const allKeywords = new Set();
+    const itemTitles = [];
+
+    for (const idx of memberIdxs) {
+      const item = items[idx];
+      itemTitles.push(item.title || '(제목 없음)');
+      (item.keywords || []).forEach(k => allKeywords.add(k.toLowerCase()));
+    }
+
+    clusters.push({
+      representative_title: items[root].title || '(제목 없음)',
+      keywords: [...allKeywords],
+      items_count: memberIdxs.length,
+      item_titles: itemTitles
+    });
+  }
+
+  return clusters;
+}
+
+/**
  * 출력 품질 검증 - 코드 기반 (API 호출 없음)
  * 요약 길이, 키워드, 인사이트 품질, 금지 표현 등 검사
  */
@@ -364,8 +453,115 @@ function validateOutputQuality(items, labelName) {
 }
 
 /**
- * 크로스 라벨 인사이트 생성
- * 모든 라벨의 merged 결과를 모아 라벨 간 연결 인사이트와 메가트렌드를 생성
+ * Split 폴백 - Reduce 단계 실패 시 3개 하위 태스크로 분리 호출
+ * mega_trends / cross_connections / ceo_actions 각각 독립 호출 후 결합
+ */
+async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunner, crossAgentPath, outputPath) {
+  console.log('  Split 폴백: 3개 하위 태스크로 분리 호출...');
+
+  const subTasks = [
+    { key: 'mega_trends', instruction: 'mega_trends(메가트렌드) 부분만 생성하세요. cross_connections와 ceo_actions는 빈 배열로 출력하세요.' },
+    { key: 'cross_connections', instruction: 'cross_connections(크로스 연결) 부분만 생성하세요. mega_trends와 ceo_actions는 빈 배열로 출력하세요.' },
+    { key: 'ceo_actions', instruction: 'ceo_actions(CEO 액션) 부분만 생성하세요. mega_trends와 cross_connections는 빈 배열로 출력하세요.' }
+  ];
+
+  const splitBudgetMs = 5 * 60 * 1000;  // 각 하위 태스크 5분
+
+  const results = await Promise.all(
+    subTasks.map(async (task) => {
+      try {
+        const input = {
+          date: dateFormatted,
+          labels: labelSummaries,
+          _focus: task.instruction
+        };
+
+        const result = await fastRunner.runAgent(crossAgentPath, {
+          skills: [],
+          inputs: input,
+          taskType: 'crossInsight',
+          skipChunking: true,
+          maxTimeMs: splitBudgetMs
+        });
+
+        if (result && result[task.key]) {
+          console.log(`    Split ${task.key}: 성공 (${result[task.key].length}개)`);
+          return { key: task.key, data: result[task.key] };
+        }
+        console.warn(`    Split ${task.key}: 결과 없음`);
+        return { key: task.key, data: [] };
+      } catch (err) {
+        console.warn(`    Split ${task.key}: 실패 (${err.message})`);
+        return { key: task.key, data: [] };
+      }
+    })
+  );
+
+  // 결합
+  const combined = {
+    mega_trends: [],
+    cross_connections: [],
+    ceo_actions: []
+  };
+
+  for (const r of results) {
+    combined[r.key] = r.data;
+  }
+
+  // 하나라도 결과가 있으면 반환
+  if (combined.mega_trends.length > 0 || combined.cross_connections.length > 0 || combined.ceo_actions.length > 0) {
+    // 결과 저장
+    if (outputPath) {
+      const dir = path.dirname(outputPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(outputPath, JSON.stringify(combined, null, 2), 'utf8');
+    }
+    console.log(`  Split 폴백 완료: 메가트렌드 ${combined.mega_trends.length}개, 크로스 연결 ${combined.cross_connections.length}개, CEO 액션 ${combined.ceo_actions.length}개`);
+    return combined;
+  }
+
+  console.warn('  Split 폴백도 결과 없음');
+  return null;
+}
+
+/**
+ * 코드 기반 라벨 요약 폴백 (API 호출 없음)
+ * Map 단계 LLM 호출 실패 시 키워드 빈도 기반으로 요약 생성
+ */
+function codeFallbackLabelSummary(label, items) {
+  // 키워드 빈도 계산
+  const kwFreq = new Map();
+  for (const item of items) {
+    for (const kw of (item.keywords || [])) {
+      const lower = kw.toLowerCase();
+      kwFreq.set(lower, (kwFreq.get(lower) || 0) + 1);
+    }
+  }
+  const topKeywords = [...kwFreq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([kw]) => kw);
+
+  // 클러스터링으로 테마 생성
+  const clusters = clusterItemsByKeyword(items, 0.2);
+  const themes = clusters.slice(0, 5).map(cluster => ({
+    topic: cluster.keywords.slice(0, 3).join(' / '),
+    description: `${cluster.items_count}개 관련 뉴스. 주요 키워드: ${cluster.keywords.slice(0, 5).join(', ')}`,
+    representative_items: cluster.item_titles.slice(0, 3)
+  }));
+
+  return {
+    label,
+    themes,
+    keywords: topKeywords,
+    business_impact: `${label} 라벨에서 ${items.length}개 뉴스 중 ${themes.length}개 주제 식별`
+  };
+}
+
+/**
+ * 크로스 라벨 인사이트 생성 (Map-Reduce 방식)
+ * Map: 각 라벨 → 클러스터링 → 라벨요약 에이전트 (병렬 3개)
+ * Reduce: 라벨 요약들 → 크로스인사이트 에이전트
  */
 async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
   const mergedFiles = fs.readdirSync(mergedDir)
@@ -376,66 +572,120 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
     return null;
   }
 
-  // 각 라벨에서 아이템 수집 (title, summary, keywords만 전달하여 토큰 절약)
-  const labelsData = [];
+  // 각 라벨에서 아이템 수집
+  const labelsWithItems = [];
   let totalItems = 0;
 
   for (const file of mergedFiles) {
-    const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
-    const items = (data.items || []).map(item => ({
-      title: item.title,
-      summary: (item.summary || '').substring(0, 200),  // 토큰 절약: 200자로 제한
-      keywords: item.keywords || []
-    }));
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
+      const items = (data.items || []).map(item => ({
+        title: item.title,
+        keywords: item.keywords || []
+      }));
 
-    if (items.length > 0) {
-      labelsData.push({
-        label: data.label,
-        items: items
-      });
-      totalItems += items.length;
+      if (items.length > 0) {
+        labelsWithItems.push({ label: data.label, items });
+        totalItems += items.length;
+      }
+    } catch (e) {
+      console.warn(`  ${file} 파싱 실패, 건너뜀: ${e.message}`);
     }
   }
 
-  if (labelsData.length < 2 || totalItems < 3) {
+  if (labelsWithItems.length < 2 || totalItems < 3) {
     console.log('  데이터 부족 (라벨 2개 이상, 아이템 3개 이상 필요)');
     return null;
   }
 
-  console.log(`  ${labelsData.length}개 라벨, ${totalItems}개 아이템으로 크로스 인사이트 생성 중...`);
+  console.log(`  [Stage 1/2] 라벨별 요약 생성 중... (${labelsWithItems.length}개 라벨, ${totalItems}개 아이템)`);
 
-  // AgentRunner로 크로스 인사이트 에이전트 호출
+  // === Map 단계: 각 라벨 → 클러스터링 → 라벨요약 에이전트 (병렬) ===
   const logDir = path.join(tempDir, 'logs');
   const { fastRunner } = getRunners(logDir);
-  const crossAgentPath = path.join(__dirname, '..', 'agents', '크로스인사이트.md');
+  const summaryAgentPath = path.join(__dirname, '..', 'agents', '라벨요약.md');
+  const limit = createLimiter(CONFIG.concurrencyLimit);
 
+  const labelSummaries = await Promise.all(
+    labelsWithItems.map(({ label, items }) =>
+      limit(async () => {
+        try {
+          // 클러스터링으로 전처리
+          const clusters = clusterItemsByKeyword(items, 0.2);
+          console.log(`    ${label}: ${items.length}개 아이템 → ${clusters.length}개 클러스터`);
+
+          // 라벨요약 에이전트 호출
+          const result = await fastRunner.runAgent(summaryAgentPath, {
+            skills: [],
+            inputs: { label, items },
+            taskType: 'summarize',
+            skipChunking: true,
+            maxTimeMs: Math.floor(CONFIG.crossInsightBudgetMs / 2)  // Map 단계에 예산의 절반
+          });
+
+          if (result && result.themes && result.themes.length > 0) {
+            console.log(`    ${label}: 요약 성공 (${result.themes.length}개 주제)`);
+            return result;
+          }
+
+          // 결과 부족 시 코드 폴백
+          console.log(`    ${label}: LLM 결과 부족, 코드 폴백 사용`);
+          return codeFallbackLabelSummary(label, items);
+        } catch (error) {
+          console.warn(`    ${label}: 요약 실패 (${error.message}), 코드 폴백 사용`);
+          return codeFallbackLabelSummary(label, items);
+        }
+      })
+    )
+  );
+
+  // 유효한 요약만 필터
+  const validSummaries = labelSummaries.filter(s => s && s.themes && s.themes.length > 0);
+
+  if (validSummaries.length < 2) {
+    console.log('  유효한 라벨 요약이 2개 미만, 크로스 인사이트 건너뜀');
+    return null;
+  }
+
+  // === Reduce 단계: 라벨 요약들 → 크로스인사이트 에이전트 ===
+  console.log(`  [Stage 2/2] 크로스 인사이트 종합 중... (${validSummaries.length}개 라벨 요약)`);
+
+  const crossAgentPath = path.join(__dirname, '..', 'agents', '크로스인사이트.md');
   const dateFormatted = formatKST(timeRange.end).split(' ')[0];
-  const inputData = {
+
+  const reduceInput = {
     date: dateFormatted,
-    labels: labelsData
+    labels: validSummaries
   };
 
   const outputPath = path.join(mergedDir, '_cross_insight_raw.json');
 
-  const result = await fastRunner.runAgent(crossAgentPath, {
-    skills: [],
-    inputs: inputData,
-    output: outputPath,
-    taskType: 'insight',
-    skipChunking: true  // 크로스 인사이트는 모든 라벨 데이터 간 연결이 필요하므로 청크 분할 금지
-  });
+  try {
+    const result = await fastRunner.runAgent(crossAgentPath, {
+      skills: [],
+      inputs: reduceInput,
+      output: outputPath,
+      taskType: 'crossInsight',
+      skipChunking: true,
+      maxTimeMs: Math.floor(CONFIG.crossInsightBudgetMs / 2)  // Reduce 단계에 예산의 절반
+    });
 
-  if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {
-    return result;
-  }
-
-  // 파일에서 읽기 시도
-  if (fs.existsSync(outputPath)) {
-    try {
-      return JSON.parse(fs.readFileSync(outputPath, 'utf8'));
-    } catch (e) {
-      console.error('  크로스 인사이트 파싱 실패:', e.message);
+    if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {
+      return result;
     }
+
+    // 파일에서 읽기 시도
+    if (fs.existsSync(outputPath)) {
+      try {
+        return JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+      } catch (e) {
+        console.error('  크로스 인사이트 파싱 실패:', e.message);
+      }
+    }
+  } catch (reduceError) {
+    console.warn(`  Reduce 단계 실패: ${reduceError.message}, Split 폴백 시도...`);
+    // Split 폴백 시도
+    return await generateCrossInsightSplit(validSummaries, dateFormatted, fastRunner, crossAgentPath, outputPath);
   }
 
   return null;
@@ -909,9 +1159,13 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   const allItems = [];
   const itemFiles = fs.readdirSync(itemsDir).filter(f => f.startsWith('items_'));
   for (const itemFile of itemFiles) {
-    const data = JSON.parse(fs.readFileSync(path.join(itemsDir, itemFile), 'utf8'));
-    if (data.items) {
-      allItems.push(...data.items);
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(itemsDir, itemFile), 'utf8'));
+      if (data.items) {
+        allItems.push(...data.items);
+      }
+    } catch (e) {
+      console.warn(`    ${itemFile} 파싱 실패, 건너뜀: ${e.message}`);
     }
   }
 
@@ -1030,7 +1284,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     progressManager.setStepStatus(label.name, 'insight', 'in_progress');
 
     if (fs.existsSync(insightAgentPath) && merged.items.length > 0) {
-      console.log('  인사이트 생성 중 (LLM 배치 처리)...');
+      console.log('  인사이트 생성 중 (LLM 배치 병렬 처리)...');
       try {
         // 사용자 프로필 로드
         let profile = null;
@@ -1038,93 +1292,94 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
         }
 
+        // 아이템 복잡도 기반 동적 배치 크기 계산
+        const batchSize = calculateOptimalBatchSize(merged.items);
+        const insightStartTime = Date.now();
+
+        // 사전 배치 분할
+        const batches = [];
+        for (let i = 0; i < merged.items.length; i += batchSize) {
+          batches.push({
+            index: batches.length,
+            items: merged.items.slice(i, i + batchSize),
+            startIdx: i
+          });
+        }
+
+        console.log(`  배치 병렬 처리 시작 (${batches.length}개 배치, 각 ${batchSize}개씩, 동시 ${CONFIG.concurrencyLimit}개)...`);
+
+        // 병렬 배치 처리 (createLimiter로 동시 실행 제한)
+        const insightLimit = createLimiter(CONFIG.concurrencyLimit);
+
+        const batchResults = await Promise.all(
+          batches.map(batch =>
+            insightLimit(async () => {
+              // 시간 예산 체크
+              if (CONFIG.insightBudgetMs > 0 && Date.now() - insightStartTime >= CONFIG.insightBudgetMs) {
+                console.warn(`    배치 ${batch.index + 1}: 시간 예산 초과, 원본 유지`);
+                return { items: batch.items, success: false, fallback: true };
+              }
+
+              // fallback 크기 순서대로 시도 (배치 자체 크기를 첫 번째로)
+              const fallbackSizes = [
+                batch.items.length,
+                ...CONFIG.insightBatchFallback.filter(s => s < batch.items.length)
+              ];
+
+              for (const trySize of fallbackSizes) {
+                // trySize가 현재 배치보다 작으면, 배치 내 앞쪽만 시도 (나머지는 원본 유지)
+                const tryItems = batch.items.slice(0, trySize);
+                const remainItems = batch.items.slice(trySize);
+
+                try {
+                  const batchResult = await fastRunner.runAgent(insightAgentPath, {
+                    inputs: {
+                      profile: profile?.user || null,
+                      label: label.name,
+                      items: tryItems
+                    },
+                    schema: { required: ['items'] },
+                    taskType: 'insight',
+                    maxTimeMs: Math.min(10 * 60 * 1000, CONFIG.insightBudgetMs)  // 배치당 최대 10분
+                  });
+
+                  if (batchResult && batchResult.items && batchResult.items.length > 0) {
+                    // 원본의 message_id, source_email 유지
+                    const enrichedItems = batchResult.items.map((resultItem, idx) => {
+                      const originalItem = tryItems.find(o => o.title === resultItem.title) || tryItems[idx];
+                      return {
+                        ...resultItem,
+                        message_id: resultItem.message_id || originalItem?.message_id,
+                        source_email: resultItem.source_email || originalItem?.source_email
+                      };
+                    });
+                    console.log(`    배치 ${batch.index + 1}/${batches.length}: 성공 (${enrichedItems.length}개 인사이트, 크기 ${trySize})`);
+                    return { items: [...enrichedItems, ...remainItems], success: true };
+                  }
+
+                  // 빈 응답 - 더 작은 크기로 재시도
+                  console.warn(`    배치 ${batch.index + 1}: 빈 응답 (크기 ${trySize}), 축소 시도...`);
+                } catch (err) {
+                  console.warn(`    배치 ${batch.index + 1}: 오류 (크기 ${trySize}): ${err.message}`);
+                }
+              }
+
+              // 모든 크기에서 실패 - 원본 유지
+              console.warn(`    배치 ${batch.index + 1}: 모든 크기 실패, 원본 유지`);
+              failedBatchManager.recordFailure(label.name, 'insight', batch.index, new Error('All sizes failed'));
+              return { items: batch.items, success: false };
+            })
+          )
+        );
+
+        // 결과 수집 (배치 순서 유지)
         const itemsWithInsights = [];
         let insightSuccessCount = 0;
-        // 아이템 복잡도 기반 동적 배치 크기 계산
-        let currentBatchSize = calculateOptimalBatchSize(merged.items);
-        let consecutiveSuccesses = 0;  // 연속 성공 카운터
 
-        console.log(`  배치 인사이트 시작 (복잡도 기반 초기 ${currentBatchSize}개씩)...`);
-
-        let i = 0;
-        while (i < merged.items.length) {
-          const batch = merged.items.slice(i, i + currentBatchSize);
-          const processedCount = itemsWithInsights.length;
-
-          console.log(`    처리 중: ${processedCount}/${merged.items.length} (현재 배치 ${batch.length}개, 크기 ${currentBatchSize})...`);
-
-          try {
-            const batchResult = await fastRunner.runAgent(insightAgentPath, {
-              inputs: {
-                profile: profile?.user || null,
-                label: label.name,
-                items: batch
-              },
-              schema: {
-                required: ['items']
-              },
-              taskType: 'insight'
-            });
-
-            if (batchResult && batchResult.items && batchResult.items.length > 0) {
-              // 원본의 message_id, source_email 유지 (인사이트 에이전트가 누락할 수 있음)
-              const enrichedItems = batchResult.items.map((resultItem, idx) => {
-                const originalItem = batch[idx];
-                return {
-                  ...resultItem,
-                  message_id: resultItem.message_id || originalItem?.message_id,
-                  source_email: resultItem.source_email || originalItem?.source_email
-                };
-              });
-              itemsWithInsights.push(...enrichedItems);
-              insightSuccessCount += enrichedItems.length;
-              console.log(`      → 성공 (${enrichedItems.length}개 인사이트 추가)`);
-              i += currentBatchSize;  // 다음 배치로 이동
-              consecutiveSuccesses++;
-
-              // 연속 2회 성공 시에만 배치 크기 복원 (안정성 확보)
-              const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
-              if (fallbackIdx > 0 && consecutiveSuccesses >= 2) {
-                currentBatchSize = CONFIG.insightBatchFallback[fallbackIdx - 1];
-                console.log(`      → 연속 성공, 배치 크기 복원: ${currentBatchSize}`);
-                consecutiveSuccesses = 0;  // 리셋
-              }
-            } else {
-              // 빈 응답 - 배치 크기 축소 시도
-              consecutiveSuccesses = 0;  // 리셋
-              const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
-              const nextIdx = fallbackIdx + 1;
-
-              if (nextIdx < CONFIG.insightBatchFallback.length) {
-                currentBatchSize = CONFIG.insightBatchFallback[nextIdx];
-                console.warn(`      → 빈 응답, 배치 크기 축소: ${currentBatchSize}`);
-                // i는 그대로 (같은 위치에서 더 작은 배치로 재시도)
-              } else {
-                // 최소 크기에서도 실패 - 원본 유지하고 다음으로
-                console.warn(`      → 최소 배치에서도 실패, 원본 유지`);
-                itemsWithInsights.push(...batch);
-                failedBatchManager.recordFailure(label.name, 'insight', i, new Error('Empty result at min batch'));
-                i += currentBatchSize;
-              }
-            }
-          } catch (batchError) {
-            // 에러 발생 - 배치 크기 축소 시도
-            consecutiveSuccesses = 0;  // 리셋
-            const isTokenError = batchError.message?.includes('토큰') || batchError.message?.includes('빈 응답');
-            const fallbackIdx = CONFIG.insightBatchFallback.indexOf(currentBatchSize);
-            const nextIdx = fallbackIdx + 1;
-
-            if (isTokenError && nextIdx < CONFIG.insightBatchFallback.length) {
-              currentBatchSize = CONFIG.insightBatchFallback[nextIdx];
-              console.warn(`      → 오류 (${batchError.message}), 배치 크기 축소: ${currentBatchSize}`);
-              // i는 그대로 (같은 위치에서 더 작은 배치로 재시도)
-            } else {
-              // 축소 불가 또는 다른 종류의 에러 - 원본 유지하고 다음으로
-              console.warn(`      → 오류: ${batchError.message}, 원본 유지`);
-              itemsWithInsights.push(...batch);
-              failedBatchManager.recordFailure(label.name, 'insight', i, batchError);
-              i += currentBatchSize;
-            }
+        for (const result of batchResults) {
+          itemsWithInsights.push(...result.items);
+          if (result.success) {
+            insightSuccessCount += result.items.length;
           }
         }
 
@@ -1512,6 +1767,9 @@ function calculateTimeRange(mode, customDate) {
     case 'custom':
       // 특정 날짜 (schedule과 동일한 로직: 전날 10:01 ~ 당일 10:00)
       // 예: 2월 4일 입력 → 2월 3일 10:01 ~ 2월 4일 10:00
+      if (!customDate || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)) {
+        throw new Error(`잘못된 날짜 형식: '${customDate}' (YYYY-MM-DD 형식 필요, 예: --date 2026-02-10)`);
+      }
       const [year, month, day] = customDate.split('-').map(Number);
       const prevDay = new Date(year, month - 1, day - 1);  // JS Date는 자동으로 월 경계 처리
       const prevDateStr = `${prevDay.getFullYear()}-${String(prevDay.getMonth() + 1).padStart(2, '0')}-${String(prevDay.getDate()).padStart(2, '0')}`;

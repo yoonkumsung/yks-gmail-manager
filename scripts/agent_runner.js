@@ -112,6 +112,18 @@ class AgentRunner {
         reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 중복 아이템을 병합하고 JSON으로 출력하세요.'
       },
+      summarize: {
+        systemPrompt: `당신은 뉴스 아이템을 주제별로 요약하는 전문가입니다.
+
+[핵심 임무] 라벨 내 뉴스 아이템들을 주제(theme)별로 분류하고 간결하게 요약합니다.
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
+        temperature: 0.2,
+        reasoningEffort: 'low',
+        tailInstruction: '위 지시사항에 따라 뉴스 아이템을 주제별로 분류/요약하고 JSON으로 출력하세요.'
+      },
       insight: {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
@@ -128,6 +140,21 @@ class AgentRunner {
         temperature: 0.3,
         reasoningEffort: 'medium',
         tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
+      },
+      crossInsight: {
+        systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
+
+[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, CEO 액션을 도출합니다.
+
+[출력 규칙]
+- 유효한 JSON만 출력 ({로 시작, }로 끝남)
+- mega_trends, cross_connections, ceo_actions 3개 필드 필수
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
+
+[금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
+        temperature: 0.3,
+        reasoningEffort: 'medium',
+        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, CEO 액션을 생성하고 JSON으로 출력하세요.'
       }
     };
     return configs[taskType] || configs.extract;
@@ -209,8 +236,8 @@ class AgentRunner {
         // 프롬프트 구성
         const prompt = this.buildFullPrompt(header, currentInput);
 
-        // API 호출
-        const response = await this.callSolar3WithRetry(prompt);
+        // API 호출 (시간 예산 전달)
+        const response = await this.callSolar3WithRetry(prompt, options.maxTimeMs || 0);
 
         // 응답 검증
         const validated = this.validateResponse(response, options.schema);
@@ -642,26 +669,58 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * Solar3 API 호출 (재시도 포함)
+   * Solar3 API 호출 (재시도 포함, 시간 예산 + 불완전 JSON 복구)
+   * @param {string} prompt - 프롬프트
+   * @param {number} maxTimeMs - 시간 예산 (ms). 0이면 무제한
    */
-  async callSolar3WithRetry(prompt) {
+  async callSolar3WithRetry(prompt, maxTimeMs = 0) {
     let lastError;
     let retryOverrides = {};
+    let bestIncompleteResponse = null;
+    const startTime = Date.now();
+    const requiredFields = this.getRequiredFieldsForTask(this.currentTaskType);
 
     for (let i = 0; i < this.retryDelays.length; i++) {
+      // 시간 예산 체크
+      if (maxTimeMs > 0 && Date.now() - startTime >= maxTimeMs) {
+        this.log(`시간 예산 초과 (${Math.round(maxTimeMs/1000)}초), 복구 시도...`, 'warn');
+        const recovered = this.tryRecoverIncompleteJson(bestIncompleteResponse, requiredFields);
+        if (recovered) return JSON.stringify(recovered);
+        throw new Error(`시간 예산 초과 (${Math.round(maxTimeMs/1000)}초), 복구 실패`);
+      }
+
       try {
         // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
         await this.checkRateLimit();
 
         const response = await this.callSolar3(prompt, retryOverrides);
 
-        // 불완전 JSON 감지 시 재시도
+        // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
+          // bestIncompleteResponse 갱신 (가장 긴 응답 저장)
+          if (!bestIncompleteResponse || response.length > bestIncompleteResponse.length) {
+            bestIncompleteResponse = response;
+          }
+
+          // 복구 시도: repairJson → parse → 필수 필드 체크
+          const recovered = this.tryRecoverIncompleteJson(response, requiredFields);
+          if (recovered) {
+            this.log(`불완전 JSON 복구 성공`, 'info');
+            return JSON.stringify(recovered);
+          }
+
           if (i < this.retryDelays.length - 1) {
             const delay = this.retryDelays[i];
-            this.log(`불완전 JSON 응답, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
+            this.log(`불완전 JSON 응답, 복구 실패, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
             await this.sleep(delay);
             continue;
+          }
+
+          // 마지막 재시도: bestIncompleteResponse에서 최후 복구 시도
+          const lastRecover = this.tryRecoverIncompleteJson(bestIncompleteResponse, requiredFields);
+          if (lastRecover) {
+            this.log(`최종 불완전 JSON 복구 성공 (bestIncompleteResponse)`, 'info');
+            return JSON.stringify(lastRecover);
           }
           throw new Error('불완전한 JSON 응답 (토큰 끊김)');
         }
@@ -695,6 +754,47 @@ ${agentContent}`;
     }
 
     throw lastError || new Error('알 수 없는 오류');
+  }
+
+  /**
+   * 불완전 JSON 복구 시도
+   * repairJson → JSON.parse → 필수 필드 확인 → 성공 시 파싱 결과 반환
+   */
+  tryRecoverIncompleteJson(response, requiredFields) {
+    if (!response || typeof response !== 'string') return null;
+
+    try {
+      const jsonStr = this.extractFirstJson(response);
+      if (!jsonStr) return null;
+
+      const repaired = this.repairJson(jsonStr);
+      const parsed = JSON.parse(repaired);
+
+      // 필수 필드 확인
+      if (requiredFields && requiredFields.length > 0) {
+        const hasAllRequired = requiredFields.every(field => field in parsed);
+        if (!hasAllRequired) return null;
+      }
+
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * 태스크별 필수 필드 매핑
+   */
+  getRequiredFieldsForTask(taskType) {
+    const fieldMap = {
+      extract: ['items'],
+      analyze: ['items'],
+      merge: ['items'],
+      insight: ['items'],
+      summarize: ['label', 'themes'],
+      crossInsight: ['mega_trends', 'cross_connections', 'ceo_actions']
+    };
+    return fieldMap[taskType] || [];
   }
 
   /**
@@ -984,24 +1084,32 @@ ${agentContent}`;
       }
     );
 
-    // 5. 줄바꿈이 포함된 문자열 값 처리 (이스케이프)
-    repaired = repaired.replace(/"([^"]*)\n([^"]*)"/g, (match, p1, p2) => {
-      return `"${p1}\\n${p2}"`;
+    // 5. 문자열 값 내 제어 문자 이스케이프
+    repaired = repaired.replace(/"[^"]*"/g, (match) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     });
 
-    // 6. 불완전한 JSON 닫기 시도
-    const openBraces = (repaired.match(/{/g) || []).length;
-    const closeBraces = (repaired.match(/}/g) || []).length;
-    const openBrackets = (repaired.match(/\[/g) || []).length;
-    const closeBrackets = (repaired.match(/\]/g) || []).length;
+    // 6. 불완전한 JSON 닫기 시도 (문자열 내부 무시)
+    let braceCount = 0, bracketCount = 0, inStr = false, esc = false;
+    for (let i = 0; i < repaired.length; i++) {
+      const c = repaired[i];
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { esc = true; continue; }
+      if (c === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (c === '{') braceCount++;
+      else if (c === '}') braceCount--;
+      else if (c === '[') bracketCount++;
+      else if (c === ']') bracketCount--;
+    }
 
     // 부족한 닫는 괄호 추가
-    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    for (let i = 0; i < bracketCount; i++) {
       repaired = repaired.trimEnd();
       if (repaired.endsWith(',')) repaired = repaired.slice(0, -1);
       repaired += ']';
     }
-    for (let i = 0; i < openBraces - closeBraces; i++) {
+    for (let i = 0; i < braceCount; i++) {
       repaired = repaired.trimEnd();
       if (repaired.endsWith(',')) repaired = repaired.slice(0, -1);
       repaired += '}';
