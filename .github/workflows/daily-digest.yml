@@ -1,9 +1,9 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 10시 KST 목표 (GitHub Actions 지연 감안하여 09:00 KST = 00:00 UTC 설정)
+  # 매일 오전 10시 KST 목표 (GitHub Actions 지연 감안하여 08:30 KST = 23:30 UTC 설정)
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '30 23 * * *'
 
   # 수동 실행 버튼
   workflow_dispatch:
