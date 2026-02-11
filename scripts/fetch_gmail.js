@@ -102,10 +102,10 @@ class GmailFetcher {
   async listMessages(options) {
     const { label, subLabels, dateStart, dateEnd, maxResults = 100 } = options;
 
-    // 라벨 쿼리 생성
-    const labelParts = [`label:${label}`];
+    // 라벨 쿼리 생성 (Gmail 검색에서 공백은 하이픈으로 치환 필요)
+    const labelParts = [`label:${label.replace(/ /g, '-')}`];
     if (subLabels && subLabels.length > 0) {
-      subLabels.forEach(sub => labelParts.push(`label:${sub.trim()}`));
+      subLabels.forEach(sub => labelParts.push(`label:${sub.trim().replace(/ /g, '-')}`));
     }
     const labelQuery = `(${labelParts.join(' OR ')})`;
     const query = `${labelQuery} after:${dateStart} before:${dateEnd}`;
