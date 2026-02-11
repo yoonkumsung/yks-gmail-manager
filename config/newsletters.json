@@ -102,11 +102,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 12
       },
       "detected_at": "2026-02-03T20:42:50.876Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "outstanding",
@@ -1061,7 +1061,151 @@
       },
       "detected_at": "2026-02-11T00:21:54.577Z",
       "skill_generated": true
+    },
+    {
+      "id": "kdi",
+      "sender": "newsletter@kdi.re.kr",
+      "name": "\"KDI 한국개발연구원\" <newsletter@kdi.re.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kdi.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-11T09:34:28.635Z",
+      "skill_generated": true
+    },
+    {
+      "id": "kif",
+      "sender": "sender@kif.re.kr",
+      "name": "\"한국금융연구원\" <sender@kif.re.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kif.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-11T09:34:28.635Z",
+      "skill_generated": true
+    },
+    {
+      "id": "mydailybyte",
+      "sender": "byteteam365@mydailybyte.com",
+      "name": "COIN_BYTE <byteteam365@mydailybyte.com>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 2,
+      "skill_file": "skills/newsletters/SKILL_mydailybyte.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-02-11T09:34:28.635Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_dongahero2020_gmail_com",
+      "sender": "dongahero2020-gmail.com@send.stibee.com",
+      "name": "\"딥다이브\" <dongahero2020-gmail.com@send.stibee.com>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_dongahero2020_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-11T09:34:28.635Z",
+      "skill_generated": true
+    },
+    {
+      "id": "mk_dig",
+      "sender": "dig@mk.co.kr",
+      "name": "\"디그(dig)\" <dig@mk.co.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_mk_dig.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-11T09:34:28.635Z",
+      "skill_generated": true
+    },
+    {
+      "id": "nanet",
+      "sender": "nalhome@nanet.go.kr",
+      "name": "\"국회도서관\" <nalhome@nanet.go.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_nanet.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-11T10:55:33.314Z",
+      "skill_generated": true
+    },
+    {
+      "id": "minumsa",
+      "sender": "1p@minumsa.com",
+      "name": "\"한편\" <1p@minumsa.com>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_minumsa.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-11T10:55:33.314Z",
+      "skill_generated": true
+    },
+    {
+      "id": "seoul",
+      "sender": "inews11@seoul.go.kr",
+      "name": "\"서울시청\" <inews11@seoul.go.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_seoul.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 7
+      },
+      "detected_at": "2026-02-11T10:55:33.314Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-11T00:35:12.371Z"
+  "last_scan": "2026-02-11T11:05:17.255Z"
 }
