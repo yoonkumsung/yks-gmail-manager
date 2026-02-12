@@ -768,11 +768,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 2
       },
       "detected_at": "2026-02-05T20:33:33.305Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "substack_2",
@@ -1207,5 +1207,5 @@
       "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-11T11:05:17.255Z"
+  "last_scan": "2026-02-12T01:28:49.920Z"
 }
