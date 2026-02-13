@@ -1205,7 +1205,169 @@
       },
       "detected_at": "2026-02-11T10:55:33.314Z",
       "skill_generated": true
+    },
+    {
+      "id": "kdi_epic",
+      "sender": "epic@kdi.re.kr",
+      "name": "KDI <epic@kdi.re.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kdi_epic.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-12T23:52:18.454Z",
+      "skill_generated": false
+    },
+    {
+      "id": "booding",
+      "sender": "everybody@booding.co",
+      "name": "BOODING <everybody@booding.co>",
+      "labels": [
+        "투자"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_booding.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 7
+      },
+      "detected_at": "2026-02-13T00:34:26.777Z",
+      "skill_generated": true
+    },
+    {
+      "id": "the_edit",
+      "sender": "newsletter@the-edit.co.kr",
+      "name": "\"까탈로그\" <newsletter@the-edit.co.kr>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_the_edit.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 8
+      },
+      "detected_at": "2026-02-13T00:46:50.646Z",
+      "skill_generated": true
+    },
+    {
+      "id": "joomaltory",
+      "sender": "hello@joomaltory.com",
+      "name": "\"주말토리\" <hello@joomaltory.com>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_joomaltory.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 10
+      },
+      "detected_at": "2026-02-13T00:49:47.019Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_albertmedia2017_gmail_com",
+      "sender": "albertmedia2017-gmail.com@send.stibee.com",
+      "name": "\"앨리스모먼트\" <albertmedia2017-gmail.com@send.stibee.com>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_albertmedia2017_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-02-13T00:49:47.019Z",
+      "skill_generated": true
+    },
+    {
+      "id": "seoul_magazine",
+      "sender": "magazine@seoul.go.kr",
+      "name": "\"서울시청\" <magazine@seoul.go.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_seoul_magazine.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-13T00:49:47.019Z",
+      "skill_generated": true
+    },
+    {
+      "id": "ceobizschool",
+      "sender": "ceoclub@ceobizschool.kr",
+      "name": "\"CEO비즈니스스쿨(CEO클럽)\" <ceoclub@ceobizschool.kr>",
+      "labels": [
+        "소셜포럼"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_ceobizschool.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-02-13T01:19:53.592Z",
+      "skill_generated": false
+    },
+    {
+      "id": "kfem",
+      "sender": "seoul@kfem.or.kr",
+      "name": "\"위클리어스\" <seoul@kfem.or.kr>",
+      "labels": [
+        "기타"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kfem.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-02-13T01:20:22.318Z",
+      "skill_generated": true
+    },
+    {
+      "id": "staircrusher",
+      "sender": "official@staircrusher.club",
+      "name": "\"계단뿌셔클럽\" <official@staircrusher.club>",
+      "labels": [
+        "기타"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_staircrusher.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-13T01:20:22.318Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-12T01:28:49.920Z"
+  "last_scan": "2026-02-13T01:23:24.200Z"
 }
