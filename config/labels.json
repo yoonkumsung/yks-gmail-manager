@@ -2,6 +2,70 @@
   "schema_version": "2.0",
   "labels": [
     {
+      "name": "소셜포럼",
+      "gmail_label": "소셜/포럼",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/소셜포럼.md",
+      "focus_topics": [
+        "커뮤니티",
+        "네트워킹",
+        "이벤트"
+      ]
+    },
+    {
+      "name": "투자",
+      "gmail_label": "투자",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/투자.md",
+      "focus_topics": [
+        "주식",
+        "펀드",
+        "채권",
+        "부동산",
+        "가상자산"
+      ]
+    },
+    {
+      "name": "기타",
+      "gmail_label": "기타",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/기타.md",
+      "focus_topics": []
+    },
+    {
+      "name": "인문학",
+      "gmail_label": "인문학",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/인문학.md",
+      "focus_topics": [
+        "철학",
+        "역사",
+        "문학",
+        "예술",
+        "교양"
+      ]
+    },
+    {
+      "name": "라이프",
+      "gmail_label": "라이프",
+      "sub_labels": [
+        "라이프/기관 홍보"
+      ],
+      "enabled": true,
+      "agent": "agents/labels/라이프.md",
+      "focus_topics": [
+        "건강",
+        "여행",
+        "음식",
+        "문화",
+        "라이프스타일"
+      ]
+    },
+    {
       "name": "IT",
       "gmail_label": "IT",
       "sub_labels": [
@@ -52,48 +116,6 @@
       ]
     },
     {
-      "name": "창업",
-      "gmail_label": "창업",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/창업.md",
-      "focus_topics": [
-        "스타트업",
-        "투자",
-        "창업",
-        "VC",
-        "엑셀러레이터"
-      ]
-    },
-    {
-      "name": "투자",
-      "gmail_label": "투자",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/투자.md",
-      "focus_topics": [
-        "주식",
-        "펀드",
-        "채권",
-        "부동산",
-        "가상자산"
-      ]
-    },
-    {
-      "name": "해외",
-      "gmail_label": "해외",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/해외.md",
-      "focus_topics": [
-        "미국",
-        "중국",
-        "유럽",
-        "글로벌",
-        "국제"
-      ]
-    },
-    {
       "name": "마케팅",
       "gmail_label": "마케팅",
       "sub_labels": [],
@@ -108,33 +130,17 @@
       ]
     },
     {
-      "name": "라이프",
-      "gmail_label": "라이프",
-      "sub_labels": [
-        "라이프/기관 홍보"
-      ],
-      "enabled": true,
-      "agent": "agents/labels/라이프.md",
-      "focus_topics": [
-        "건강",
-        "여행",
-        "음식",
-        "문화",
-        "라이프스타일"
-      ]
-    },
-    {
-      "name": "인문학",
-      "gmail_label": "인문학",
+      "name": "창업",
+      "gmail_label": "창업",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/인문학.md",
+      "agent": "agents/labels/창업.md",
       "focus_topics": [
-        "철학",
-        "역사",
-        "문학",
-        "예술",
-        "교양"
+        "스타트업",
+        "투자",
+        "창업",
+        "VC",
+        "엑셀러레이터"
       ]
     },
     {
@@ -152,24 +158,18 @@
       ]
     },
     {
-      "name": "소셜포럼",
-      "gmail_label": "소셜/포럼",
+      "name": "해외",
+      "gmail_label": "해외",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/소셜포럼.md",
+      "agent": "agents/labels/해외.md",
       "focus_topics": [
-        "커뮤니티",
-        "네트워킹",
-        "이벤트"
+        "미국",
+        "중국",
+        "유럽",
+        "글로벌",
+        "국제"
       ]
-    },
-    {
-      "name": "기타",
-      "gmail_label": "기타",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/기타.md",
-      "focus_topics": []
     },
     {
       "name": "쇼핑결제",

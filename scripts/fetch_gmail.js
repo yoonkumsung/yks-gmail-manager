@@ -285,7 +285,7 @@ class GmailFetcher {
 
         const start = new Date(rangeStart);
         const end = new Date(rangeEnd);
-        return msgDate >= start && msgDate <= end;
+        return msgDate >= start && msgDate < end;
       } catch (e) {
         return false;
       }

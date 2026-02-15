@@ -860,6 +860,14 @@ async function main() {
     // 7. 메일 정리 실행
     const results = await processAllLabels(labels, timeRange, tempDir, progressManager, failedBatchManager, adaptiveLearning);
 
+    // 7-1. 인증 에러 확인 - 전체 라벨이 인증 에러로 실패하면 워크플로우 실패 처리
+    const authErrors = results.filter(r => r.error && r.isAuthError);
+    if (authErrors.length > 0) {
+      console.error(`\n[치명적 오류] Gmail 인증 실패 (${authErrors.length}개 라벨)`);
+      console.error('토큰이 만료되었을 수 있습니다. npm run auth로 재인증하세요.');
+      process.exit(1);
+    }
+
     // 8. 크로스 라벨 인사이트 생성
     const mergedDir = path.join(tempDir, 'merged');
     const finalDir = path.join(tempDir, 'final');
@@ -952,7 +960,8 @@ async function processAllLabels(labels, timeRange, runDir, progressManager, fail
           return {
             label: label.name,
             success: false,
-            error: error.message
+            error: error.message,
+            isAuthError: error.isAuthError || false
           };
         }
       })
@@ -991,7 +1000,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   if (!progressManager.isStepCompleted(label.name, 'gmail_fetch')) {
     console.log('  Gmail API 호출 중...');
     progressManager.setStepStatus(label.name, 'gmail_fetch', 'in_progress');
-    fetchResult = await fetchGmailMessages(label, timeRange, rawDir);
+    fetchResult = await fetchGmailMessages(label, timeRange, rawDir);  // 인증 에러는 throw됨
     progressManager.setStepStatus(label.name, 'gmail_fetch', 'completed');
   } else {
     console.log('  Gmail API 호출 (이미 완료, 건너뜀)');
@@ -1482,7 +1491,19 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
 
     return result;
   } catch (error) {
-    console.warn(`  Gmail API 오류 (메일 없을 수 있음): ${error.message}`);
+    const msg = error.message || '';
+    const isAuthError = msg.includes('invalid_grant') || msg.includes('invalid_client') ||
+      msg.includes('unauthorized') || msg.includes('access_denied') ||
+      msg.includes('Token has been expired') || msg.includes('401');
+
+    if (isAuthError) {
+      console.error(`  [인증 오류] Gmail 인증 실패: ${msg}`);
+      const authError = new Error(`Gmail 인증 실패: ${msg}`);
+      authError.isAuthError = true;
+      throw authError;
+    }
+
+    console.warn(`  Gmail API 오류 (메일 없을 수 있음): ${msg}`);
     return null;
   }
 }
@@ -1737,14 +1758,14 @@ function calculateTimeRange(mode, customDate) {
 
   switch (mode) {
     case 'schedule':
-      // 자동 실행: 전날 10:01 ~ 당일 10:00 (KST)
+      // 자동 실행: 전날 10:00 ~ 당일 10:00 (KST), 경계값은 start 포함 end 미포함
       const todayKST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
       const todayStr = todayKST.toISOString().split('T')[0];
       const yesterdayKST = new Date(todayKST.getTime() - 24 * 60 * 60 * 1000);
       const yesterdayStr = yesterdayKST.toISOString().split('T')[0];
 
       return {
-        start: new Date(yesterdayStr + 'T10:01:00+09:00'),
+        start: new Date(yesterdayStr + 'T10:00:00+09:00'),
         end: new Date(todayStr + 'T10:00:00+09:00')
       };
 
@@ -1765,8 +1786,8 @@ function calculateTimeRange(mode, customDate) {
       };
 
     case 'custom':
-      // 특정 날짜 (schedule과 동일한 로직: 전날 10:01 ~ 당일 10:00)
-      // 예: 2월 4일 입력 → 2월 3일 10:01 ~ 2월 4일 10:00
+      // 특정 날짜 (schedule과 동일한 로직: 전날 10:00 ~ 당일 10:00)
+      // 예: 2월 4일 입력 → 2월 3일 10:00 ~ 2월 4일 10:00
       if (!customDate || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)) {
         throw new Error(`잘못된 날짜 형식: '${customDate}' (YYYY-MM-DD 형식 필요, 예: --date 2026-02-10)`);
       }
@@ -1774,7 +1795,7 @@ function calculateTimeRange(mode, customDate) {
       const prevDay = new Date(year, month - 1, day - 1);  // JS Date는 자동으로 월 경계 처리
       const prevDateStr = `${prevDay.getFullYear()}-${String(prevDay.getMonth() + 1).padStart(2, '0')}-${String(prevDay.getDate()).padStart(2, '0')}`;
       return {
-        start: new Date(prevDateStr + 'T10:01:00+09:00'),
+        start: new Date(prevDateStr + 'T10:00:00+09:00'),
         end: new Date(customDate + 'T10:00:00+09:00')
       };
 
@@ -1787,7 +1808,7 @@ function calculateTimeRange(mode, customDate) {
       const defaultYesterdayStr = defaultYesterdayKST.toISOString().split('T')[0];
 
       return {
-        start: new Date(defaultYesterdayStr + 'T10:01:00+09:00'),
+        start: new Date(defaultYesterdayStr + 'T10:00:00+09:00'),
         end: new Date(defaultTodayStr + 'T10:00:00+09:00')
       };
   }

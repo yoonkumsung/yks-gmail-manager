@@ -52,13 +52,15 @@ function getAuthUrl(credentials) {
   return `${credentials.auth_uri}?${params.toString()}`;
 }
 
-// 브라우저 열기 (Windows)
-function openBrowser(url) {
-  exec(`start "" "${url}"`, (error) => {
+// 브라우저 열기 (크로스 플랫폼)
+function openBrowser(targetUrl) {
+  const platform = process.platform;
+  const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start ""' : 'xdg-open';
+  exec(`${cmd} "${targetUrl}"`, (error) => {
     if (error) {
       console.log('\n브라우저를 자동으로 열 수 없습니다.');
       console.log('아래 URL을 직접 브라우저에 붙여넣어 주세요:\n');
-      console.log(url);
+      console.log(targetUrl);
     }
   });
 }
