@@ -144,17 +144,17 @@ class AgentRunner {
       crossInsight: {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
-[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, CEO 액션을 도출합니다.
+[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, 사용자 액션을 도출합니다.
 
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- mega_trends, cross_connections, ceo_actions 3개 필드 필수
+- mega_trends, cross_connections, action_items 3개 필드 필수
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
         reasoningEffort: 'medium',
-        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, CEO 액션을 생성하고 JSON으로 출력하세요.'
+        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요.'
       }
     };
     return configs[taskType] || configs.extract;
@@ -792,7 +792,7 @@ ${agentContent}`;
       merge: ['items'],
       insight: ['items'],
       summarize: ['label', 'themes'],
-      crossInsight: ['mega_trends', 'cross_connections', 'ceo_actions']
+      crossInsight: ['mega_trends', 'cross_connections', 'action_items']
     };
     return fieldMap[taskType] || [];
   }

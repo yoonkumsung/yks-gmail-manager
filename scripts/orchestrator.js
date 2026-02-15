@@ -454,15 +454,15 @@ function validateOutputQuality(items, labelName) {
 
 /**
  * Split 폴백 - Reduce 단계 실패 시 3개 하위 태스크로 분리 호출
- * mega_trends / cross_connections / ceo_actions 각각 독립 호출 후 결합
+ * mega_trends / cross_connections / action_items 각각 독립 호출 후 결합
  */
 async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunner, crossAgentPath, outputPath) {
   console.log('  Split 폴백: 3개 하위 태스크로 분리 호출...');
 
   const subTasks = [
-    { key: 'mega_trends', instruction: 'mega_trends(메가트렌드) 부분만 생성하세요. cross_connections와 ceo_actions는 빈 배열로 출력하세요.' },
-    { key: 'cross_connections', instruction: 'cross_connections(크로스 연결) 부분만 생성하세요. mega_trends와 ceo_actions는 빈 배열로 출력하세요.' },
-    { key: 'ceo_actions', instruction: 'ceo_actions(CEO 액션) 부분만 생성하세요. mega_trends와 cross_connections는 빈 배열로 출력하세요.' }
+    { key: 'mega_trends', instruction: 'mega_trends(메가트렌드) 부분만 생성하세요. cross_connections와 action_items는 빈 배열로 출력하세요.' },
+    { key: 'cross_connections', instruction: 'cross_connections(크로스 연결) 부분만 생성하세요. mega_trends와 action_items는 빈 배열로 출력하세요.' },
+    { key: 'action_items', instruction: 'action_items(사용자 액션) 부분만 생성하세요. mega_trends와 cross_connections는 빈 배열로 출력하세요.' }
   ];
 
   const splitBudgetMs = 5 * 60 * 1000;  // 각 하위 태스크 5분
@@ -501,7 +501,7 @@ async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunn
   const combined = {
     mega_trends: [],
     cross_connections: [],
-    ceo_actions: []
+    action_items: []
   };
 
   for (const r of results) {
@@ -509,14 +509,14 @@ async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunn
   }
 
   // 하나라도 결과가 있으면 반환
-  if (combined.mega_trends.length > 0 || combined.cross_connections.length > 0 || combined.ceo_actions.length > 0) {
+  if (combined.mega_trends.length > 0 || combined.cross_connections.length > 0 || combined.action_items.length > 0) {
     // 결과 저장
     if (outputPath) {
       const dir = path.dirname(outputPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(outputPath, JSON.stringify(combined, null, 2), 'utf8');
     }
-    console.log(`  Split 폴백 완료: 메가트렌드 ${combined.mega_trends.length}개, 크로스 연결 ${combined.cross_connections.length}개, CEO 액션 ${combined.ceo_actions.length}개`);
+    console.log(`  Split 폴백 완료: 메가트렌드 ${combined.mega_trends.length}개, 크로스 연결 ${combined.cross_connections.length}개, 사용자 액션 ${combined.action_items.length}개`);
     return combined;
   }
 
@@ -670,7 +670,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
       maxTimeMs: Math.floor(CONFIG.crossInsightBudgetMs / 2)  // Reduce 단계에 예산의 절반
     });
 
-    if (result && (result.mega_trends || result.cross_connections || result.ceo_actions)) {
+    if (result && (result.mega_trends || result.cross_connections || result.action_items)) {
       return result;
     }
 
@@ -878,7 +878,7 @@ async function main() {
       try {
         crossInsightData = await generateCrossLabelInsight(mergedDir, tempDir, timeRange);
         if (crossInsightData) {
-          console.log(`  메가트렌드 ${crossInsightData.mega_trends?.length || 0}개, 크로스 연결 ${crossInsightData.cross_connections?.length || 0}개, CEO 액션 ${crossInsightData.ceo_actions?.length || 0}개`);
+          console.log(`  메가트렌드 ${crossInsightData.mega_trends?.length || 0}개, 크로스 연결 ${crossInsightData.cross_connections?.length || 0}개, 사용자 액션 ${crossInsightData.action_items?.length || 0}개`);
           // 크로스 인사이트 결과를 파일로 저장 (HTML/MD 생성에서 사용)
           const crossInsightPath = path.join(mergedDir, '_cross_insight.json');
           fs.writeFileSync(crossInsightPath, JSON.stringify(crossInsightData, null, 2), 'utf8');
@@ -1663,9 +1663,9 @@ function generateCombinedMarkdown(mergedDir, date) {
           });
         }
 
-        if (crossInsight.ceo_actions?.length > 0) {
-          md += `## CEO 액션\n\n`;
-          crossInsight.ceo_actions.forEach((action, i) => {
+        if (crossInsight.action_items?.length > 0) {
+          md += `## 사용자 액션\n\n`;
+          crossInsight.action_items.forEach((action, i) => {
             const labels = action.related_labels?.join(', ') || '';
             md += `${i + 1}. **[${action.timeline || ''}]** ${action.action}${labels ? ` (${labels})` : ''}\n`;
           });

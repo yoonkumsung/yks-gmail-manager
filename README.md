@@ -56,7 +56,12 @@ Gmail API에 접근하려면 OAuth 인증 정보가 필요합니다.
 4. **API 및 서비스 → 사용자 인증 정보** → "사용자 인증 정보 만들기" → "OAuth 클라이언트 ID"
    - 애플리케이션 유형: "데스크톱 앱"
    - 이름: 원하는 이름
+   - **승인된 리디렉션 URI**: `http://localhost:3000/callback` 추가
 5. 생성된 JSON 파일을 다운로드하여 `config/credentials/client_secret.json`으로 저장
+6. **OAuth 동의 화면 → "앱 게시(PUBLISH APP)"** 클릭하여 Production 모드로 전환
+   - Testing 모드에서는 refresh token이 **7일 후 만료**되어 인증이 끊깁니다
+   - Production 모드에서는 토큰이 만료되지 않아 자동화에 적합합니다
+   - 개인 사용(100명 미만)은 Google 심사 없이 즉시 게시 가능
 
 ### 4. OpenRouter API 키
 
@@ -136,7 +141,7 @@ npm run setup
 ## 실행 방법
 
 ```bash
-# 기본 실행 (스케줄 모드: 전날 10:01 ~ 당일 10:00)
+# 기본 실행 (스케줄 모드: 전날 10:00 ~ 당일 10:00)
 npm run digest
 
 # 오늘 (0시 ~ 현재)
@@ -193,7 +198,7 @@ Repository → Settings → Secrets and variables → Actions에서 다음 Secre
 ### 자동 실행
 
 - **시간**: 매일 오전 10시 KST (자동)
-- **범위**: 전날 10:01 ~ 당일 10:00 수신 메일
+- **범위**: 전날 10:00 ~ 당일 10:00 수신 메일
 - **결과 수신**:
   - Telegram으로 HTML + 통합 MD 파일 자동 전송 (Secrets에 Telegram 설정 시)
   - GitHub Artifacts에서 다운로드 (Actions 탭 → 해당 실행 → Artifacts)

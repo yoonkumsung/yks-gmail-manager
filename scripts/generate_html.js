@@ -423,14 +423,14 @@ function generateCrossInsightTab(crossInsight) {
     `;
   }).join('');
 
-  // CEO 액션 섹션
-  const actionsHtml = (crossInsight.ceo_actions || []).map(action => {
+  // 액션 아이템 섹션
+  const actionsHtml = (crossInsight.action_items || []).map(action => {
     const labelTags = (action.related_labels || []).map(label =>
       `<span class="action-label-tag">${escapeHtml(label)}</span>`
     ).join('');
 
     return `
-      <div class="ceo-action-card">
+      <div class="action-item-card">
         <div class="card-description">
           <span class="action-timeline">${escapeHtml(action.timeline || '')}</span>
           ${escapeHtml(action.action)}
@@ -456,7 +456,7 @@ function generateCrossInsightTab(crossInsight) {
       ` : ''}
       ${actionsHtml ? `
         <div class="cross-insight-section">
-          <div class="cross-section-title">CEO 액션</div>
+          <div class="cross-section-title">액션 아이템</div>
           ${actionsHtml}
         </div>
       ` : ''}
@@ -502,7 +502,7 @@ function generateFromFinalJson(finalJsonPath, outputPath) {
  */
 function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
   // 크로스 인사이트 탭 버튼 (있으면 첫 번째)
-  const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0 || crossInsight.ceo_actions?.length > 0);
+  const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0 || crossInsight.action_items?.length > 0);
   const crossTabButton = hasCrossInsight
     ? `<button class="tab-btn active cross-tab-btn" data-tab="종합인사이트">종합 인사이트</button>\n`
     : '';
@@ -995,7 +995,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
       color: var(--text);
     }
 
-    .mega-trend-card, .cross-connection-card, .ceo-action-card {
+    .mega-trend-card, .cross-connection-card, .action-item-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -1011,7 +1011,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
       border-left: 4px solid #f59e0b;
     }
 
-    .ceo-action-card {
+    .action-item-card {
       border-left: 4px solid #10b981;
     }
 
@@ -1242,7 +1242,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
         border-left-color: #fbbf24;
       }
 
-      .ceo-action-card {
+      .action-item-card {
         border-left-color: #34d399;
       }
     }
