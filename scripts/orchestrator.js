@@ -229,7 +229,7 @@ const CONFIG = {
 
   // 모델 설정 (모두 fast 모델 사용으로 속도 최적화)
   models: {
-    fast: 'tngtech/deepseek-r1t2-chimera:free',    // 추출, 뉴스레터분석, 병합, 인사이트 (전체) - R1T2: 20% 빠름
+    fast: 'z-ai/glm-4.5-air:free',                  // 추출, 뉴스레터분석, 병합, 인사이트 (전체)
     reasoning: 'upstage/solar-pro-3:free'          // (미사용 - 필요시 활성화)
   },
 
