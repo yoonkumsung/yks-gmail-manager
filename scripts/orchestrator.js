@@ -227,10 +227,16 @@ function createLimiter(concurrency) {
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 3개 처리 (분당 10개 제한에 맞춤)
 
-  // 모델 설정 (모두 fast 모델 사용으로 속도 최적화)
+  // 모델 설정 (작업별 Primary + Fallback)
   models: {
-    fast: 'z-ai/glm-4.5-air:free',                  // 추출, 뉴스레터분석, 병합, 인사이트 (전체)
-    reasoning: 'upstage/solar-pro-3:free'          // (미사용 - 필요시 활성화)
+    extract: {
+      primary: 'z-ai/glm-4.5-air:free',               // 추출/분석/병합/요약
+      fallback: 'deepseek/deepseek-r1-0528:free'       // GLM 실패 시 폴백
+    },
+    reasoning: {
+      primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 인사이트/크로스인사이트
+      fallback: 'deepseek/deepseek-r1-0528:free'        // Qwen 실패 시 폴백
+    }
   },
 
   mergeBatchSize: 15,     // 병합 배치 크기
@@ -456,7 +462,7 @@ function validateOutputQuality(items, labelName) {
  * Split 폴백 - Reduce 단계 실패 시 3개 하위 태스크로 분리 호출
  * mega_trends / cross_connections / action_items 각각 독립 호출 후 결합
  */
-async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunner, crossAgentPath, outputPath) {
+async function generateCrossInsightSplit(labelSummaries, dateFormatted, runner, crossAgentPath, outputPath) {
   console.log('  Split 폴백: 3개 하위 태스크로 분리 호출...');
 
   const subTasks = [
@@ -476,7 +482,7 @@ async function generateCrossInsightSplit(labelSummaries, dateFormatted, fastRunn
           _focus: task.instruction
         };
 
-        const result = await fastRunner.runAgent(crossAgentPath, {
+        const result = await runner.runAgent(crossAgentPath, {
           skills: [],
           inputs: input,
           taskType: 'crossInsight',
@@ -602,7 +608,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
 
   // === Map 단계: 각 라벨 → 클러스터링 → 라벨요약 에이전트 (병렬) ===
   const logDir = path.join(tempDir, 'logs');
-  const { fastRunner } = getRunners(logDir);
+  const runner = getRunner(logDir);
   const summaryAgentPath = path.join(__dirname, '..', 'agents', '라벨요약.md');
   const limit = createLimiter(CONFIG.concurrencyLimit);
 
@@ -615,7 +621,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
           console.log(`    ${label}: ${items.length}개 아이템 → ${clusters.length}개 클러스터`);
 
           // 라벨요약 에이전트 호출
-          const result = await fastRunner.runAgent(summaryAgentPath, {
+          const result = await runner.runAgent(summaryAgentPath, {
             skills: [],
             inputs: { label, items },
             taskType: 'summarize',
@@ -661,7 +667,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
   const outputPath = path.join(mergedDir, '_cross_insight_raw.json');
 
   try {
-    const result = await fastRunner.runAgent(crossAgentPath, {
+    const result = await runner.runAgent(crossAgentPath, {
       skills: [],
       inputs: reduceInput,
       output: outputPath,
@@ -685,32 +691,24 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
   } catch (reduceError) {
     console.warn(`  Reduce 단계 실패: ${reduceError.message}, Split 폴백 시도...`);
     // Split 폴백 시도
-    return await generateCrossInsightSplit(validSummaries, dateFormatted, fastRunner, crossAgentPath, outputPath);
+    return await generateCrossInsightSplit(validSummaries, dateFormatted, runner, crossAgentPath, outputPath);
   }
 
   return null;
 }
 
-// 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유)
-let globalFastRunner = null;
-let globalReasoningRunner = null;
+// 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유, 작업별 자동 모델 선택)
+let globalRunner = null;
 
-function getRunners(logDir) {
-  if (!globalFastRunner) {
-    globalFastRunner = new AgentRunner(
+function getRunner(logDir) {
+  if (!globalRunner) {
+    globalRunner = new AgentRunner(
       process.env.OPENROUTER_API_KEY,
-      CONFIG.models.fast,
+      CONFIG.models,
       { logDir }
     );
   }
-  if (!globalReasoningRunner) {
-    globalReasoningRunner = new AgentRunner(
-      process.env.OPENROUTER_API_KEY,
-      CONFIG.models.reasoning,
-      { logDir }
-    );
-  }
-  return { fastRunner: globalFastRunner, reasoningRunner: globalReasoningRunner };
+  return globalRunner;
 }
 
 /**
@@ -993,7 +991,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   });
 
   // AgentRunner 인스턴스 (전역 재사용으로 Rate Limit 카운터 공유)
-  const { fastRunner, reasoningRunner } = getRunners(path.join(runDir, 'logs'));
+  const runner = getRunner(path.join(runDir, 'logs'));
 
   // 1. Gmail API 호출 (Node.js) - 증분 처리 지원
   let fetchResult = null;
@@ -1100,7 +1098,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
           console.log(`      → 새 발신자: ${senderEmail} (뉴스레터분석 에이전트 실행)`);
 
-          result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
+          result = await runner.runAgent(path.join(__dirname, '..', 'agents', '뉴스레터분석.md'), {
             skills: ['SKILL_작성규칙.md'],
             inputs: cleanPath,
             output: itemsPath,
@@ -1115,7 +1113,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         } else {
           // 기존 발신자: 일반 추출
           console.log(`      → 기존 발신자: ${senderEmail} (${label.name} 에이전트 실행)`);
-          result = await fastRunner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
+          result = await runner.runAgent(path.join(__dirname, '..', 'agents', 'labels', `${label.name}.md`), {
             skills,
             inputs: cleanPath,
             output: itemsPath,
@@ -1211,7 +1209,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
             console.log(`    병합 배치 ${batchNum}/${totalBatches} (${batch.length}개 후보)...`);
 
             try {
-              const batchResult = await fastRunner.runAgent(mergeAgentPath, {
+              const batchResult = await runner.runAgent(mergeAgentPath, {
                 inputs: {
                   label: label.name,
                   items: batch
@@ -1341,7 +1339,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
                 const remainItems = batch.items.slice(trySize);
 
                 try {
-                  const batchResult = await fastRunner.runAgent(insightAgentPath, {
+                  const batchResult = await runner.runAgent(insightAgentPath, {
                     inputs: {
                       profile: profile?.user || null,
                       label: label.name,

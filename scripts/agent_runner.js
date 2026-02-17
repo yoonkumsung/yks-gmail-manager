@@ -1,10 +1,13 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
- * 모델: 단계별 다중 모델 사용
- *   - 빠른 모델 (추출/분석/병합): tngtech/deepseek-r1t2-chimera:free
- *   - 추론 모델 (인사이트): upstage/solar-pro-3:free
+ * 모델: 작업별 다중 모델 + 폴백 전략
+ *   - 추출 모델 (extract/analyze/merge/summarize): GLM-4.5-Air → DeepSeek-R1 폴백
+ *   - 추론 모델 (insight/crossInsight): Qwen3-235B → DeepSeek-R1 폴백
  *
  * 주요 기능:
+ * - 작업 유형별 자동 모델 선택
+ * - Primary 실패 시 Fallback 모델 자동 전환
+ * - 모델별 reasoning 파라미터 최적화
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
  * - 토큰 초과 에러 자동 복구
  * - Rate Limit 관리
@@ -24,10 +27,27 @@ async function getFetch() {
 }
 
 class AgentRunner {
-  constructor(apiKey, model = 'upstage/solar-pro', options = {}) {
+  /**
+   * @param {string} apiKey - OpenRouter API 키
+   * @param {Object} modelConfig - 모델 설정
+   *   { extract: { primary, fallback }, reasoning: { primary, fallback } }
+   *   또는 단일 문자열 (하위 호환)
+   * @param {Object} options - 추가 옵션
+   */
+  constructor(apiKey, modelConfig = {}, options = {}) {
     this.apiKey = apiKey;
-    this.model = model;
     this.logDir = options.logDir || 'logs';
+
+    // 모델 설정 (다중 모델 + 폴백)
+    if (typeof modelConfig === 'string') {
+      // 하위 호환: 단일 문자열이면 모든 작업에 동일 모델 사용
+      this.modelConfig = {
+        extract: { primary: modelConfig, fallback: null },
+        reasoning: { primary: modelConfig, fallback: null }
+      };
+    } else {
+      this.modelConfig = modelConfig;
+    }
 
     // 청크 분할 설정
     // 128K 컨텍스트에서 출력 max_tokens 제외한 안전한 입력 크기
@@ -54,14 +74,62 @@ class AgentRunner {
   }
 
   // ============================================
+  // 모델 선택 메서드
+  // ============================================
+
+  /**
+   * 작업 유형에 따른 모델 쌍 (primary + fallback) 반환
+   */
+  getModelsForTask(taskType) {
+    const reasoningTasks = ['insight', 'crossInsight'];
+    const category = reasoningTasks.includes(taskType) ? 'reasoning' : 'extract';
+    return this.modelConfig[category] || this.modelConfig.extract;
+  }
+
+  /**
+   * 모델별 API 요청 설정 반환
+   * - GLM: reasoning 파라미터 미지원, 타임아웃 2분
+   * - DeepSeek R1: reasoning 지원, 타임아웃 5분
+   * - Qwen3: reasoning 지원, 타임아웃 5분
+   */
+  getModelSpecificConfig(model) {
+    if (model.includes('glm')) {
+      return {
+        supportsReasoning: false,
+        timeoutMs: 120000,       // 2분 (reasoning 루프 방지)
+        maxTokens: 16000         // 출력 제한 (reasoning 폭발 방지)
+      };
+    }
+    if (model.includes('deepseek')) {
+      return {
+        supportsReasoning: true,
+        timeoutMs: 300000,       // 5분
+        maxTokens: 100000
+      };
+    }
+    if (model.includes('qwen')) {
+      return {
+        supportsReasoning: true,
+        timeoutMs: 300000,       // 5분
+        maxTokens: 100000
+      };
+    }
+    // 기본값
+    return {
+      supportsReasoning: false,
+      timeoutMs: 300000,
+      maxTokens: 100000
+    };
+  }
+
+  // ============================================
   // 작업 유형별 최적 설정
   // ============================================
 
   /**
    * 작업 유형별 최적 설정 반환
-   * - 추론 모델(R1T Chimera)의 reasoning 파라미터로 추론량 제어
-   * - 추출/병합: reasoning low (추론 최소화 → JSON 출력에 토큰 집중)
-   * - 인사이트: reasoning medium (적절한 추론 → 깊은 통찰)
+   * - reasoning 파라미터로 추론량 제어
+   * - 전 작업 reasoning low 통일 (추론 최소화 → 출력 토큰에 집중)
    */
   getTaskConfig(taskType) {
     const configs = {
@@ -138,7 +206,7 @@ class AgentRunner {
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
       },
       crossInsight: {
@@ -153,7 +221,7 @@ class AgentRunner {
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요.'
       }
     };
@@ -669,18 +737,56 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * Solar3 API 호출 (재시도 포함, 시간 예산 + 불완전 JSON 복구)
+   * API 호출 (재시도 + 모델 폴백 포함)
+   * 1) Primary 모델로 재시도 → 2) 실패 시 Fallback 모델로 재시도
    * @param {string} prompt - 프롬프트
    * @param {number} maxTimeMs - 시간 예산 (ms). 0이면 무제한
    */
   async callSolar3WithRetry(prompt, maxTimeMs = 0) {
-    let lastError;
-    let retryOverrides = {};
-    let bestIncompleteResponse = null;
+    const models = this.getModelsForTask(this.currentTaskType);
     const startTime = Date.now();
+
+    // Primary 모델 시도
+    try {
+      this.log(`[Primary] ${models.primary}`, 'info');
+      return await this._retryWithModel(prompt, maxTimeMs, models.primary, startTime);
+    } catch (primaryError) {
+      // Fallback 모델이 없으면 그대로 throw
+      if (!models.fallback) throw primaryError;
+
+      // 시간 예산 잔여 확인
+      const elapsed = Date.now() - startTime;
+      const remaining = maxTimeMs > 0 ? maxTimeMs - elapsed : 0;
+      if (maxTimeMs > 0 && remaining < 30000) {
+        this.log(`시간 부족 (${Math.round(remaining/1000)}초), 폴백 건너뜀`, 'warn');
+        throw primaryError;
+      }
+
+      // Fallback 모델 시도
+      this.log(`[Fallback] Primary 실패 (${primaryError.message}), ${models.fallback}으로 전환`, 'warn');
+      try {
+        return await this._retryWithModel(prompt, remaining || 0, models.fallback, Date.now());
+      } catch (fallbackError) {
+        // 폴백도 실패하면 원본 에러 메시지에 폴백 실패 정보 추가
+        throw new Error(`Primary(${models.primary}): ${primaryError.message} → Fallback(${models.fallback}): ${fallbackError.message}`);
+      }
+    }
+  }
+
+  /**
+   * 특정 모델로 재시도 루프 실행
+   */
+  async _retryWithModel(prompt, maxTimeMs, model, startTime) {
+    let lastError;
+    let retryOverrides = { model };
+    let bestIncompleteResponse = null;
     const requiredFields = this.getRequiredFieldsForTask(this.currentTaskType);
 
-    for (let i = 0; i < this.retryDelays.length; i++) {
+    // 폴백 시 재시도 횟수 축소 (3회)
+    const isPrimary = model === this.getModelsForTask(this.currentTaskType).primary;
+    const delays = isPrimary ? this.retryDelays : this.retryDelays.slice(0, 3);
+
+    for (let i = 0; i < delays.length; i++) {
       // 시간 예산 체크
       if (maxTimeMs > 0 && Date.now() - startTime >= maxTimeMs) {
         this.log(`시간 예산 초과 (${Math.round(maxTimeMs/1000)}초), 복구 시도...`, 'warn');
@@ -690,36 +796,32 @@ ${agentContent}`;
       }
 
       try {
-        // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
         await this.checkRateLimit();
 
         const response = await this.callSolar3(prompt, retryOverrides);
 
         // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
-          // bestIncompleteResponse 갱신 (가장 긴 응답 저장)
           if (!bestIncompleteResponse || response.length > bestIncompleteResponse.length) {
             bestIncompleteResponse = response;
           }
 
-          // 복구 시도: repairJson → parse → 필수 필드 체크
           const recovered = this.tryRecoverIncompleteJson(response, requiredFields);
           if (recovered) {
             this.log(`불완전 JSON 복구 성공`, 'info');
             return JSON.stringify(recovered);
           }
 
-          if (i < this.retryDelays.length - 1) {
-            const delay = this.retryDelays[i];
-            this.log(`불완전 JSON 응답, 복구 실패, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
+          if (i < delays.length - 1) {
+            const delay = delays[i];
+            this.log(`불완전 JSON 응답, ${delay/1000}초 후 재시도 (${i + 1}/${delays.length})`, 'warn');
             await this.sleep(delay);
             continue;
           }
 
-          // 마지막 재시도: bestIncompleteResponse에서 최후 복구 시도
           const lastRecover = this.tryRecoverIncompleteJson(bestIncompleteResponse, requiredFields);
           if (lastRecover) {
-            this.log(`최종 불완전 JSON 복구 성공 (bestIncompleteResponse)`, 'info');
+            this.log(`최종 불완전 JSON 복구 성공`, 'info');
             return JSON.stringify(lastRecover);
           }
           throw new Error('불완전한 JSON 응답 (토큰 끊김)');
@@ -731,20 +833,19 @@ ${agentContent}`;
         lastError = error;
 
         const isRetryable = this.isRetryableError(error);
-        const hasMoreRetries = i < this.retryDelays.length - 1;
+        const hasMoreRetries = i < delays.length - 1;
 
         if (isRetryable && hasMoreRetries) {
-          const delay = this.retryDelays[i];
+          const delay = delays[i];
 
-          // 빈 응답(추론 토큰만 소진)인 경우 reasoningEffort를 낮춰서 재시도
           if (error.isEmptyResponse) {
-            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
+            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${delays.length})`, 'warn');
             await this.sleep(delay);
-            retryOverrides = { reasoningEffort: 'low' };
+            retryOverrides = { model, reasoningEffort: 'low' };
             continue;
           }
 
-          this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length}): ${error.message}`, 'warn');
+          this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${delays.length}): ${error.message}`, 'warn');
           await this.sleep(delay);
           continue;
         }
@@ -798,23 +899,41 @@ ${agentContent}`;
   }
 
   /**
-   * Solar3 API 호출 (단일)
+   * API 호출 (단일)
    * @param {string} prompt - 프롬프트
-   * @param {object} overrides - 설정 오버라이드 (예: { reasoningEffort: 'low' })
+   * @param {object} overrides - 설정 오버라이드 (예: { model, reasoningEffort })
    */
   async callSolar3(prompt, overrides = {}) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
+    const model = overrides.model || this.getModelsForTask(this.currentTaskType).primary;
+    const modelConfig = this.getModelSpecificConfig(model);
     const reasoningEffort = overrides.reasoningEffort || taskConfig.reasoningEffort;
     const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
-    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자, 작업: ${this.currentTaskType}, reasoning: ${reasoningEffort})`, 'debug');
+    this.log(`API 호출: ${model} (${prompt.length}자, ${this.currentTaskType}, reasoning: ${modelConfig.supportsReasoning ? reasoningEffort : 'N/A'})`, 'debug');
 
-    // 타임아웃 설정 (5분 - 긴 처리 대비)
+    // 모델별 타임아웃 설정
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000);
+    const timeoutId = setTimeout(() => controller.abort(), modelConfig.timeoutMs);
 
     try {
+      // 요청 본문 구성 (모델별 분기)
+      const requestBody = {
+        model: model,
+        messages: [
+          { role: 'system', content: taskConfig.systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        temperature: taskConfig.temperature,
+        max_tokens: modelConfig.maxTokens
+      };
+
+      // reasoning 파라미터는 지원 모델에만 추가
+      if (modelConfig.supportsReasoning) {
+        requestBody.reasoning = { effort: reasoningEffort };
+      }
+
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         signal: controller.signal,
@@ -824,30 +943,15 @@ ${agentContent}`;
           'HTTP-Referer': 'https://github.com/yks-gmail-manager',
           'X-Title': 'Gmail Manager'
         },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            {
-              role: 'system',
-              content: taskConfig.systemPrompt
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: taskConfig.temperature,
-          max_tokens: 100000,
-          reasoning: { effort: reasoningEffort }
-        })
+        body: JSON.stringify(requestBody)
       });
 
       clearTimeout(timeoutId);
-      this.log(`API 응답 수신 (상태 ${response.status})`, 'debug');
+      this.log(`API 응답 수신: ${model} (상태 ${response.status})`, 'debug');
 
       if (!response.ok) {
         const errorText = await response.text();
-        const error = new Error(`Solar3 API Error (${response.status}): ${errorText}`);
+        const error = new Error(`API Error (${response.status}) [${model}]: ${errorText}`);
         error.status = response.status;
         throw error;
       }
@@ -855,7 +959,7 @@ ${agentContent}`;
       const data = await response.json();
 
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('API 응답에 choices가 없습니다');
+        throw new Error(`API 응답에 choices가 없습니다 [${model}]`);
       }
 
       const content = data.choices[0].message?.content || '';
@@ -865,12 +969,12 @@ ${agentContent}`;
         const reasoning = data.usage.completion_tokens_details?.reasoning_tokens || 0;
         const total = data.usage.completion_tokens || 0;
         const input = data.usage.prompt_tokens || 0;
-        this.log(`  토큰: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
+        this.log(`  토큰 [${model}]: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
       }
 
       if (!content) {
         const reasoning = data.usage?.completion_tokens_details?.reasoning_tokens || 0;
-        const error = new Error(`빈 응답 (추론 토큰: ${reasoning}개 사용됨)`);
+        const error = new Error(`빈 응답 [${model}] (추론 토큰: ${reasoning}개 사용됨)`);
         error.isEmptyResponse = true;
         throw error;
       }
@@ -881,7 +985,8 @@ ${agentContent}`;
       clearTimeout(timeoutId);
 
       if (error.name === 'AbortError') {
-        throw new Error('API 호출 타임아웃 (5분 초과)');
+        const timeoutSec = Math.round(modelConfig.timeoutMs / 1000);
+        throw new Error(`API 타임아웃 [${model}] (${timeoutSec}초 초과)`);
       }
       throw error;
     }
