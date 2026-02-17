@@ -69,7 +69,7 @@ LLM 호출에 사용되는 API 키입니다.
 
 1. [OpenRouter](https://openrouter.ai/) 가입
 2. API Keys 페이지에서 키 생성
-3. 무료 모델(Solar Pro 등)을 사용하면 비용 없이 이용 가능
+3. 무료 모델(GLM, DeepSeek 등)을 사용하면 비용 없이 이용 가능
 
 ## 설치 및 설정
 
@@ -239,17 +239,26 @@ Repository → Settings → Secrets and variables → Actions에서 다음 Secre
 
 ### LLM 모델 변경
 
-`scripts/orchestrator.js`의 CONFIG에서 모델을 변경할 수 있습니다:
+`scripts/orchestrator.js`의 CONFIG에서 작업별 모델을 변경할 수 있습니다:
 
 ```javascript
 const CONFIG = {
-  openrouterModel: 'upstage/solar-pro-3:free',
-  // 다른 옵션:
-  // 'anthropic/claude-3.5-haiku'
-  // 'google/gemini-2.0-flash-exp'
-  // 'openai/gpt-4o-mini'
+  models: {
+    extract: {
+      primary: 'z-ai/glm-4.5-air:free',             // 추출/분석/병합/요약
+      fallback: 'deepseek/deepseek-r1-0528:free'     // 실패 시 폴백
+    },
+    reasoning: {
+      primary: 'qwen/qwen3-235b-a22b-thinking-2507', // 인사이트/크로스인사이트
+      fallback: 'deepseek/deepseek-r1-0528:free'      // 실패 시 폴백
+    }
+  }
 };
 ```
+
+- **extract**: 뉴스 추출, 구조 분석, 중복 병합, 라벨 요약에 사용
+- **reasoning**: 개인화 인사이트, 크로스 라벨 인사이트 생성에 사용
+- Primary 모델 실패 시 Fallback 모델로 자동 전환됩니다
 
 사용 가능한 모델 목록: [OpenRouter Models](https://openrouter.ai/models)
 
