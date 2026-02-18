@@ -946,17 +946,20 @@ ${agentContent}`;
         body: JSON.stringify(requestBody)
       });
 
-      clearTimeout(timeoutId);
-      this.log(`API 응답 수신: ${model} (상태 ${response.status})`, 'debug');
+      // 타임아웃을 여기서 해제하지 않음! body 수신 완료까지 유지
+      this.log(`API 응답 헤더 수신: ${model} (상태 ${response.status})`, 'debug');
 
       if (!response.ok) {
         const errorText = await response.text();
+        clearTimeout(timeoutId);
         const error = new Error(`API Error (${response.status}) [${model}]: ${errorText}`);
         error.status = response.status;
         throw error;
       }
 
+      // body 수신도 타임아웃 범위 내에서 완료되어야 함
       const data = await response.json();
+      clearTimeout(timeoutId);
 
       if (!data.choices || data.choices.length === 0) {
         throw new Error(`API 응답에 choices가 없습니다 [${model}]`);
