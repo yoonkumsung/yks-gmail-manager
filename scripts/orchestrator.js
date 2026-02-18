@@ -230,8 +230,8 @@ const CONFIG = {
   // 모델 설정 (작업별 Primary + Fallback)
   models: {
     extract: {
-      primary: 'z-ai/glm-4.5-air:free',               // 추출/분석/병합/요약
-      fallback: 'deepseek/deepseek-r1-0528:free'       // GLM 실패 시 폴백
+      primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 추출/분석/병합/요약
+      fallback: 'z-ai/glm-4.5-air:free'                // Qwen 실패 시 폴백
     },
     reasoning: {
       primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 인사이트/크로스인사이트

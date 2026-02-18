@@ -95,28 +95,29 @@ class AgentRunner {
   getModelSpecificConfig(model) {
     if (model.includes('glm')) {
       return {
-        supportsReasoning: false,
-        timeoutMs: 120000,       // 2분 (reasoning 루프 방지)
-        maxTokens: 16000         // 출력 제한 (reasoning 폭발 방지)
+        supportsReasoning: true,  // reasoning 파라미터 전송 시도 (효과 미확인)
+        reasoningMaxTokens: 1000, // 추론 토큰 직접 제한
+        timeoutMs: 120000,        // 2분 (reasoning 루프 방지)
+        maxTokens: 16000          // 출력 제한 (reasoning 폭발 방지)
       };
     }
     if (model.includes('deepseek')) {
       return {
         supportsReasoning: true,
-        timeoutMs: 300000,       // 5분
+        timeoutMs: 300000,        // 5분
         maxTokens: 100000
       };
     }
     if (model.includes('qwen')) {
       return {
         supportsReasoning: true,
-        timeoutMs: 300000,       // 5분
+        timeoutMs: 300000,        // 5분
         maxTokens: 100000
       };
     }
     // 기본값
     return {
-      supportsReasoning: false,
+      supportsReasoning: true,
       timeoutMs: 300000,
       maxTokens: 100000
     };
@@ -929,9 +930,13 @@ ${agentContent}`;
         max_tokens: modelConfig.maxTokens
       };
 
-      // reasoning 파라미터는 지원 모델에만 추가
+      // reasoning 파라미터 추가
       if (modelConfig.supportsReasoning) {
         requestBody.reasoning = { effort: reasoningEffort };
+        // 모델별 추론 토큰 상한 (GLM 등 추론 폭발 방지)
+        if (modelConfig.reasoningMaxTokens) {
+          requestBody.reasoning.max_tokens = modelConfig.reasoningMaxTokens;
+        }
       }
 
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
