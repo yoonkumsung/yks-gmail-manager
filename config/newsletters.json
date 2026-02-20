@@ -1218,11 +1218,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 15
       },
       "detected_at": "2026-02-12T23:52:18.454Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "booding",
@@ -1403,7 +1403,25 @@
       },
       "detected_at": "2026-02-18T23:54:56.821Z",
       "skill_generated": true
+    },
+    {
+      "id": "kdi_kdieiec",
+      "sender": "kdieiec@kdi.re.kr",
+      "name": "KDI <kdieiec@kdi.re.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kdi_kdieiec.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-20T00:03:56.465Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-18T23:59:12.363Z"
+  "last_scan": "2026-02-20T00:09:36.800Z"
 }
