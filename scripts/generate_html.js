@@ -1339,8 +1339,11 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     allLabelsData.push(data);
   }
 
+  // 아이템 0건인 라벨 제외
+  const filteredLabelsData = allLabelsData.filter(data => data.items && data.items.length > 0);
+
   // 라벨 이름순 정렬
-  allLabelsData.sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+  filteredLabelsData.sort((a, b) => a.label.localeCompare(b.label, 'ko'));
 
   // 크로스 인사이트 데이터 읽기
   let crossInsight = null;
@@ -1353,7 +1356,7 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     }
   }
 
-  const html = generateCombinedHtmlReport(allLabelsData, date, crossInsight);
+  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight);
   fs.writeFileSync(outputPath, html, 'utf8');
 
   console.log(`통합 HTML 리포트 생성됨: ${outputPath}`);

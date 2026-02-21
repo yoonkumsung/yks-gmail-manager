@@ -1178,6 +1178,32 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
   console.log(`    총 ${allItems.length}개 아이템`);
 
+  // 아이템 0건이면 merged 파일 생성하지 않고 건너뜀
+  if (allItems.length === 0) {
+    console.log(`  [${label.name}] 추출된 아이템 없음 - merged 파일 생성 건너뜀 (HTML에서 제외됨)`);
+    console.log(`  [디버그] 메일 ${msgFiles.length}개 수집, LLM 성공 ${successCount}개, 실패 ${failCount}개 → 아이템 0건`);
+
+    // clean 파일의 텍스트 길이 로깅 (이미지 전용 메일 감지)
+    const cleanFiles = fs.readdirSync(cleanDir).filter(f => f.startsWith('clean_'));
+    for (const cf of cleanFiles) {
+      try {
+        const cleanData = JSON.parse(fs.readFileSync(path.join(cleanDir, cf), 'utf8'));
+        const textLen = (cleanData.clean_text || '').length;
+        const from = cleanData.from || 'unknown';
+        const imgOnly = textLen < 100 ? ' ⚠ 이미지 전용 메일 가능성' : '';
+        console.log(`    - ${from}: clean_text ${textLen}자${imgOnly}`);
+      } catch (e) { /* skip */ }
+    }
+
+    return {
+      label: label.name,
+      success: true,
+      messageCount: msgFiles.length,
+      itemCount: 0,
+      newNewsletters: newNewsletters.newsletters
+    };
+  }
+
   // 병합 Agent 호출 (배치 처리)
   let merged;
   const mergeAgentPath = path.join(__dirname, '..', 'agents', '병합.md');
