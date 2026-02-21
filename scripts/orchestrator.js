@@ -236,7 +236,8 @@ const CONFIG = {
     reasoning: {
       primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 인사이트/크로스인사이트
       fallback: 'deepseek/deepseek-r1-0528:free'        // Qwen 실패 시 폴백
-    }
+    },
+    vision: 'nvidia/nemotron-nano-12b-v2-vl:free'       // 이미지 전용 메일 텍스트 변환
   },
 
   mergeBatchSize: 15,     // 병합 배치 크기
@@ -1032,7 +1033,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   if (!progressManager.isStepCompleted(label.name, 'html_to_text')) {
     console.log('  HTML → Text 변환 중...');
     progressManager.setStepStatus(label.name, 'html_to_text', 'in_progress');
-    await convertHtmlToText(rawDir, cleanDir);
+    await convertHtmlToText(rawDir, cleanDir, runner);
     progressManager.setStepStatus(label.name, 'html_to_text', 'completed');
   } else {
     console.log('  HTML → Text 변환 (이미 완료, 건너뜀)');
@@ -1042,6 +1043,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   let successCount = 0;
   let failCount = 0;
   let newSkillCount = 0;
+  const excludedMails = []; // 제외된 메일 추적
 
   if (!progressManager.isStepCompleted(label.name, 'llm_extract')) {
     console.log('  아이템 추출 중 (LLM)...');
@@ -1122,13 +1124,24 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         }
 
         // 공통: 메타데이터 추가 후 저장
-        if (result && result.items) {
+        if (result && result.items && result.items.length > 0) {
           const enrichedItems = result.items.map(item => ({
             ...item,
             source_email: senderEmail,
             message_id: messageId
           }));
           fs.writeFileSync(itemsPath, JSON.stringify({ items: enrichedItems }, null, 2), 'utf8');
+        } else {
+          // 아이템 0건 - 제외 사유 기록
+          const cleanData = JSON.parse(fs.readFileSync(cleanPath, 'utf8'));
+          const textLen = (cleanData.clean_text || '').length;
+          let reason = '추출 가능한 뉴스 아이템 없음';
+          if (textLen < 150) reason = `본문 텍스트 부족 (${textLen}자) - 이미지 전용 메일 가능성`;
+          excludedMails.push({
+            subject: cleanData.subject || '(제목 없음)',
+            from: senderEmail,
+            reason
+          });
         }
 
         successCount++;
@@ -1136,6 +1149,17 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         failCount++;
         failedBatchManager.recordFailure(label.name, 'llm_extract', idx, error, { messageId, senderEmail });
         console.warn(`    [실패] ${messageId}: ${error.message}`);
+
+        // 실패 메일도 제외 목록에 추가
+        try {
+          const cleanData = JSON.parse(fs.readFileSync(cleanPath, 'utf8'));
+          excludedMails.push({
+            subject: cleanData.subject || '(제목 없음)',
+            from: senderEmail,
+            reason: `LLM 처리 실패: ${error.message.substring(0, 100)}`
+          });
+        } catch (e) { /* skip */ }
+
         // 실패해도 계속 진행
       }
     }
@@ -1178,21 +1202,27 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
   console.log(`    총 ${allItems.length}개 아이템`);
 
-  // 아이템 0건이면 merged 파일 생성하지 않고 건너뜀
+  // 아이템 0건이면 merged 파일 생성하지 않고 건너뜀 (제외 메일은 별도 저장)
   if (allItems.length === 0) {
     console.log(`  [${label.name}] 추출된 아이템 없음 - merged 파일 생성 건너뜀 (HTML에서 제외됨)`);
     console.log(`  [디버그] 메일 ${msgFiles.length}개 수집, LLM 성공 ${successCount}개, 실패 ${failCount}개 → 아이템 0건`);
 
-    // clean 파일의 텍스트 길이 로깅 (이미지 전용 메일 감지)
+    // clean 파일의 텍스트 길이 로깅
     const cleanFiles = fs.readdirSync(cleanDir).filter(f => f.startsWith('clean_'));
     for (const cf of cleanFiles) {
       try {
         const cleanData = JSON.parse(fs.readFileSync(path.join(cleanDir, cf), 'utf8'));
         const textLen = (cleanData.clean_text || '').length;
         const from = cleanData.from || 'unknown';
-        const imgOnly = textLen < 100 ? ' ⚠ 이미지 전용 메일 가능성' : '';
+        const imgOnly = textLen < 150 ? ' ⚠ 이미지 전용 메일 가능성' : '';
         console.log(`    - ${from}: clean_text ${textLen}자${imgOnly}`);
       } catch (e) { /* skip */ }
+    }
+
+    // 제외 메일 정보 저장 (HTML 제외 탭용)
+    if (excludedMails.length > 0) {
+      const excludedPath = path.join(mergedDir, `excluded_${label.name}.json`);
+      fs.writeFileSync(excludedPath, JSON.stringify({ label: label.name, excluded: excludedMails }, null, 2), 'utf8');
     }
 
     return {
@@ -1200,6 +1230,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       success: true,
       messageCount: msgFiles.length,
       itemCount: 0,
+      excludedMails,
       newNewsletters: newNewsletters.newsletters
     };
   }
@@ -1299,6 +1330,11 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
         items: allItems,
         stats: { original_count: allItems.length, total_items: allItems.length, duplicates_removed: 0 }
       };
+    }
+
+    // 제외 메일 정보 포함
+    if (excludedMails.length > 0) {
+      merged.excluded = excludedMails;
     }
 
     fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
@@ -1535,8 +1571,8 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
 /**
  * HTML → Text 변환 (병렬 처리)
  */
-async function convertHtmlToText(rawDir, cleanDir) {
-  const { htmlToText, cleanNewsletterText } = require('./html_to_text');
+async function convertHtmlToText(rawDir, cleanDir, runner) {
+  const { htmlToText, cleanNewsletterText, extractImageUrls } = require('./html_to_text');
 
   const msgFiles = fs.readdirSync(rawDir).filter(f => f.startsWith('msg_'));
 
@@ -1550,9 +1586,28 @@ async function convertHtmlToText(rawDir, cleanDir) {
       const messageId = file.replace('msg_', '').replace('.json', '');
 
       let cleanText = '';
+      let visionUsed = false;
       if (msgData.html_body) {
         cleanText = htmlToText(msgData.html_body);
         cleanText = cleanNewsletterText(cleanText);
+
+        // 이미지 전용 메일 감지: clean_text < 150자이면 vision 모델로 텍스트 추출 시도
+        if (cleanText.length < 150 && runner && CONFIG.models.vision) {
+          const imageUrls = extractImageUrls(msgData.html_body);
+          if (imageUrls.length > 0) {
+            console.log(`    [Vision] ${msgData.subject || messageId}: clean_text ${cleanText.length}자, 이미지 ${imageUrls.length}개 → vision 모델 호출`);
+            try {
+              const visionText = await runner.callVisionModel(imageUrls, CONFIG.models.vision);
+              if (visionText && visionText.length > cleanText.length) {
+                cleanText = visionText;
+                visionUsed = true;
+                console.log(`    [Vision] 텍스트 추출 성공: ${visionText.length}자`);
+              }
+            } catch (e) {
+              console.warn(`    [Vision] 실패 (원본 텍스트 사용): ${e.message}`);
+            }
+          }
+        }
       }
 
       const cleanData = {
@@ -1561,7 +1616,8 @@ async function convertHtmlToText(rawDir, cleanDir) {
         subject: msgData.subject,
         date: msgData.date,
         labels: msgData.labels,
-        clean_text: cleanText
+        clean_text: cleanText,
+        vision_used: visionUsed
       };
 
       fs.writeFileSync(

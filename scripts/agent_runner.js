@@ -1,8 +1,9 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
  * 모델: 작업별 다중 모델 + 폴백 전략
- *   - 추출 모델 (extract/analyze/merge/summarize): GLM-4.5-Air → DeepSeek-R1 폴백
+ *   - 추출 모델 (extract/analyze/merge/summarize): Qwen3-235B → GLM-4.5-Air 폴백
  *   - 추론 모델 (insight/crossInsight): Qwen3-235B → DeepSeek-R1 폴백
+ *   - 비전 모델 (vision): Nemotron-Nano-12B-VL (이미지 전용 메일 텍스트 변환)
  *
  * 주요 기능:
  * - 작업 유형별 자동 모델 선택
@@ -93,6 +94,13 @@ class AgentRunner {
    * - Qwen3: reasoning 지원, 타임아웃 5분
    */
   getModelSpecificConfig(model) {
+    if (model.includes('nemotron') || model.includes('vision') || model.includes('-vl')) {
+      return {
+        supportsReasoning: false,
+        timeoutMs: 120000,        // 2분
+        maxTokens: 4000           // 이미지 → 텍스트 변환은 짧은 출력
+      };
+    }
     if (model.includes('glm')) {
       return {
         supportsReasoning: true,  // reasoning 파라미터 전송 시도 (효과 미확인)
@@ -306,7 +314,7 @@ class AgentRunner {
         const prompt = this.buildFullPrompt(header, currentInput);
 
         // API 호출 (시간 예산 전달)
-        const response = await this.callSolar3WithRetry(prompt, options.maxTimeMs || 0);
+        const response = await this.callLLMWithRetry(prompt, options.maxTimeMs || 0);
 
         // 응답 검증
         const validated = this.validateResponse(response, options.schema);
@@ -743,7 +751,7 @@ ${agentContent}`;
    * @param {string} prompt - 프롬프트
    * @param {number} maxTimeMs - 시간 예산 (ms). 0이면 무제한
    */
-  async callSolar3WithRetry(prompt, maxTimeMs = 0) {
+  async callLLMWithRetry(prompt, maxTimeMs = 0) {
     const models = this.getModelsForTask(this.currentTaskType);
     const startTime = Date.now();
 
@@ -799,7 +807,7 @@ ${agentContent}`;
       try {
         await this.checkRateLimit();
 
-        const response = await this.callSolar3(prompt, retryOverrides);
+        const response = await this.callLLM(prompt, retryOverrides);
 
         // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
@@ -900,11 +908,78 @@ ${agentContent}`;
   }
 
   /**
+   * Vision 모델로 이미지에서 텍스트 추출
+   * @param {string[]} imageUrls - 이미지 URL 배열
+   * @param {string} visionModel - 사용할 vision 모델명
+   * @returns {string} 추출된 텍스트
+   */
+  async callVisionModel(imageUrls, visionModel) {
+    const fetch = await getFetch();
+    const modelConfig = this.getModelSpecificConfig(visionModel);
+
+    this.log(`Vision API 호출: ${visionModel} (이미지 ${imageUrls.length}개)`, 'info');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), modelConfig.timeoutMs);
+
+    try {
+      // 멀티모달 content 배열 구성
+      const content = [
+        { type: 'text', text: '이 이미지들은 뉴스레터 이메일의 본문입니다. 이미지에 포함된 모든 텍스트를 그대로 추출해주세요. 텍스트만 출력하고, 설명이나 해석은 하지 마세요.' }
+      ];
+
+      for (const url of imageUrls.slice(0, 5)) { // 최대 5개 이미지
+        content.push({ type: 'image_url', image_url: { url } });
+      }
+
+      const requestBody = {
+        model: visionModel,
+        messages: [
+          { role: 'user', content }
+        ],
+        temperature: 0.1,
+        max_tokens: modelConfig.maxTokens
+      };
+
+      await this.checkRateLimit();
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/yks-gmail-manager',
+          'X-Title': 'Gmail Manager'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        clearTimeout(timeoutId);
+        throw new Error(`Vision API 오류 ${response.status}: ${errorText.substring(0, 200)}`);
+      }
+
+      const data = await response.json();
+      clearTimeout(timeoutId);
+
+      const extractedText = data.choices?.[0]?.message?.content || '';
+      this.log(`Vision 텍스트 추출 완료: ${extractedText.length}자`, 'info');
+      return extractedText;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      this.log(`Vision API 실패: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  /**
    * API 호출 (단일)
    * @param {string} prompt - 프롬프트
    * @param {object} overrides - 설정 오버라이드 (예: { model, reasoningEffort })
    */
-  async callSolar3(prompt, overrides = {}) {
+  async callLLM(prompt, overrides = {}) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
     const model = overrides.model || this.getModelsForTask(this.currentTaskType).primary;
     const modelConfig = this.getModelSpecificConfig(model);

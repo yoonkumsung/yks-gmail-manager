@@ -500,7 +500,7 @@ function generateFromFinalJson(finalJsonPath, outputPath) {
 /**
  * 통합 HTML 리포트 생성 (모든 라벨 포함)
  */
-function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
+function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedMails = []) {
   // 크로스 인사이트 탭 버튼 (있으면 첫 번째)
   const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0 || crossInsight.action_items?.length > 0);
   const crossTabButton = hasCrossInsight
@@ -508,11 +508,16 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
     : '';
 
   // 라벨별 탭 버튼 생성
+  const hasExcluded = excludedMails && excludedMails.length > 0;
+  const excludedTabButton = hasExcluded
+    ? `\n<button class="tab-btn excluded-tab-btn" data-tab="제외됨">제외<span class="count">${excludedMails.length}</span></button>`
+    : '';
+
   const tabButtons = crossTabButton + allLabelsData.map((data, index) => {
     const isActive = (!hasCrossInsight && index === 0) ? 'active' : '';
     const itemCount = data.items?.length || 0;
     return `<button class="tab-btn ${isActive}" data-tab="${data.label}">${escapeHtml(data.label)}<span class="count">${itemCount}</span></button>`;
-  }).join('\n');
+  }).join('\n') + excludedTabButton;
 
   // 크로스 인사이트 탭 콘텐츠
   const crossTabContent = hasCrossInsight ? generateCrossInsightTab(crossInsight) : '';
@@ -620,6 +625,30 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
       </div>
     `;
   }).join('\n');
+
+  // 제외 탭 콘텐츠
+  const excludedTabContent = hasExcluded ? `
+    <div class="tab-content" id="tab-제외됨">
+      <div class="label-stats">
+        <span class="stat">제외 ${excludedMails.length}건</span>
+      </div>
+      <div class="items-list">
+        ${excludedMails.map((mail, i) => `
+          <article class="item-card excluded-card">
+            <div class="item-header">
+              <h3 class="item-title">${escapeHtml(mail.subject)}</h3>
+              <span class="item-number">#${i + 1}</span>
+            </div>
+            <p class="item-summary"><strong>발신:</strong> ${escapeHtml(mail.from || '')}</p>
+            <p class="item-summary"><strong>라벨:</strong> ${escapeHtml(mail.label || '')}</p>
+            <p class="item-summary" style="color: #9ca3af;"><strong>제외 사유:</strong> ${escapeHtml(mail.reason)}</p>
+          </article>
+        `).join('\n')}
+      </div>
+    </div>
+  ` : '';
+
+  const allTabContents = tabContents + excludedTabContent;
 
   // 총 기사 수 계산
   const totalItems = allLabelsData.reduce((sum, data) => sum + (data.items?.length || 0), 0);
@@ -982,6 +1011,19 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
       background: rgba(255,255,255,0.3);
     }
 
+    /* 제외 탭 */
+    .excluded-tab-btn {
+      opacity: 0.6;
+    }
+    .excluded-tab-btn .count {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    .excluded-card {
+      border-left: 3px solid #9ca3af;
+      opacity: 0.8;
+    }
+
     .cross-insight-section {
       margin-bottom: 1.5rem;
     }
@@ -1269,7 +1311,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight) {
 
   <!-- 메인 콘텐츠 -->
   <main class="container">
-    ${tabContents}
+    ${allTabContents}
   </main>
 
   <script>
@@ -1339,6 +1381,24 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     allLabelsData.push(data);
   }
 
+  // 제외 메일 수집 (merged 파일 내 excluded + 별도 excluded_*.json)
+  const allExcluded = [];
+  for (const data of allLabelsData) {
+    if (data.excluded && data.excluded.length > 0) {
+      allExcluded.push(...data.excluded.map(e => ({ ...e, label: data.label })));
+    }
+  }
+  // 별도 excluded_*.json 파일에서도 수집
+  const excludedFiles = fs.readdirSync(mergedDir).filter(f => f.startsWith('excluded_') && f.endsWith('.json'));
+  for (const file of excludedFiles) {
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
+      if (data.excluded) {
+        allExcluded.push(...data.excluded.map(e => ({ ...e, label: data.label })));
+      }
+    } catch (e) { /* skip */ }
+  }
+
   // 아이템 0건인 라벨 제외
   const filteredLabelsData = allLabelsData.filter(data => data.items && data.items.length > 0);
 
@@ -1356,7 +1416,7 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     }
   }
 
-  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight);
+  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight, allExcluded);
   fs.writeFileSync(outputPath, html, 'utf8');
 
   console.log(`통합 HTML 리포트 생성됨: ${outputPath}`);

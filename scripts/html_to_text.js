@@ -233,12 +233,39 @@ async function main() {
   }
 }
 
+/**
+ * HTML에서 이미지 URL 추출 (vision 모델용)
+ * 작은 아이콘/추적 픽셀 제외, 콘텐츠 이미지만 추출
+ */
+function extractImageUrls(html) {
+  const urls = [];
+  const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*>/gi;
+  let match;
+
+  while ((match = imgRegex.exec(html)) !== null) {
+    const url = match[0];
+    const src = match[1];
+
+    // 추적 픽셀/아이콘 제외 (1x1, spacer, pixel, tracking 등)
+    if (/width=["']1["']|height=["']1["']|spacer|pixel|track|beacon|open\./i.test(url)) continue;
+    // data URI 제외 (너무 작은 것)
+    if (src.startsWith('data:') && src.length < 200) continue;
+    // http(s) URL만 포함
+    if (!src.startsWith('http') && !src.startsWith('data:image')) continue;
+
+    urls.push(src);
+  }
+
+  return urls;
+}
+
 // 모듈 내보내기
 module.exports = {
   htmlToText,
   cleanNewsletterText,
   createCleanTextWithLineNumbers,
-  decodeHtmlEntities
+  decodeHtmlEntities,
+  extractImageUrls
 };
 
 // 직접 실행시
