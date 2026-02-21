@@ -129,11 +129,12 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
-          MESSAGE=$(printf "안녕하세요, %s 뉴스레터 정리를 시작합니다.\n모드: %s\n완료되면 다시 알려드리겠습니다." "$TARGET_DATE" "$MODE_KR")
+          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리를 시작합니다.\n\n📅 %s\n📋 모드: %s" "$TARGET_DATE" "$MODE_KR")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE"
+            -d text="$MESSAGE" \
+            -d parse_mode=HTML
 
       - name: Setup Node.js
         if: steps.check-secrets.outputs.skip != 'true'
@@ -260,10 +261,11 @@ jobs:
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
-            MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n오늘은 처리할 뉴스레터가 없었습니다.\n소요 시간: %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
+            MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 처리할 뉴스레터가 없었습니다.\n⏱ %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
-              -d text="$MESSAGE"
+              -d text="$MESSAGE" \
+              -d parse_mode=HTML
             exit 0
           fi
 
@@ -276,25 +278,25 @@ jobs:
           MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
 
           # 완료 메시지 먼저 전송
-          MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n%s 등 %s개 라벨을 처리했습니다.\n소요 시간: %d분 %d초\n\n아래에 리포트를 보내드립니다." "$TARGET_DATE" "$LABEL_NAMES" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
+          REPORT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 %s개 라벨 처리 완료\n⏱ %d분 %d초\n\n🔗 <a href=\"%s\">리포트 보기</a>" "$TARGET_DATE" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC" "$REPORT_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE"
+            -d text="$MESSAGE" \
+            -d parse_mode=HTML
 
-          # 파일 전송
+          # 파일 전송 (caption 없이 단순 첨부)
           if [ -n "$HTML_FILE" ]; then
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F document=@"${HTML_FILE}" \
-              -F caption="HTML 리포트"
+              -F document=@"${HTML_FILE}"
           fi
 
           if [ -n "$MD_FILE" ]; then
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F document=@"${MD_FILE}" \
-              -F caption="Markdown 리포트"
+              -F document=@"${MD_FILE}"
           fi
 
       - name: 에러/타임아웃 알림
@@ -330,8 +332,9 @@ jobs:
             STATUS="에러"
           fi
 
-          MESSAGE=$(printf "뉴스레터 정리 중 문제가 발생했습니다.\n날짜: %s\n상태: %s\n소요: %s\n\n상세 로그를 확인해주세요.\n%s" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
+          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 실패\n\n📅 %s\n❌ 상태: %s\n⏱ %s\n\n🔗 <a href=\"%s\">로그 확인</a>" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE"
+            -d text="$MESSAGE" \
+            -d parse_mode=HTML

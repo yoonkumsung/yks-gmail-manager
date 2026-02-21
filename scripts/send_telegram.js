@@ -73,17 +73,15 @@ if (require.main === module) {
 
   let message;
   if (status === 'success') {
-    message = `<b>📬 메일 다이제스트 완료</b>
+    message = `[Gmail Manager] 뉴스레터 정리 완료
 
 📅 ${dateStr}
-📊 총 ${itemCount}개 아이템 정리됨
-
-${pagesUrl ? `🔗 <a href="${pagesUrl}">결과 보기</a>` : ''}`;
+📊 ${itemCount}개 라벨 처리 완료${pagesUrl ? `\n\n🔗 <a href="${pagesUrl}">리포트 보기</a>` : ''}`;
   } else {
-    message = `<b>⚠️ 메일 다이제스트 실패</b>
+    message = `[Gmail Manager] 뉴스레터 정리 실패
 
 📅 ${dateStr}
-GitHub Actions 로그를 확인하세요.`;
+❌ 상태: 에러`;
   }
 
   sendTelegram(message).catch(err => {
