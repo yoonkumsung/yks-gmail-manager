@@ -822,11 +822,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "single-topic",
+        "item_count_avg": 1
       },
       "detected_at": "2026-02-07T03:20:56.911Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "video_jockey",
@@ -1421,7 +1421,43 @@
       },
       "detected_at": "2026-02-20T00:03:56.465Z",
       "skill_generated": true
+    },
+    {
+      "id": "kotra",
+      "sender": "kotranews@kotra.or.kr",
+      "name": "\"KOTRA 뉴스레터\" <kotranews@kotra.or.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_kotra.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-20T23:50:45.601Z",
+      "skill_generated": true
+    },
+    {
+      "id": "coffeepot",
+      "sender": "good@coffeepot.me",
+      "name": "COFFEEPOT <good@coffeepot.me>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_coffeepot.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-02-20T23:50:45.601Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-20T00:09:36.800Z"
+  "last_scan": "2026-02-21T00:01:01.754Z"
 }
