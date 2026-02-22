@@ -191,6 +191,7 @@ jobs:
 
       - name: SKILL 파일 및 설정 커밋
         if: success() && steps.check-secrets.outputs.skip != 'true'
+        continue-on-error: true
         run: |
           # Git 설정
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -210,9 +211,13 @@ jobs:
             # 커밋 (변경사항이 있을 때만)
             git diff --staged --quiet || git commit -m "chore: 새 뉴스레터 SKILL 자동 생성"
 
-            # remote 변경사항 반영 후 푸시
-            git pull --rebase || true
-            git push
+            # remote 변경사항 반영 후 푸시 (conflict 시 abort 후 재시도)
+            if ! git pull --rebase; then
+              echo "Rebase conflict 발생, abort 후 merge 방식으로 재시도"
+              git rebase --abort
+              git pull --no-rebase --strategy-option theirs || true
+            fi
+            git push || echo "SKILL 푸시 실패 (메일 정리 자체는 정상 완료)"
             echo "SKILL 파일 커밋 완료"
           else
             echo "새로운 SKILL 파일 없음, 건너뜀"
