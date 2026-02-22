@@ -76,12 +76,12 @@ if (require.main === module) {
     message = `[Gmail Manager] 뉴스레터 정리 완료
 
 📅 ${dateStr}
-📊 ${itemCount}개 라벨 처리 완료${pagesUrl ? `\n\n🔗 <a href="${pagesUrl}">리포트 보기</a>` : ''}`;
+📊 ${itemCount}개 라벨 처리 완료`;
   } else {
     message = `[Gmail Manager] 뉴스레터 정리 실패
 
 📅 ${dateStr}
-❌ 상태: 에러`;
+❌ 상태: 에러${pagesUrl ? `\n\n🔗 <a href="${pagesUrl}">로그 확인</a>` : ''}`;
   }
 
   sendTelegram(message).catch(err => {

@@ -278,8 +278,7 @@ jobs:
           MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
 
           # 완료 메시지 먼저 전송
-          REPORT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 %s개 라벨 처리 완료\n⏱ %d분 %d초\n\n🔗 <a href=\"%s\">리포트 보기</a>" "$TARGET_DATE" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC" "$REPORT_URL")
+          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 %s개 라벨 처리 완료\n⏱ %d분 %d초" "$TARGET_DATE" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
