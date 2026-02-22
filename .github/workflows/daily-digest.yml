@@ -210,7 +210,8 @@ jobs:
             # 커밋 (변경사항이 있을 때만)
             git diff --staged --quiet || git commit -m "chore: 새 뉴스레터 SKILL 자동 생성"
 
-            # 푸시
+            # remote 변경사항 반영 후 푸시
+            git pull --rebase || true
             git push
             echo "SKILL 파일 커밋 완료"
           else
