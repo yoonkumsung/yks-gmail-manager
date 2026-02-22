@@ -139,7 +139,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 5
+        "item_count_avg": 12
       },
       "detected_at": "2026-02-03T20:42:52.811Z",
       "skill_generated": true
@@ -1326,11 +1326,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 5
       },
       "detected_at": "2026-02-13T01:19:53.592Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "kfem",
@@ -1457,7 +1457,43 @@
       },
       "detected_at": "2026-02-20T23:50:45.601Z",
       "skill_generated": true
+    },
+    {
+      "id": "minumsa_banbi",
+      "sender": "banbi@minumsa.com",
+      "name": "\"반비 책타래\" <banbi@minumsa.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_minumsa_banbi.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-22T16:34:28.616Z",
+      "skill_generated": true
+    },
+    {
+      "id": "awarelab",
+      "sender": "content@mail.awarelab.io",
+      "name": "\"어웨어\" <content@mail.awarelab.io>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_awarelab.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-22T16:39:14.547Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-21T00:01:01.754Z"
+  "last_scan": "2026-02-22T17:34:27.737Z"
 }
