@@ -1493,7 +1493,25 @@
       },
       "detected_at": "2026-02-22T16:39:14.547Z",
       "skill_generated": true
+    },
+    {
+      "id": "careet",
+      "sender": "careet@careet.net",
+      "name": "\"캐릿\" <careet@careet.net>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_careet.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-24T00:24:19.934Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-22T17:34:27.737Z"
+  "last_scan": "2026-02-24T00:35:30.525Z"
 }
