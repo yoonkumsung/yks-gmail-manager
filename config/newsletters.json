@@ -1511,7 +1511,25 @@
       },
       "detected_at": "2026-02-24T00:24:19.934Z",
       "skill_generated": true
+    },
+    {
+      "id": "beehiiv",
+      "sender": "catchpaper@mail.beehiiv.com",
+      "name": "Catch Paper <catchpaper@mail.beehiiv.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_beehiiv.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-02-25T00:02:23.021Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-24T00:35:30.525Z"
+  "last_scan": "2026-02-25T00:05:24.330Z"
 }
