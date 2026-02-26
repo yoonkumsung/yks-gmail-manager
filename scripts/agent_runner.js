@@ -103,10 +103,9 @@ class AgentRunner {
     }
     if (model.includes('glm')) {
       return {
-        supportsReasoning: true,  // reasoning 파라미터 전송 시도 (효과 미확인)
-        reasoningMaxTokens: 1000, // 추론 토큰 직접 제한
+        supportsReasoning: false, // GLM은 effort+max_tokens 동시 지원 안 함 → reasoning 비활성화
         timeoutMs: 120000,        // 2분 (reasoning 루프 방지)
-        maxTokens: 16000          // 출력 제한 (reasoning 폭발 방지)
+        maxTokens: 16000          // 출력 제한
       };
     }
     if (model.includes('deepseek')) {
@@ -763,6 +762,13 @@ ${agentContent}`;
       // Fallback 모델이 없으면 그대로 throw
       if (!models.fallback) throw primaryError;
 
+      // 401/403 인증 에러는 같은 API 키를 쓰는 Fallback도 실패하므로 즉시 throw
+      const primaryStatus = primaryError.status;
+      if (primaryStatus === 401 || primaryStatus === 403) {
+        this.log(`[Fallback 건너뜀] 인증 에러(${primaryStatus})는 Fallback도 동일 실패`, 'warn');
+        throw primaryError;
+      }
+
       // 시간 예산 잔여 확인
       const elapsed = Date.now() - startTime;
       const remaining = maxTimeMs > 0 ? maxTimeMs - elapsed : 0;
@@ -1106,6 +1112,7 @@ ${agentContent}`;
       [429, 408, 500, 502, 503, 504].includes(status) ||
       error.name === 'AbortError' ||
       msg.includes('timeout') ||
+      msg.includes('타임아웃') ||
       msg.includes('ECONNRESET') ||
       msg.includes('ETIMEDOUT') ||
       msg.includes('불완전') ||

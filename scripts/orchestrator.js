@@ -1164,7 +1164,12 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       }
     }
 
-    progressManager.setStepStatus(label.name, 'llm_extract', 'completed');
+    // 실패가 있으면 completed로 표시하지 않음 → 재실행 시 실패 항목 재처리 가능
+    if (failCount === 0) {
+      progressManager.setStepStatus(label.name, 'llm_extract', 'completed');
+    } else {
+      console.log(`  [주의] ${failCount}개 실패 → 재실행 시 재처리됨`);
+    }
   } else {
     console.log('  아이템 추출 (이미 완료, 건너뜀)');
     // 이미 추출된 아이템 수 계산
