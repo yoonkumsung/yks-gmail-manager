@@ -1000,7 +1000,11 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     console.log('  Gmail API 호출 중...');
     progressManager.setStepStatus(label.name, 'gmail_fetch', 'in_progress');
     fetchResult = await fetchGmailMessages(label, timeRange, rawDir);  // 인증 에러는 throw됨
-    progressManager.setStepStatus(label.name, 'gmail_fetch', 'completed');
+    if (fetchResult !== null) {
+      progressManager.setStepStatus(label.name, 'gmail_fetch', 'completed');
+    } else {
+      console.warn('  Gmail API 오류 발생 → 재실행 시 재시도됨');
+    }
   } else {
     console.log('  Gmail API 호출 (이미 완료, 건너뜀)');
   }
@@ -1343,7 +1347,12 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     }
 
     fs.writeFileSync(mergedPath, JSON.stringify(merged, null, 2), 'utf8');
-    progressManager.setStepStatus(label.name, 'merge', 'completed');
+    // merged.items가 존재하고 비어있지 않을 때만 완료 처리
+    if (merged.items && merged.items.length > 0) {
+      progressManager.setStepStatus(label.name, 'merge', 'completed');
+    } else {
+      console.warn('  [주의] 병합 결과에 아이템 없음 → 재실행 시 재처리됨');
+    }
   } else {
     console.log('  병합 (이미 완료, 건너뜀)');
     // 기존 병합 결과 로드
@@ -1356,6 +1365,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
   if (!progressManager.isStepCompleted(label.name, 'insight')) {
     progressManager.setStepStatus(label.name, 'insight', 'in_progress');
+    let insightFailed = false;
 
     if (fs.existsSync(insightAgentPath) && merged.items.length > 0) {
       console.log('  인사이트 생성 중 (LLM 배치 병렬 처리)...');
@@ -1471,13 +1481,19 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       } catch (error) {
         console.warn(`  인사이트 생성 실패 (무시): ${error.message}`);
         merged.has_insights = false;
+        insightFailed = true;
       }
     } else {
       console.log('  인사이트 Agent 없음 또는 아이템 없음, 건너뜀');
       merged.has_insights = false;
     }
 
-    progressManager.setStepStatus(label.name, 'insight', 'completed');
+    // 인사이트 전체 실패 시 completed 미표시 → 재실행 시 재처리
+    if (!insightFailed) {
+      progressManager.setStepStatus(label.name, 'insight', 'completed');
+    } else {
+      console.log(`  [주의] 인사이트 생성 실패 → 재실행 시 재처리됨`);
+    }
   } else {
     console.log('  인사이트 생성 (이미 완료, 건너뜀)');
     // 기존 결과에 이미 인사이트가 있을 수 있음
@@ -1496,8 +1512,12 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   const finalMd = path.join(finalDir, `${dateStr}_${label.name}_메일정리.md`);
 
   // MD 파일 생성 (timeRange.end = 사용자 요청 날짜)
-  const mdContent = generateMarkdown(merged, timeRange.end);
-  fs.writeFileSync(finalMd, mdContent, 'utf8');
+  try {
+    const mdContent = generateMarkdown(merged, timeRange.end);
+    fs.writeFileSync(finalMd, mdContent, 'utf8');
+  } catch (mdError) {
+    console.error(`  MD 파일 생성 실패: ${mdError.message}`);
+  }
 
   // HTML은 통합 파일로 main()에서 생성됨
 
@@ -1510,8 +1530,10 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     const fetcher = new GmailFetcher();
     await fetcher.authenticate();
 
-    // 처리된 메시지 ID 목록 (raw 폴더의 msg_ 파일에서 추출)
-    const processedIds = msgFiles.map(f => f.replace('msg_', '').replace('.json', ''));
+    // 성공적으로 처리된 메시지만 읽음 표시 (items_ 파일이 존재하는 것만)
+    const processedIds = msgFiles
+      .map(f => f.replace('msg_', '').replace('.json', ''))
+      .filter(id => fs.existsSync(path.join(itemsDir, `items_${id}.json`)));
     const markResult = await fetcher.markMessagesAsRead(processedIds);
     console.log(`  읽음 표시: ${markResult.success}개 완료`);
   } catch (error) {
@@ -1587,49 +1609,53 @@ async function convertHtmlToText(rawDir, cleanDir, runner) {
     const batch = msgFiles.slice(i, i + PARALLEL_LIMIT);
 
     await Promise.all(batch.map(async (file) => {
-      const msgData = JSON.parse(fs.readFileSync(path.join(rawDir, file), 'utf8'));
-      const messageId = file.replace('msg_', '').replace('.json', '');
+      try {
+        const msgData = JSON.parse(fs.readFileSync(path.join(rawDir, file), 'utf8'));
+        const messageId = file.replace('msg_', '').replace('.json', '');
 
-      let cleanText = '';
-      let visionUsed = false;
-      if (msgData.html_body) {
-        cleanText = htmlToText(msgData.html_body);
-        cleanText = cleanNewsletterText(cleanText);
+        let cleanText = '';
+        let visionUsed = false;
+        if (msgData.html_body) {
+          cleanText = htmlToText(msgData.html_body);
+          cleanText = cleanNewsletterText(cleanText);
 
-        // 이미지 전용 메일 감지: clean_text < 150자이면 vision 모델로 텍스트 추출 시도
-        if (cleanText.length < 150 && runner && CONFIG.models.vision) {
-          const imageUrls = extractImageUrls(msgData.html_body);
-          if (imageUrls.length > 0) {
-            console.log(`    [Vision] ${msgData.subject || messageId}: clean_text ${cleanText.length}자, 이미지 ${imageUrls.length}개 → vision 모델 호출`);
-            try {
-              const visionText = await runner.callVisionModel(imageUrls, CONFIG.models.vision);
-              if (visionText && visionText.length > cleanText.length) {
-                cleanText = visionText;
-                visionUsed = true;
-                console.log(`    [Vision] 텍스트 추출 성공: ${visionText.length}자`);
+          // 이미지 전용 메일 감지: clean_text < 150자이면 vision 모델로 텍스트 추출 시도
+          if (cleanText.length < 150 && runner && CONFIG.models.vision) {
+            const imageUrls = extractImageUrls(msgData.html_body);
+            if (imageUrls.length > 0) {
+              console.log(`    [Vision] ${msgData.subject || messageId}: clean_text ${cleanText.length}자, 이미지 ${imageUrls.length}개 → vision 모델 호출`);
+              try {
+                const visionText = await runner.callVisionModel(imageUrls, CONFIG.models.vision);
+                if (visionText && visionText.length > cleanText.length) {
+                  cleanText = visionText;
+                  visionUsed = true;
+                  console.log(`    [Vision] 텍스트 추출 성공: ${visionText.length}자`);
+                }
+              } catch (e) {
+                console.warn(`    [Vision] 실패 (원본 텍스트 사용): ${e.message}`);
               }
-            } catch (e) {
-              console.warn(`    [Vision] 실패 (원본 텍스트 사용): ${e.message}`);
             }
           }
         }
+
+        const cleanData = {
+          message_id: messageId,
+          from: msgData.from,
+          subject: msgData.subject,
+          date: msgData.date,
+          labels: msgData.labels,
+          clean_text: cleanText,
+          vision_used: visionUsed
+        };
+
+        fs.writeFileSync(
+          path.join(cleanDir, 'clean_' + messageId + '.json'),
+          JSON.stringify(cleanData, null, 2),
+          'utf8'
+        );
+      } catch (fileError) {
+        console.error(`    HTML→Text 변환 실패 (${file}): ${fileError.message}`);
       }
-
-      const cleanData = {
-        message_id: messageId,
-        from: msgData.from,
-        subject: msgData.subject,
-        date: msgData.date,
-        labels: msgData.labels,
-        clean_text: cleanText,
-        vision_used: visionUsed
-      };
-
-      fs.writeFileSync(
-        path.join(cleanDir, 'clean_' + messageId + '.json'),
-        JSON.stringify(cleanData, null, 2),
-        'utf8'
-      );
     }));
   }
 }
