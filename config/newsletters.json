@@ -1542,48 +1542,66 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
-        "item_count_avg": 12
+        "type": "unknown",
+        "item_count_avg": null
       },
-      "detected_at": "2026-02-27T23:45:08.402Z",
-      "skill_generated": true
+      "detected_at": "2026-02-26T04:56:07.037Z",
+      "skill_generated": false
     },
     {
-      "id": "glit",
-      "sender": "official@glit.pw",
-      "name": "GLIT <official@glit.pw>",
+      "id": "seoul_promotion01",
+      "sender": "promotion01@seoul.go.kr",
+      "name": "\"서울대공원\" <promotion01@seoul.go.kr>",
       "labels": [
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills/newsletters/SKILL_glit.md",
+      "skill_file": "skills/newsletters/SKILL_seoul_promotion01.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-26T04:56:07.037Z",
+      "skill_generated": true
+    },
+    {
+      "id": "seoul_sema",
+      "sender": "sema@seoul.go.kr",
+      "name": "\"서울시립미술관\" <sema@seoul.go.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_seoul_sema.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
         "item_count_avg": 3
       },
-      "detected_at": "2026-02-27T23:45:08.402Z",
+      "detected_at": "2026-02-26T07:04:05.968Z",
       "skill_generated": true
     },
     {
-      "id": "bok",
-      "sender": "webmaster@bok.or.kr",
-      "name": "\"한국은행\" <webmaster@bok.or.kr>",
+      "id": "yetham",
+      "sender": "contact@yetham.com",
+      "name": "\"예담이 친구 마루\" <contact@yetham.com>",
       "labels": [
-        "경제"
+        "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills/newsletters/SKILL_bok.md",
+      "skill_file": "skills/newsletters/SKILL_yetham.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 5
+        "item_count_avg": 3
       },
-      "detected_at": "2026-02-27T23:50:34.430Z",
+      "detected_at": "2026-02-26T07:04:05.968Z",
       "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-28T00:40:50.196Z"
+  "last_scan": "2026-02-26T07:08:34.566Z"
 }

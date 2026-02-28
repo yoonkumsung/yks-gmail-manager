@@ -754,11 +754,25 @@ ${agentContent}`;
     const models = this.getModelsForTask(this.currentTaskType);
     const startTime = Date.now();
 
-    // Primary 모델 시도
+    // Primary 모델 시도 (타임아웃 시 최대 3회: reasoning 2회 + no-reasoning 1회)
     try {
       this.log(`[Primary] ${models.primary}`, 'info');
-      return await this._retryWithModel(prompt, maxTimeMs, models.primary, startTime);
+      return await this._retryWithModel(prompt, maxTimeMs, models.primary, startTime, { maxTimeoutRetries: 2 });
     } catch (primaryError) {
+      const primaryMsg = primaryError.message || '';
+      const isTimeoutError = primaryMsg.includes('타임아웃') || primaryMsg.includes('timeout');
+
+      // 타임아웃이면 reasoning 비활성화 후 1회 더 시도
+      if (isTimeoutError) {
+        this.log(`[Primary 재시도] reasoning 비활성화 후 마지막 시도`, 'warn');
+        try {
+          return await this._retryWithModel(prompt, maxTimeMs > 0 ? maxTimeMs - (Date.now() - startTime) : 0, models.primary, Date.now(), { disableReasoning: true, maxTimeoutRetries: 1 });
+        } catch (noReasoningError) {
+          // no-reasoning도 실패 → Fallback으로 진행
+          primaryError = noReasoningError;
+        }
+      }
+
       // Fallback 모델이 없으면 그대로 throw
       if (!models.fallback) throw primaryError;
 
@@ -791,11 +805,18 @@ ${agentContent}`;
   /**
    * 특정 모델로 재시도 루프 실행
    */
-  async _retryWithModel(prompt, maxTimeMs, model, startTime) {
+  async _retryWithModel(prompt, maxTimeMs, model, startTime, options = {}) {
     let lastError;
     let retryOverrides = { model };
     let bestIncompleteResponse = null;
     const requiredFields = this.getRequiredFieldsForTask(this.currentTaskType);
+    const maxTimeoutRetries = options.maxTimeoutRetries || 7;
+    let timeoutCount = 0;
+
+    // reasoning 비활성화 옵션
+    if (options.disableReasoning) {
+      retryOverrides.disableReasoning = true;
+    }
 
     // 폴백 시 재시도 횟수 축소 (3회)
     const isPrimary = model === this.getModelsForTask(this.currentTaskType).primary;
@@ -849,6 +870,16 @@ ${agentContent}`;
 
         const isRetryable = this.isRetryableError(error);
         const hasMoreRetries = i < delays.length - 1;
+
+        // 타임아웃 횟수 추적 → 초과 시 즉시 throw하여 상위에서 처리
+        const isTimeout = (error.message || '').includes('타임아웃') || (error.message || '').includes('timeout');
+        if (isTimeout) {
+          timeoutCount++;
+          if (timeoutCount >= maxTimeoutRetries) {
+            this.log(`타임아웃 ${timeoutCount}회 도달, 현재 모델 시도 중단`, 'warn');
+            throw error;
+          }
+        }
 
         if (isRetryable && hasMoreRetries) {
           const delay = delays[i];
@@ -1011,8 +1042,8 @@ ${agentContent}`;
         max_tokens: modelConfig.maxTokens
       };
 
-      // reasoning 파라미터 추가
-      if (modelConfig.supportsReasoning) {
+      // reasoning 파라미터 추가 (disableReasoning 옵션으로 비활성화 가능)
+      if (modelConfig.supportsReasoning && !overrides.disableReasoning) {
         requestBody.reasoning = { effort: reasoningEffort };
         // 모델별 추론 토큰 상한 (GLM 등 추론 폭발 방지)
         if (modelConfig.reasoningMaxTokens) {
@@ -1116,7 +1147,10 @@ ${agentContent}`;
       msg.includes('ECONNRESET') ||
       msg.includes('ETIMEDOUT') ||
       msg.includes('불완전') ||
-      msg.includes('빈 응답')
+      msg.includes('빈 응답') ||
+      msg.includes('Invalid response body') ||
+      msg.includes('network') ||
+      msg.includes('ECONNREFUSED')
     );
   }
 
