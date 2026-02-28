@@ -887,7 +887,7 @@ ${agentContent}`;
           if (error.isEmptyResponse) {
             this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${delays.length})`, 'warn');
             await this.sleep(delay);
-            retryOverrides = { model, reasoningEffort: 'low' };
+            retryOverrides = { model, reasoningEffort: 'low', ...(options.disableReasoning && { disableReasoning: true }) };
             continue;
           }
 
