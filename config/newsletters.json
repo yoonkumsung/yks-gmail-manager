@@ -1601,7 +1601,25 @@
       },
       "detected_at": "2026-02-26T07:04:05.968Z",
       "skill_generated": true
+    },
+    {
+      "id": "asan_nanum",
+      "sender": "newsletter@asan-nanum.org",
+      "name": "\"아산나눔재단\" <newsletter@asan-nanum.org>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_asan_nanum.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 8
+      },
+      "detected_at": "2026-03-03T00:40:05.881Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-02-26T07:08:34.566Z"
+  "last_scan": "2026-03-03T01:25:15.579Z"
 }
