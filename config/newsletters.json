@@ -1542,11 +1542,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
-        "item_count_avg": 3
+        "type": "unknown",
+        "item_count_avg": null
       },
       "detected_at": "2026-02-26T04:56:07.037Z",
-      "skill_generated": true
+      "skill_generated": false
     },
     {
       "id": "seoul_promotion01",
@@ -1603,21 +1603,39 @@
       "skill_generated": true
     },
     {
-      "id": "asan_nanum",
-      "sender": "newsletter@asan-nanum.org",
-      "name": "\"아산나눔재단\" <newsletter@asan-nanum.org>",
+      "id": "substack_svweekly_alert",
+      "sender": "svweekly+alert@substack.com",
+      "name": "\"Ian Park | 주간 실리콘밸리\" <svweekly+alert@substack.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_svweekly_alert.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-02-28T14:42:01.187Z",
+      "skill_generated": true
+    },
+    {
+      "id": "nextunicorn",
+      "sender": "nextunicorn@nextunicorn.kr",
+      "name": "\"넥스트유니콘\" <nextunicorn@nextunicorn.kr>",
       "labels": [
         "창업"
       ],
       "frequency": 1,
-      "skill_file": "skills/newsletters/SKILL_asan_nanum.md",
+      "skill_file": "skills/newsletters/SKILL_nextunicorn.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
-        "item_count_avg": 8
+        "type": "single-topic",
+        "item_count_avg": 1
       },
-      "detected_at": "2026-03-03T00:40:05.881Z",
+      "detected_at": "2026-02-28T20:18:04.701Z",
       "skill_generated": true
     },
     {
@@ -1632,12 +1650,174 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 10
       },
-      "detected_at": "2026-03-09T23:49:43.581Z",
-      "skill_generated": false
+      "detected_at": "2026-03-02T07:13:22.346Z",
+      "skill_generated": true
+    },
+    {
+      "id": "asan_nanum",
+      "sender": "newsletter@asan-nanum.org",
+      "name": "\"아산나눔재단\" <newsletter@asan-nanum.org>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_asan_nanum.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-03-02T08:06:28.698Z",
+      "skill_generated": true
+    },
+    {
+      "id": "stibee_uupress_gmail_com",
+      "sender": "uupress-gmail.com@send.stibee.com",
+      "name": "\"유유출판사\" <uupress-gmail.com@send.stibee.com>",
+      "labels": [
+        "인문학"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_uupress_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 2
+      },
+      "detected_at": "2026-03-02T11:53:44.333Z",
+      "skill_generated": true
+    },
+    {
+      "id": "substack_svweekly_weekly",
+      "sender": "svweekly+weekly@substack.com",
+      "name": "\"Ian Park | 주간 실리콘밸리\" <svweekly+weekly@substack.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_substack_svweekly_weekly.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-03-02T11:55:46.357Z",
+      "skill_generated": true
+    },
+    {
+      "id": "bok",
+      "sender": "webmaster@bok.or.kr",
+      "name": "\"한국은행\" <webmaster@bok.or.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_bok.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-03-02T16:38:01.237Z",
+      "skill_generated": true
+    },
+    {
+      "id": "arko",
+      "sender": "zine@arko.or.kr",
+      "name": "\"웹진 에이스퀘어(A SQUARE)｜한국문화예술위원회(ARKO)\" <zine@arko.or.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_arko.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-03-03T18:51:21.524Z",
+      "skill_generated": true
+    },
+    {
+      "id": "glit",
+      "sender": "official@glit.pw",
+      "name": "GLIT <official@glit.pw>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_glit.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-03-03T21:32:41.113Z",
+      "skill_generated": true
+    },
+    {
+      "id": "artlamp",
+      "sender": "info@artlamp.org",
+      "name": "\"아트레터💌\" <info@artlamp.org>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_artlamp.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-03-04T23:39:18.093Z",
+      "skill_generated": true
+    },
+    {
+      "id": "scmp_craig_addison",
+      "sender": "craig.addison@e.scmp.com",
+      "name": "\"Craig Addison, SCMP\" <craig.addison@e.scmp.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_scmp_craig_addison.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-03-05T00:22:35.113Z",
+      "skill_generated": true
+    },
+    {
+      "id": "scmp_shi_huang",
+      "sender": "shi.huang@e.scmp.com",
+      "name": "\"Shi Huang, SCMP\" <shi.huang@e.scmp.com>",
+      "labels": [
+        "해외"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_scmp_shi_huang.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 5
+      },
+      "detected_at": "2026-03-05T03:07:10.353Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-03-09T23:54:38.564Z"
+  "last_scan": "2026-03-05T03:09:44.392Z"
 }

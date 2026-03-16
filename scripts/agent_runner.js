@@ -1,14 +1,12 @@
 /**
  * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
- * 모델: 작업별 다중 모델 + 폴백 전략
- *   - 추출 모델 (extract/analyze/merge/summarize): Qwen3-235B → GLM-4.5-Air 폴백
- *   - 추론 모델 (insight/crossInsight): Qwen3-235B → DeepSeek-R1 폴백
- *   - 비전 모델 (vision): Nemotron-Nano-12B-VL (이미지 전용 메일 텍스트 변환)
+ * 모델: 작업별 다중 모델 + 폴백 전략 (동적 메타데이터 조회)
  *
  * 주요 기능:
+ * - OpenRouter API에서 모델 메타데이터 동적 조회 (reasoning 지원, maxTokens 등)
+ * - 모델 변경 시 코드 수정 없이 자동 적응
  * - 작업 유형별 자동 모델 선택
  * - Primary 실패 시 Fallback 모델 자동 전환
- * - 모델별 reasoning 파라미터 최적화
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
  * - 토큰 초과 에러 자동 복구
  * - Rate Limit 관리
@@ -29,49 +27,234 @@ async function getFetch() {
 
 class AgentRunner {
   /**
-   * @param {string} apiKey - OpenRouter API 키
-   * @param {Object} modelConfig - 모델 설정
-   *   { extract: { primary, fallback }, reasoning: { primary, fallback } }
-   *   또는 단일 문자열 (하위 호환)
+   * @param {Object} llmConfig - settings.json의 llm 섹션 전체
    * @param {Object} options - 추가 옵션
    */
-  constructor(apiKey, modelConfig = {}, options = {}) {
-    this.apiKey = apiKey;
+  constructor(llmConfig = {}, options = {}) {
     this.logDir = options.logDir || 'logs';
 
-    // 모델 설정 (다중 모델 + 폴백)
-    if (typeof modelConfig === 'string') {
-      // 하위 호환: 단일 문자열이면 모든 작업에 동일 모델 사용
-      this.modelConfig = {
-        extract: { primary: modelConfig, fallback: null },
-        reasoning: { primary: modelConfig, fallback: null }
+    // 프로바이더 설정 (API URL, 키)
+    this.providers = {};
+    const providerConfigs = llmConfig.providers || {};
+    for (const [name, config] of Object.entries(providerConfigs)) {
+      this.providers[name] = {
+        baseUrl: config.baseUrl,
+        apiKey: process.env[config.envKey] || '',
+        metadataUrl: config.metadataUrl || null,
+        envKey: config.envKey
       };
-    } else {
-      this.modelConfig = modelConfig;
     }
 
-    // 청크 분할 설정
-    // 128K 컨텍스트에서 출력 max_tokens 제외한 안전한 입력 크기
-    // 한글 기준 1토큰 ≈ 2-3자, 안전하게 15000자로 설정
-    this.chunkSize = options.chunkSize || 15000;
+    // 하위 호환: llmConfig 없이 apiKey 문자열로 호출 시
+    if (typeof llmConfig === 'string') {
+      this.providers.openrouter = {
+        baseUrl: 'https://openrouter.ai/api/v1',
+        apiKey: llmConfig,
+        metadataUrl: 'https://openrouter.ai/api/v1/models',
+        envKey: 'OPENROUTER_API_KEY'
+      };
+      llmConfig = {};
+    }
 
-    // 프롬프트 헤더(에이전트 지시사항 + 스킬) 최대 크기
+    // 모델 설정 (provider + model 쌍)
+    // settings.json 형식: { provider: "google", model: "gemini-3-flash-preview" }
+    // 내부 형식: { primary: "gemini-3-flash-preview", fallback: "...", primaryProvider: "google", fallbackProvider: "openrouter" }
+    const modelsConfig = llmConfig.models || {};
+    this.modelConfig = {};
+    for (const [category, config] of Object.entries(modelsConfig)) {
+      if (typeof config === 'string') {
+        // 단일 문자열 (vision 등) → 하위 호환
+        this.modelConfig[category] = config;
+      } else if (config.provider && config.model) {
+        // vision 등 단일 모델: { provider, model }
+        this.modelConfig[category] = config.model;
+        // 프로바이더 매핑 저장
+        if (!this._modelProviderMap) this._modelProviderMap = {};
+        this._modelProviderMap[config.model] = config.provider;
+      } else {
+        // primary/fallback 쌍
+        this.modelConfig[category] = {
+          primary: config.primary?.model || config.primary || null,
+          fallback: config.fallback?.model || config.fallback || null
+        };
+        if (!this._modelProviderMap) this._modelProviderMap = {};
+        if (config.primary?.provider) this._modelProviderMap[config.primary.model] = config.primary.provider;
+        if (config.fallback?.provider) this._modelProviderMap[config.fallback.model] = config.fallback.provider;
+      }
+    }
+    this._modelProviderMap = this._modelProviderMap || {};
+
+    // 티어 설정 (free/paid)
+    this.tier = llmConfig.tier || 'free';
+    this.freeLimits = llmConfig.free_limits || { daily_requests: 500, requests_per_minute: 10 };
+
+    // 일일 요청 카운터 (무료 티어용)
+    this.dailyRequestCount = 0;
+    this.dailyCountResetDate = new Date().toDateString();
+
+    // 청크 분할 설정
+    this.chunkSize = options.chunkSize || 15000;
     this.maxHeaderSize = options.maxHeaderSize || 5000;
 
     // 재시도 설정 (7회, 점진적 대기)
     this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
 
-    // Rate Limit 설정 (OpenRouter: 분당 20회, 일 1000회)
+    // Rate Limit 설정
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
-    this.maxRequestsPerMinute = 18;      // 20회 제한에 안전 마진 2회
-    this.minRequestInterval = 3200;       // 요청 간 최소 3.2초 대기 (~분당 18회)
+    const rpm = this.tier === 'free' ? (this.freeLimits.requests_per_minute || 10) : 18;
+    this.maxRequestsPerMinute = rpm;
+    this.minRequestInterval = Math.ceil(60000 / rpm);
     this.lastRequestTime = 0;
+
+    // 모델 메타데이터 캐시
+    this.modelMetadataCache = {};
 
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
+  }
+
+  /**
+   * 모델 ID로 해당 프로바이더 설정 반환
+   * API 키가 없으면 키가 있는 다른 프로바이더로 폴백
+   */
+  getProviderForModel(model) {
+    const providerName = this._modelProviderMap[model];
+    if (providerName && this.providers[providerName]) {
+      const provider = this.providers[providerName];
+      if (provider.apiKey) {
+        return { name: providerName, ...provider };
+      }
+      // 매핑된 프로바이더에 키가 없으면 경고 후 다른 프로바이더로 폴백
+      this.log(`[프로바이더] ${providerName}의 API 키 미설정 (${model}), 다른 프로바이더로 폴백`, 'warn');
+    }
+    // 키가 있는 첫 번째 프로바이더로 폴백
+    for (const [name, config] of Object.entries(this.providers)) {
+      if (config.apiKey) return { name, ...config };
+    }
+    this.log(`[프로바이더] 사용 가능한 API 키가 없습니다`, 'error');
+    return { name: 'unknown', baseUrl: '', apiKey: '', metadataUrl: null };
+  }
+
+  /**
+   * 무료 티어 일일 한도 체크
+   * @returns {boolean} 요청 가능 여부
+   */
+  checkDailyLimit() {
+    if (this.tier !== 'free') return true;
+
+    // 날짜 변경 시 카운터 리셋
+    const today = new Date().toDateString();
+    if (this.dailyCountResetDate !== today) {
+      this.dailyRequestCount = 0;
+      this.dailyCountResetDate = today;
+    }
+
+    if (this.dailyRequestCount >= this.freeLimits.daily_requests) {
+      this.log(`[무료 티어] 일일 요청 한도 도달 (${this.freeLimits.daily_requests}회)`, 'error');
+      return false;
+    }
+    return true;
+  }
+
+  // ============================================
+  // 모델 메타데이터 (프로바이더별 동적 조회)
+  // ============================================
+
+  /**
+   * 사용할 모델들의 메타데이터를 프로바이더 API에서 조회하여 캐시
+   * - OpenRouter: /api/v1/models → supported_parameters, max_completion_tokens
+   * - Google AI Studio: 메타데이터 API 없음 → 안전한 기본값 사용
+   * - 시작 시 1회만 호출, 이후 캐시 사용
+   */
+  async initModelMetadata() {
+    // 사용할 모델 ID를 프로바이더별로 분류
+    const modelsByProvider = {};
+    for (const category of Object.values(this.modelConfig)) {
+      const models = [];
+      if (typeof category === 'string') {
+        models.push(category);
+      } else if (category && typeof category === 'object') {
+        if (category.primary) models.push(category.primary);
+        if (category.fallback) models.push(category.fallback);
+      }
+      for (const modelId of models) {
+        const providerName = this._modelProviderMap[modelId] || 'openrouter';
+        if (!modelsByProvider[providerName]) modelsByProvider[providerName] = new Set();
+        modelsByProvider[providerName].add(modelId);
+      }
+    }
+
+    const fetch = await getFetch();
+
+    // 프로바이더별 메타데이터 조회
+    for (const [providerName, modelIds] of Object.entries(modelsByProvider)) {
+      const provider = this.providers[providerName];
+
+      // Google AI Studio: 메타데이터 API 없음 → Gemini 기본값 설정
+      if (!provider?.metadataUrl) {
+        for (const modelId of modelIds) {
+          const isVision = modelId.includes('-vl') || modelId.includes('vision');
+          // Gemini 모델은 thinking 지원 (gemini-3-flash 등)
+          const supportsReasoning = modelId.includes('gemini') && !modelId.includes('lite');
+          this.modelMetadataCache[modelId] = {
+            supportsReasoning,
+            maxTokens: isVision ? 4000 : 8192,
+            timeoutMs: supportsReasoning ? 300000 : 180000,
+            contextLength: 1000000,  // Gemini 기본 1M
+          };
+          this.log(`[모델 메타데이터] ${modelId} (${providerName}): reasoning=${supportsReasoning}, maxTokens=8192 (기본값)`, 'info');
+        }
+        continue;
+      }
+
+      // OpenRouter 등: 메타데이터 API로 동적 조회
+      try {
+        const response = await fetch(provider.metadataUrl, {
+          headers: {
+            'Authorization': `Bearer ${provider.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          this.log(`[모델 메타데이터] ${providerName} API 조회 실패 (${response.status}), 기본값 사용`, 'warn');
+          continue;
+        }
+
+        const data = await response.json();
+        const models = data.data || [];
+
+        for (const modelId of modelIds) {
+          const meta = models.find(m => m.id === modelId);
+          if (meta) {
+            const supportedParams = meta.supported_parameters || [];
+            const supportsReasoning = supportedParams.includes('reasoning');
+            const maxCompletionTokens = meta.top_provider?.max_completion_tokens || null;
+            const contextLength = meta.context_length || 128000;
+            const isVision = modelId.includes('-vl') || modelId.includes('vision') || modelId.includes('nemotron');
+
+            this.modelMetadataCache[modelId] = {
+              supportsReasoning,
+              maxTokens: isVision ? 4000 : (maxCompletionTokens || 16000),
+              timeoutMs: supportsReasoning ? 300000 : (isVision ? 120000 : 180000),
+              contextLength,
+            };
+
+            this.log(`[모델 메타데이터] ${modelId} (${providerName}): reasoning=${supportsReasoning}, maxTokens=${this.modelMetadataCache[modelId].maxTokens}, context=${contextLength}`, 'info');
+          } else {
+            this.log(`[모델 메타데이터] ${modelId}: ${providerName} API에서 찾을 수 없음, 기본값 사용`, 'warn');
+          }
+        }
+      } catch (error) {
+        this.log(`[모델 메타데이터] ${providerName} 조회 중 오류: ${error.message}, 기본값 사용`, 'warn');
+      }
+    }
+
+    // 티어 정보 로깅
+    this.log(`[티어] ${this.tier} (일일 한도: ${this.tier === 'free' ? this.freeLimits.daily_requests + '회' : '무제한'})`, 'info');
   }
 
   // ============================================
@@ -89,44 +272,30 @@ class AgentRunner {
 
   /**
    * 모델별 API 요청 설정 반환
-   * - GLM: reasoning 파라미터 미지원, 타임아웃 2분
-   * - DeepSeek R1: reasoning 지원, 타임아웃 5분
-   * - Qwen3: reasoning 지원, 타임아웃 5분
+   * - initModelMetadata()로 조회된 캐시 우선 사용
+   * - 캐시 미스 시 안전한 기본값 반환 (reasoning 비활성화)
    */
   getModelSpecificConfig(model) {
+    // 캐시에 있으면 동적 조회 결과 사용
+    if (this.modelMetadataCache[model]) {
+      return this.modelMetadataCache[model];
+    }
+
+    // 캐시 미스: 비전 모델 감지
     if (model.includes('nemotron') || model.includes('vision') || model.includes('-vl')) {
       return {
         supportsReasoning: false,
-        timeoutMs: 120000,        // 2분
-        maxTokens: 4000           // 이미지 → 텍스트 변환은 짧은 출력
+        timeoutMs: 120000,
+        maxTokens: 4000
       };
     }
-    if (model.includes('glm')) {
-      return {
-        supportsReasoning: false, // GLM은 effort+max_tokens 동시 지원 안 함 → reasoning 비활성화
-        timeoutMs: 120000,        // 2분 (reasoning 루프 방지)
-        maxTokens: 16000          // 출력 제한
-      };
-    }
-    if (model.includes('deepseek')) {
-      return {
-        supportsReasoning: true,
-        timeoutMs: 300000,        // 5분
-        maxTokens: 100000
-      };
-    }
-    if (model.includes('qwen')) {
-      return {
-        supportsReasoning: true,
-        timeoutMs: 300000,        // 5분
-        maxTokens: 100000
-      };
-    }
-    // 기본값
+
+    // 캐시 미스: 안전한 기본값 (reasoning 비활성화)
+    this.log(`[모델 설정] ${model}: 캐시 없음, 기본값 사용 (reasoning=false)`, 'warn');
     return {
-      supportsReasoning: true,
-      timeoutMs: 300000,
-      maxTokens: 100000
+      supportsReasoning: false,
+      timeoutMs: 180000,
+      maxTokens: 16000
     };
   }
 
@@ -628,8 +797,14 @@ ${agentContent}`;
 
   /**
    * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환
+   * 무료 티어에서는 개인정보 보호를 위해 프로필을 로드하지 않음
    */
   loadUserContext() {
+    // 무료 티어: 개인정보 미사용
+    if (this.tier === 'free') {
+      return '- 사용자 프로필 미사용 (무료 티어)';
+    }
+
     const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
@@ -776,11 +951,16 @@ ${agentContent}`;
       // Fallback 모델이 없으면 그대로 throw
       if (!models.fallback) throw primaryError;
 
-      // 401/403 인증 에러는 같은 API 키를 쓰는 Fallback도 실패하므로 즉시 throw
+      // 401/403 인증 에러: 같은 프로바이더의 Fallback은 건너뜀 (다른 프로바이더면 시도)
       const primaryStatus = primaryError.status;
       if (primaryStatus === 401 || primaryStatus === 403) {
-        this.log(`[Fallback 건너뜀] 인증 에러(${primaryStatus})는 Fallback도 동일 실패`, 'warn');
-        throw primaryError;
+        const primaryProvider = this._modelProviderMap[models.primary];
+        const fallbackProvider = this._modelProviderMap[models.fallback];
+        if (primaryProvider === fallbackProvider) {
+          this.log(`[Fallback 건너뜀] 같은 프로바이더(${primaryProvider}) 인증 에러(${primaryStatus})`, 'warn');
+          throw primaryError;
+        }
+        this.log(`[Fallback] 다른 프로바이더(${primaryProvider}→${fallbackProvider})로 전환 시도`, 'info');
       }
 
       // 시간 예산 잔여 확인
@@ -980,15 +1160,21 @@ ${agentContent}`;
 
       await this.checkRateLimit();
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // 프로바이더별 API URL 및 헤더 구성
+      const provider = this.getProviderForModel(visionModel);
+      const headers = {
+        'Authorization': `Bearer ${provider.apiKey}`,
+        'Content-Type': 'application/json'
+      };
+      if (provider.name === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://github.com/yks-gmail-manager';
+        headers['X-Title'] = 'Gmail Manager';
+      }
+
+      const response = await fetch(`${provider.baseUrl}/chat/completions`, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/yks-gmail-manager',
-          'X-Title': 'Gmail Manager'
-        },
+        headers,
         body: JSON.stringify(requestBody)
       });
 
@@ -1051,20 +1237,36 @@ ${agentContent}`;
         }
       }
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // 프로바이더별 API URL 및 헤더 구성
+      const provider = this.getProviderForModel(model);
+      const headers = {
+        'Authorization': `Bearer ${provider.apiKey}`,
+        'Content-Type': 'application/json'
+      };
+      // OpenRouter 전용 헤더
+      if (provider.name === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://github.com/yks-gmail-manager';
+        headers['X-Title'] = 'Gmail Manager';
+      }
+
+      // 무료 티어 일일 한도 체크
+      if (!this.checkDailyLimit()) {
+        clearTimeout(timeoutId);
+        const error = new Error(`무료 티어 일일 요청 한도 초과 (${this.freeLimits.daily_requests}회)`);
+        error.isDailyLimitExceeded = true;
+        throw error;
+      }
+      this.dailyRequestCount++;
+
+      const response = await fetch(`${provider.baseUrl}/chat/completions`, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/yks-gmail-manager',
-          'X-Title': 'Gmail Manager'
-        },
+        headers,
         body: JSON.stringify(requestBody)
       });
 
       // 타임아웃을 여기서 해제하지 않음! body 수신 완료까지 유지
-      this.log(`API 응답 헤더 수신: ${model} (상태 ${response.status})`, 'debug');
+      this.log(`API 응답 헤더 수신: ${model} (${provider.name}, 상태 ${response.status})`, 'debug');
 
       if (!response.ok) {
         const errorText = await response.text();

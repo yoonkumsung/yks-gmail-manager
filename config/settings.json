@@ -1,5 +1,40 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
+
+  "llm": {
+    "tier": "free",
+
+    "providers": {
+      "google": {
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "envKey": "GOOGLE_AI_API_KEY",
+        "metadataUrl": null
+      },
+      "openrouter": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "envKey": "OPENROUTER_API_KEY",
+        "metadataUrl": "https://openrouter.ai/api/v1/models"
+      }
+    },
+
+    "models": {
+      "extract": {
+        "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
+        "fallback": { "provider": "openrouter", "model": "arcee-ai/trinity-large-preview:free" }
+      },
+      "reasoning": {
+        "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
+        "fallback": { "provider": "openrouter", "model": "stepfun/step-3.5-flash:free" }
+      },
+      "vision": { "provider": "openrouter", "model": "nvidia/nemotron-nano-12b-v2-vl:free" }
+    },
+
+    "free_limits": {
+      "daily_requests": 500,
+      "requests_per_minute": 10
+    }
+  },
+
   "gmail": {
     "user_id": "me",
     "max_results_per_query": 100

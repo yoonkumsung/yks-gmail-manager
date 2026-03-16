@@ -1417,6 +1417,10 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
   }
 
   const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight, allExcluded);
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
   fs.writeFileSync(outputPath, html, 'utf8');
 
   console.log(`통합 HTML 리포트 생성됨: ${outputPath}`);

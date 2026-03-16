@@ -224,21 +224,16 @@ function createLimiter(concurrency) {
   });
 }
 
-const CONFIG = {
-  concurrencyLimit: 3,    // 병렬 3개 처리 (분당 10개 제한에 맞춤)
+// settings.json에서 LLM 설정 로드
+const settingsPath = path.join(__dirname, '..', 'config', 'settings.json');
+const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 
-  // 모델 설정 (작업별 Primary + Fallback)
-  models: {
-    extract: {
-      primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 추출/분석/병합/요약
-      fallback: 'z-ai/glm-4.5-air:free'                // Qwen 실패 시 폴백
-    },
-    reasoning: {
-      primary: 'qwen/qwen3-235b-a22b-thinking-2507',   // 인사이트/크로스인사이트
-      fallback: 'deepseek/deepseek-r1-0528:free'        // Qwen 실패 시 폴백
-    },
-    vision: 'nvidia/nemotron-nano-12b-v2-vl:free'       // 이미지 전용 메일 텍스트 변환
-  },
+const CONFIG = {
+  concurrencyLimit: 3,    // 병렬 3개 처리
+
+  // LLM 설정은 settings.json에서 로드
+  // ⚠️ 모델/프로바이더 변경 시: config/settings.json의 llm 섹션만 수정
+  llm: settings.llm || {},
 
   mergeBatchSize: 15,     // 병합 배치 크기
   insightBatchSize: 10,   // 인사이트 배치 크기 기본값
@@ -609,7 +604,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
 
   // === Map 단계: 각 라벨 → 클러스터링 → 라벨요약 에이전트 (병렬) ===
   const logDir = path.join(tempDir, 'logs');
-  const runner = getRunner(logDir);
+  const runner = await getRunner(logDir);
   const summaryAgentPath = path.join(__dirname, '..', 'agents', '라벨요약.md');
   const limit = createLimiter(CONFIG.concurrencyLimit);
 
@@ -701,13 +696,14 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
 // 전역 AgentRunner 인스턴스 (Rate Limit 카운터 공유, 작업별 자동 모델 선택)
 let globalRunner = null;
 
-function getRunner(logDir) {
+async function getRunner(logDir) {
   if (!globalRunner) {
     globalRunner = new AgentRunner(
-      process.env.OPENROUTER_API_KEY,
-      CONFIG.models,
+      CONFIG.llm,
       { logDir }
     );
+    // 프로바이더별 모델 메타데이터 동적 조회 (reasoning 지원, maxTokens 등)
+    await globalRunner.initModelMetadata();
   }
   return globalRunner;
 }
@@ -730,20 +726,26 @@ function checkSetup() {
     });
   }
 
-  // 2. 환경 변수 (.env + OPENROUTER_API_KEY)
+  // 2. 환경 변수 (.env + LLM API 키)
   const envPath = path.join(projectRoot, '.env');
   if (!fs.existsSync(envPath)) {
     errors.push({
       type: '환경 변수',
       message: '.env 파일이 없습니다.',
-      solution: '.env 파일 생성 후 OPENROUTER_API_KEY=sk-or-v1-xxx 추가'
+      solution: '.env 파일 생성 후 LLM API 키 추가 (GOOGLE_AI_API_KEY 또는 OPENROUTER_API_KEY)'
     });
-  } else if (!process.env.OPENROUTER_API_KEY) {
-    errors.push({
-      type: '환경 변수',
-      message: 'OPENROUTER_API_KEY가 설정되지 않았습니다.',
-      solution: '.env 파일에 OPENROUTER_API_KEY=sk-or-v1-xxx 추가'
-    });
+  } else {
+    // settings.json에 등록된 프로바이더 중 최소 하나의 API 키가 있는지 확인
+    const providers = settings.llm?.providers || {};
+    const hasAnyKey = Object.values(providers).some(p => process.env[p.envKey]);
+    if (!hasAnyKey) {
+      const keyNames = Object.values(providers).map(p => p.envKey).join(' 또는 ');
+      errors.push({
+        type: '환경 변수',
+        message: 'LLM API 키가 설정되지 않았습니다.',
+        solution: `.env 파일에 ${keyNames} 추가`
+      });
+    }
   }
 
   // 3. 라벨 설정 (labels.json)
@@ -889,6 +891,10 @@ async function main() {
 
     // 9. 통합 HTML 생성
     console.log('\n--- 통합 HTML 생성 ---');
+    // finalDir 생성 (라벨 처리 중 생성되지 않았을 수 있음)
+    if (!fs.existsSync(finalDir)) {
+      fs.mkdirSync(finalDir, { recursive: true });
+    }
     // KST 기준 날짜로 파일명 생성 (timeRange.end = 사용자 요청 날짜)
     const kstDate = new Date(timeRange.end.getTime() + 9 * 60 * 60 * 1000);
     const dateStr = `${String(kstDate.getUTCFullYear()).slice(2)}${String(kstDate.getUTCMonth() + 1).padStart(2, '0')}${String(kstDate.getUTCDate()).padStart(2, '0')}`;
@@ -992,7 +998,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   });
 
   // AgentRunner 인스턴스 (전역 재사용으로 Rate Limit 카운터 공유)
-  const runner = getRunner(path.join(runDir, 'logs'));
+  const runner = await getRunner(path.join(runDir, 'logs'));
 
   // 1. Gmail API 호출 (Node.js) - 증분 처리 지원
   let fetchResult = null;
@@ -1370,10 +1376,13 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     if (fs.existsSync(insightAgentPath) && merged.items.length > 0) {
       console.log('  인사이트 생성 중 (LLM 배치 병렬 처리)...');
       try {
-        // 사용자 프로필 로드
+        // 사용자 프로필 로드 (무료 티어에서는 개인정보 미사용)
         let profile = null;
-        if (fs.existsSync(profilePath)) {
+        const tier = CONFIG.llm.tier || 'free';
+        if (tier !== 'free' && fs.existsSync(profilePath)) {
           profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        } else if (tier === 'free') {
+          console.log('  [무료 티어] 사용자 프로필 미로드 (개인정보 보호)');
         }
 
         // 아이템 복잡도 기반 동적 배치 크기 계산
@@ -1620,12 +1629,13 @@ async function convertHtmlToText(rawDir, cleanDir, runner) {
           cleanText = cleanNewsletterText(cleanText);
 
           // 이미지 전용 메일 감지: clean_text < 150자이면 vision 모델로 텍스트 추출 시도
-          if (cleanText.length < 150 && runner && CONFIG.models.vision) {
+          const visionModelId = CONFIG.llm.models?.vision?.model || CONFIG.llm.models?.vision;
+          if (cleanText.length < 150 && runner && visionModelId) {
             const imageUrls = extractImageUrls(msgData.html_body);
             if (imageUrls.length > 0) {
               console.log(`    [Vision] ${msgData.subject || messageId}: clean_text ${cleanText.length}자, 이미지 ${imageUrls.length}개 → vision 모델 호출`);
               try {
-                const visionText = await runner.callVisionModel(imageUrls, CONFIG.models.vision);
+                const visionText = await runner.callVisionModel(imageUrls, visionModelId);
                 if (visionText && visionText.length > cleanText.length) {
                   cleanText = visionText;
                   visionUsed = true;

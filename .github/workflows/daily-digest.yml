@@ -50,13 +50,15 @@ jobs:
         id: check-secrets
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
         run: |
           MISSING=""
 
-          if [ -z "$OPENROUTER_API_KEY" ]; then
-            MISSING="${MISSING}OPENROUTER_API_KEY, "
+          # LLM API 키: 최소 하나는 필요
+          if [ -z "$OPENROUTER_API_KEY" ] && [ -z "$GOOGLE_AI_API_KEY" ]; then
+            MISSING="${MISSING}LLM API 키(OPENROUTER_API_KEY 또는 GOOGLE_AI_API_KEY 중 하나), "
           fi
 
           if [ -z "$GMAIL_CREDENTIALS" ]; then
@@ -77,7 +79,8 @@ jobs:
             echo "설정 방법:"
             echo "1. Repository → Settings → Secrets and variables → Actions"
             echo "2. 다음 Secrets 추가:"
-            echo "   - OPENROUTER_API_KEY: OpenRouter API 키"
+            echo "   - GOOGLE_AI_API_KEY: Google AI Studio API 키 (권장)"
+            echo "   - OPENROUTER_API_KEY: OpenRouter API 키 (폴백용)"
             echo "   - GMAIL_CREDENTIALS: client_secret.json 내용"
             echo "   - GMAIL_TOKEN: token.json 내용"
             echo ""
@@ -150,6 +153,7 @@ jobs:
         if: steps.check-secrets.outputs.skip != 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
           USER_PROFILE: ${{ secrets.USER_PROFILE }}
@@ -159,6 +163,7 @@ jobs:
         run: |
           # .env 파일 생성
           echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
+          echo "GOOGLE_AI_API_KEY=$GOOGLE_AI_API_KEY" >> .env
 
           # Gmail credentials 저장 (config/credentials/ 경로로 통일)
           mkdir -p config/credentials
