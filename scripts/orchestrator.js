@@ -583,6 +583,7 @@ async function generateCrossLabelInsight(mergedDir, tempDir, timeRange) {
       const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
       const items = (data.items || []).map(item => ({
         title: item.title,
+        summary: item.summary || '',
         keywords: item.keywords || []
       }));
 

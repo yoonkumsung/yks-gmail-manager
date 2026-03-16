@@ -318,12 +318,10 @@ class AgentRunner {
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
-- 광고/푸터/구독안내만 제외, 나머지 모든 뉴스 콘텐츠 추출
-- 각 요약에 필수 포함: 핵심사실(WHO+WHAT) + 구체적 수치 + 배경맥락 + 결론(원문에 명시된 경우만)
-- 영문 콘텐츠는 자연스러운 한국어로 번역 (고유명사 원어 병기)`,
+- 에이전트 지시사항과 SKILL 규칙에 따라 처리`,
         temperature: 0.1,
         reasoningEffort: 'low',
-        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 하나라도 누락하면 안 됩니다.'
+        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요.'
       },
       analyze: {
         systemPrompt: `당신은 뉴스레터 구조 분석 전문가입니다.
@@ -373,8 +371,11 @@ class AgentRunner {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
 [핵심 임무] 각 뉴스 아이템에 2가지 인사이트를 추가합니다:
-1. domain: 사용자의 사업에 구체적 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함. (사용자 컨텍스트는 에이전트 지시사항 참고)
-2. cross_domain: 실명의 철학자, 구체적 역사적 사건, 실제 심리학 실험명을 인용한 본질적 통찰. 이름/연도/출처를 반드시 명시.
+1. domain: 원문 데이터 기반의 실용적 분석. 원문에 수치가 있으면 활용, 없으면 정성적 분석.
+2. cross_domain: 뉴스의 본질과 자연스럽게 연결되는 경우에만 인문/철학적 통찰을 인용.
+
+[중요] 단순 팩트 뉴스(일정 공지, 휴장 안내 등)는 insights를 null로 출력하세요.
+[중요] 원문에 없는 수치, 보고서, 논문, 실험을 절대 생성하지 마세요.
 
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
@@ -384,22 +385,25 @@ class AgentRunner {
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
         reasoningEffort: 'low',
-        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
+        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 단순 팩트 뉴스는 insights를 null로. 모든 기존 필드를 반드시 유지하세요.'
       },
       crossInsight: {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
 [핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, 사용자 액션을 도출합니다.
 
+[중요] 자연스러운 연결이 없으면 빈 배열을 출력하세요. 억지 연결 금지.
+[중요] 원문에 없는 수치, 보고서를 생성하지 마세요.
+
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- mega_trends, cross_connections, action_items 3개 필드 필수
+- mega_trends, cross_connections, action_items 3개 필드 포함 (빈 배열 허용)
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
         reasoningEffort: 'low',
-        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요.'
+        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요. 자연스러운 연결이 없으면 빈 배열을 출력하세요.'
       }
     };
     return configs[taskType] || configs.extract;
@@ -534,8 +538,15 @@ class AgentRunner {
 
       const tempFile = path.join(tempDir, `_chunk_${i + 1}_of_${chunks.length}_${Date.now()}.json`);
 
+      // 청크 위치 힌트 추가 (분할 처리 시 문맥 보존)
+      let chunkData = chunks[i];
+      if (chunks.length > 1) {
+        const hint = `[참고: 이 텍스트는 전체 뉴스레터의 ${i + 1}/${chunks.length} 번째 부분입니다. 텍스트 경계에서 잘린 아이템이 있을 수 있으니, 불완전한 아이템은 건너뛰세요.]\n\n`;
+        chunkData = hint + chunkData;
+      }
+
       try {
-        const result = await this.runSinglePrompt(header, chunks[i], {
+        const result = await this.runSinglePrompt(header, chunkData, {
           ...options,
           output: null // 여기서는 저장하지 않음
         });
@@ -758,6 +769,14 @@ class AgentRunner {
   async buildHeader(agentPath, options) {
     // Agent 문서 읽기
     let agentContent = fs.readFileSync(agentPath, 'utf8');
+
+    // 라벨 에이전트인 경우 _공통규칙.md 자동 합성
+    const labelsDir = path.join(path.dirname(agentPath));
+    const commonRulesPath = path.join(labelsDir, '_공통규칙.md');
+    if (agentPath.includes(path.join('agents', 'labels')) && fs.existsSync(commonRulesPath)) {
+      const commonRules = fs.readFileSync(commonRulesPath, 'utf8');
+      agentContent += '\n\n' + commonRules;
+    }
 
     // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환)
     if (agentContent.includes('{{USER_CONTEXT}}')) {
