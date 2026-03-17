@@ -178,29 +178,37 @@ function cleanupTempDir(tempDir) {
  * 최종 결과물을 영구 저장소로 복사
  */
 function copyToFinalOutput(tempDir, runId, projectRoot) {
-  const finalOutputDir = path.join(projectRoot, 'output', 'final', runId);
-  const tempFinalDir = path.join(tempDir, 'final');
+  try {
+    const finalOutputDir = path.join(projectRoot, 'output', 'final', runId);
+    const tempFinalDir = path.join(tempDir, 'final');
 
-  if (!fs.existsSync(tempFinalDir)) {
-    return;
-  }
-
-  if (!fs.existsSync(finalOutputDir)) {
-    fs.mkdirSync(finalOutputDir, { recursive: true });
-  }
-
-  // HTML 및 MD 파일 복사
-  const files = fs.readdirSync(tempFinalDir);
-  for (const file of files) {
-    if (file.endsWith('.html') || file.endsWith('.md')) {
-      fs.copyFileSync(
-        path.join(tempFinalDir, file),
-        path.join(finalOutputDir, file)
-      );
+    if (!fs.existsSync(tempFinalDir)) {
+      return;
     }
-  }
 
-  console.log(`  결과물 복사됨: ${finalOutputDir}`);
+    if (!fs.existsSync(finalOutputDir)) {
+      fs.mkdirSync(finalOutputDir, { recursive: true });
+    }
+
+    // HTML 및 MD 파일 복사
+    const files = fs.readdirSync(tempFinalDir);
+    let copied = 0;
+    for (const file of files) {
+      if (file.endsWith('.html') || file.endsWith('.md')) {
+        fs.copyFileSync(
+          path.join(tempFinalDir, file),
+          path.join(finalOutputDir, file)
+        );
+        copied++;
+      }
+    }
+
+    if (copied > 0) {
+      console.log(`  결과물 복사됨: ${finalOutputDir} (${copied}개 파일)`);
+    }
+  } catch (e) {
+    console.error(`  결과물 복사 실패: ${e.message}`);
+  }
 }
 
 // 간단한 concurrency limiter 구현 (p-limit 대체)
@@ -226,7 +234,13 @@ function createLimiter(concurrency) {
 
 // settings.json에서 LLM 설정 로드
 const settingsPath = path.join(__dirname, '..', 'config', 'settings.json');
-const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+let settings;
+try {
+  settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+} catch (e) {
+  console.error(`settings.json 로드 실패: ${e.message}`);
+  process.exit(1);
+}
 
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 3개 처리
@@ -1611,6 +1625,10 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
 async function convertHtmlToText(rawDir, cleanDir, runner) {
   const { htmlToText, cleanNewsletterText, extractImageUrls } = require('./html_to_text');
 
+  if (!fs.existsSync(rawDir)) {
+    console.warn(`  raw 디렉토리 없음: ${rawDir}`);
+    return;
+  }
   const msgFiles = fs.readdirSync(rawDir).filter(f => f.startsWith('msg_'));
 
   // 병렬 처리 (최대 10개 동시 처리)
@@ -1686,8 +1704,8 @@ function generateMarkdown(merged, date) {
   md += `---\n\n`;
 
   merged.items.forEach((item, i) => {
-    md += `## ${i + 1}. ${item.title}\n\n`;
-    md += `${item.summary}\n\n`;
+    md += `## ${i + 1}. ${item.title || '(제목 없음)'}\n\n`;
+    md += `${item.summary || ''}\n\n`;
 
     if (item.keywords && item.keywords.length > 0) {
       md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
@@ -1732,9 +1750,14 @@ function generateCombinedMarkdown(mergedDir, date) {
     return '';
   }
 
-  const allLabelsData = mergedFiles.map(file => {
-    return JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
-  });
+  const allLabelsData = [];
+  for (const file of mergedFiles) {
+    try {
+      allLabelsData.push(JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8')));
+    } catch (e) {
+      console.warn(`  ${file} 파싱 실패, 건너뜀: ${e.message}`);
+    }
+  }
 
   // 전체 아이템 수 계산
   const totalItems = allLabelsData.reduce((sum, data) => sum + (data.items?.length || 0), 0);
@@ -1941,7 +1964,15 @@ function calculateTimeRange(mode, customDate) {
  */
 function getLabels(labelFilter) {
   const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
-  const labelsJson = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+  let labelsJson;
+  try {
+    labelsJson = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+  } catch (e) {
+    throw new Error(`labels.json 로드 실패: ${e.message}`);
+  }
+  if (!labelsJson.labels || !Array.isArray(labelsJson.labels)) {
+    throw new Error('labels.json에 labels 배열이 없습니다');
+  }
   let labels = labelsJson.labels.filter(l => l.enabled);
 
   if (labelFilter) {

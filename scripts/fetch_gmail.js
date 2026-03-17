@@ -76,12 +76,22 @@ class GmailFetcher {
       throw new Error('token.json not found. Run npm run auth first.');
     }
 
-    const token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+    let token;
+    try {
+      token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+    } catch (e) {
+      throw new Error(`token.json 파싱 실패: ${e.message}`);
+    }
 
     // client_secret.json이 있으면 사용, 없으면 토큰만으로 인증
     let auth;
     if (fs.existsSync(clientSecretPath)) {
-      const credentials = JSON.parse(fs.readFileSync(clientSecretPath, 'utf8'));
+      let credentials;
+      try {
+        credentials = JSON.parse(fs.readFileSync(clientSecretPath, 'utf8'));
+      } catch (e) {
+        throw new Error(`client_secret.json 파싱 실패: ${e.message}`);
+      }
       const { client_id, client_secret } = credentials.installed || credentials.web;
 
       auth = new google.auth.OAuth2(client_id, client_secret);

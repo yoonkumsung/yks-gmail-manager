@@ -768,6 +768,9 @@ class AgentRunner {
    */
   async buildHeader(agentPath, options) {
     // Agent 문서 읽기
+    if (!fs.existsSync(agentPath)) {
+      throw new Error(`에이전트 파일 없음: ${agentPath}`);
+    }
     let agentContent = fs.readFileSync(agentPath, 'utf8');
 
     // 라벨 에이전트인 경우 _공통규칙.md 자동 합성
@@ -1534,9 +1537,12 @@ ${agentContent}`;
       }
     );
 
-    // 5. 문자열 값 내 제어 문자 이스케이프
+    // 5. 문자열 값 내 제어 문자 이스케이프 (이미 이스케이프된 것은 제외)
     repaired = repaired.replace(/"[^"]*"/g, (match) => {
-      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+      return match
+        .replace(/(?<!\\)\n/g, '\\n')
+        .replace(/(?<!\\)\r/g, '\\r')
+        .replace(/(?<!\\)\t/g, '\\t');
     });
 
     // 6. 불완전한 JSON 닫기 시도 (문자열 내부 무시)

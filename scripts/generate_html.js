@@ -516,7 +516,8 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
   const tabButtons = crossTabButton + allLabelsData.map((data, index) => {
     const isActive = (!hasCrossInsight && index === 0) ? 'active' : '';
     const itemCount = data.items?.length || 0;
-    return `<button class="tab-btn ${isActive}" data-tab="${data.label}">${escapeHtml(data.label)}<span class="count">${itemCount}</span></button>`;
+    const safeLabel = data.label.replace(/[^a-zA-Z0-9가-힣_-]/g, '_');
+    return `<button class="tab-btn ${isActive}" data-tab="${safeLabel}">${escapeHtml(data.label)}<span class="count">${itemCount}</span></button>`;
   }).join('\n') + excludedTabButton;
 
   // 크로스 인사이트 탭 콘텐츠
@@ -526,7 +527,8 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
   const tabContents = crossTabContent + allLabelsData.map((data, index) => {
     const isActive = (!hasCrossInsight && index === 0) ? 'active' : '';
     const items = data.items || [];
-    // 라벨명을 ID에 사용 (특수문자 제거)
+    // 라벨명을 ID에 사용 (특수문자를 _로 치환, 탭 버튼과 동일 로직)
+    const safeLabel = data.label.replace(/[^a-zA-Z0-9가-힣_-]/g, '_');
     const labelId = data.label.replace(/[^a-zA-Z0-9가-힣]/g, '');
 
     const itemsHtml = items.map((item, itemIndex) => {
@@ -614,7 +616,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     }).join('\n');
 
     return `
-      <div class="tab-content ${isActive}" id="tab-${data.label}">
+      <div class="tab-content ${isActive}" id="tab-${safeLabel}">
         <div class="label-stats">
           <span class="stat">기사 ${items.length}개</span>
           ${data.stats?.duplicates_removed ? `<span class="stat">중복 제거 ${data.stats.duplicates_removed}개</span>` : ''}
@@ -1377,8 +1379,12 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
   const files = fs.readdirSync(mergedDir).filter(f => f.startsWith('merged_') && f.endsWith('.json'));
 
   for (const file of files) {
-    const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
-    allLabelsData.push(data);
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
+      allLabelsData.push(data);
+    } catch (e) {
+      console.warn(`  ${file} 파싱 실패, 건너뜀: ${e.message}`);
+    }
   }
 
   // 제외 메일 수집 (merged 파일 내 excluded + 별도 excluded_*.json)
