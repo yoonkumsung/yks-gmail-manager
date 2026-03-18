@@ -88,8 +88,8 @@ class AgentRunner {
     this.tier = llmConfig.tier || 'free';
     this.freeLimits = llmConfig.free_limits || { daily_requests: 500, requests_per_minute: 10 };
 
-    // 일일 요청 카운터 (무료 티어용)
-    this.dailyRequestCount = 0;
+    // 일일 요청 카운터 (무료 티어용, 프로바이더별 분리)
+    this.dailyRequestCounts = {};  // { providerName: count }
     this.dailyCountResetDate = new Date().toDateString();
 
     // 청크 분할 설정
@@ -139,24 +139,33 @@ class AgentRunner {
   }
 
   /**
-   * 무료 티어 일일 한도 체크
+   * 무료 티어 일일 한도 체크 (프로바이더별)
+   * @param {string} providerName - 프로바이더명
    * @returns {boolean} 요청 가능 여부
    */
-  checkDailyLimit() {
+  checkDailyLimit(providerName) {
     if (this.tier !== 'free') return true;
 
-    // 날짜 변경 시 카운터 리셋
+    // 날짜 변경 시 모든 카운터 리셋
     const today = new Date().toDateString();
     if (this.dailyCountResetDate !== today) {
-      this.dailyRequestCount = 0;
+      this.dailyRequestCounts = {};
       this.dailyCountResetDate = today;
     }
 
-    if (this.dailyRequestCount >= this.freeLimits.daily_requests) {
-      this.log(`[무료 티어] 일일 요청 한도 도달 (${this.freeLimits.daily_requests}회)`, 'error');
+    const count = this.dailyRequestCounts[providerName] || 0;
+    if (count >= this.freeLimits.daily_requests) {
+      this.log(`[무료 티어] ${providerName} 일일 요청 한도 도달 (${this.freeLimits.daily_requests}회)`, 'error');
       return false;
     }
     return true;
+  }
+
+  /**
+   * 프로바이더별 일일 요청 카운터 증가
+   */
+  incrementDailyCount(providerName) {
+    this.dailyRequestCounts[providerName] = (this.dailyRequestCounts[providerName] || 0) + 1;
   }
 
   // ============================================
@@ -973,6 +982,17 @@ ${agentContent}`;
       // Fallback 모델이 없으면 그대로 throw
       if (!models.fallback) throw primaryError;
 
+      // 일일 한도 초과: 다른 프로바이더의 Fallback으로 즉시 전환
+      if (primaryError.isDailyLimitExceeded) {
+        const primaryProvider = this._modelProviderMap[models.primary];
+        const fallbackProvider = this._modelProviderMap[models.fallback];
+        if (primaryProvider === fallbackProvider) {
+          this.log(`[Fallback 건너뜀] 같은 프로바이더(${primaryProvider}) 일일 한도 초과`, 'warn');
+          throw primaryError;
+        }
+        this.log(`[Fallback] ${primaryProvider} 일일 한도 초과 → ${fallbackProvider}로 전환`, 'info');
+      }
+
       // 401/403 인증 에러: 같은 프로바이더의 Fallback은 건너뜀 (다른 프로바이더면 시도)
       const primaryStatus = primaryError.status;
       if (primaryStatus === 401 || primaryStatus === 403) {
@@ -1069,6 +1089,12 @@ ${agentContent}`;
 
       } catch (error) {
         lastError = error;
+
+        // 일일 한도 초과는 재시도 무의미 → 즉시 throw하여 Fallback 전환
+        if (error.isDailyLimitExceeded) {
+          this.log(`[${model}] 일일 한도 초과, Fallback 전환`, 'warn');
+          throw error;
+        }
 
         const isRetryable = this.isRetryableError(error);
         const hasMoreRetries = i < delays.length - 1;
@@ -1271,14 +1297,15 @@ ${agentContent}`;
         headers['X-Title'] = 'Gmail Manager';
       }
 
-      // 무료 티어 일일 한도 체크
-      if (!this.checkDailyLimit()) {
+      // 무료 티어 일일 한도 체크 (프로바이더별)
+      if (!this.checkDailyLimit(provider.name)) {
         clearTimeout(timeoutId);
-        const error = new Error(`무료 티어 일일 요청 한도 초과 (${this.freeLimits.daily_requests}회)`);
+        const error = new Error(`무료 티어 일일 요청 한도 초과 [${provider.name}] (${this.freeLimits.daily_requests}회)`);
         error.isDailyLimitExceeded = true;
+        error.providerName = provider.name;
         throw error;
       }
-      this.dailyRequestCount++;
+      this.incrementDailyCount(provider.name);
 
       const response = await fetch(`${provider.baseUrl}/chat/completions`, {
         method: 'POST',

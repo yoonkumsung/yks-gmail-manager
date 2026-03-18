@@ -90,11 +90,11 @@ function htmlToText(html) {
   // 4. <br> 태그 처리
   text = text.replace(/<br\s*\/?>/gi, '\n');
 
-  // 5. 링크 텍스트 추출 (URL 포함)
-  text = text.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>([^<]*)<\/a>/gi, (_, url, linkText) => {
-    linkText = linkText.trim();
+  // 5. 링크 텍스트 추출 (URL 포함, 중첩 태그 지원)
+  text = text.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, url, innerHtml) => {
+    // 내부 HTML 태그 제거하여 순수 텍스트 추출
+    const linkText = innerHtml.replace(/<[^>]+>/g, '').trim();
     if (linkText && url && !url.startsWith('#') && !url.startsWith('javascript:')) {
-      // 뉴스레터에서 유용한 링크만 유지
       if (url.startsWith('http')) {
         return `${linkText} [${url}]`;
       }
@@ -137,16 +137,17 @@ function cleanNewsletterText(text) {
   // 추적 파라미터가 있는 URL 정리
   text = text.replace(/\[https?:\/\/[^\]]*(?:utm_|click\.|track\.|redirect)[^\]]*\]/g, '');
 
-  // 구독 관련 문구 제거
+  // 구독 관련 문구 제거 (줄 단위로만 제거, 본문 유실 방지)
+  // 각 패턴은 해당 키워드가 포함된 줄만 제거 (.*$의 m 플래그로 줄 끝까지만)
   const subscriptionPatterns = [
-    /unsubscribe.*$/gim,
-    /구독.*취소.*$/gim,
-    /수신.*거부.*$/gim,
-    /받지.*않으시려면.*$/gim,
-    /view.*in.*browser.*$/gim,
-    /브라우저에서.*보기.*$/gim,
-    /email.*preferences.*$/gim,
-    /update.*preferences.*$/gim,
+    /^.*unsubscribe.*$/gim,
+    /^.*구독\s*취소.*$/gim,
+    /^.*수신\s*거부.*$/gim,
+    /^.*받지.*않으시려면.*$/gim,
+    /^.*view\s+(this\s+)?(email\s+)?in\s+(your\s+)?browser.*$/gim,
+    /^.*브라우저에서.*보기.*$/gim,
+    /^.*manage\s+(your\s+)?email\s+preferences.*$/gim,
+    /^.*update\s+(your\s+)?preferences.*$/gim,
   ];
 
   for (const pattern of subscriptionPatterns) {
