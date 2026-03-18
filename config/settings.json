@@ -20,17 +20,17 @@
     "models": {
       "extract": {
         "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
-        "fallback": { "provider": "openrouter", "model": "arcee-ai/trinity-large-preview:free" }
+        "fallback": { "provider": "openrouter", "model": "nvidia/nemotron-3-super-120b-a12b:free" }
       },
       "reasoning": {
         "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
-        "fallback": { "provider": "openrouter", "model": "stepfun/step-3.5-flash:free" }
+        "fallback": { "provider": "openrouter", "model": "nvidia/nemotron-3-super-120b-a12b:free" }
       },
       "vision": { "provider": "openrouter", "model": "nvidia/nemotron-nano-12b-v2-vl:free" }
     },
 
     "free_limits": {
-      "daily_requests": 500,
+      "daily_requests": 1400,
       "requests_per_minute": 10
     }
   },
