@@ -1276,17 +1276,17 @@ ${agentContent}`;
         max_tokens: modelConfig.maxTokens
       };
 
-      // reasoning 파라미터 추가 (disableReasoning 옵션으로 비활성화 가능)
-      if (modelConfig.supportsReasoning && !overrides.disableReasoning) {
+      // 프로바이더별 API URL 및 헤더 구성
+      const provider = this.getProviderForModel(model);
+
+      // reasoning 파라미터 추가 (Google AI Studio는 미지원 → 제외)
+      if (modelConfig.supportsReasoning && !overrides.disableReasoning && provider.name !== 'google') {
         requestBody.reasoning = { effort: reasoningEffort };
         // 모델별 추론 토큰 상한 (GLM 등 추론 폭발 방지)
         if (modelConfig.reasoningMaxTokens) {
           requestBody.reasoning.max_tokens = modelConfig.reasoningMaxTokens;
         }
       }
-
-      // 프로바이더별 API URL 및 헤더 구성
-      const provider = this.getProviderForModel(model);
       const headers = {
         'Authorization': `Bearer ${provider.apiKey}`,
         'Content-Type': 'application/json'
