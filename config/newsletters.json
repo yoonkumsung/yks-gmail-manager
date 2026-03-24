@@ -1835,7 +1835,25 @@
       },
       "detected_at": "2026-03-17T02:44:54.758Z",
       "skill_generated": true
+    },
+    {
+      "id": "redwit",
+      "sender": "goono@redwit.io",
+      "name": "\"전자연구노트 구노\" <goono@redwit.io>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_redwit.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-03-24T02:28:29.646Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-03-17T02:56:18.496Z"
+  "last_scan": "2026-03-24T03:29:13.064Z"
 }
