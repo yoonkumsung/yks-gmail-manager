@@ -1889,7 +1889,25 @@
       },
       "detected_at": "2026-03-25T02:32:06.367Z",
       "skill_generated": true
+    },
+    {
+      "id": "vinulabs",
+      "sender": "insight@vinulabs.com",
+      "name": "\"비누랩스 인사이트\" <insight@vinulabs.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_vinulabs.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 3
+      },
+      "detected_at": "2026-04-02T04:13:26.940Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-03-25T02:32:43.749Z"
+  "last_scan": "2026-04-02T04:19:17.474Z"
 }
