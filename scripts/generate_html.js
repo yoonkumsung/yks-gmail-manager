@@ -362,6 +362,12 @@ function generateHtmlReport(finalData, label, date) {
         align-items: flex-start;
       }
     }
+
+    @media print {
+      body { background: white; color: black; }
+      .item { break-inside: avoid; box-shadow: none; }
+      .links { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -529,7 +535,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     const items = data.items || [];
     // 라벨명을 ID에 사용 (특수문자를 _로 치환, 탭 버튼과 동일 로직)
     const safeLabel = data.label.replace(/[^a-zA-Z0-9가-힣_-]/g, '_');
-    const labelId = data.label.replace(/[^a-zA-Z0-9가-힣]/g, '');
+    const labelId = safeLabel;
 
     const itemsHtml = items.map((item, itemIndex) => {
       const keywordTags = (item.keywords || [])
@@ -544,51 +550,35 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       const hasDomainInsight = item.insights?.domain?.content;
       const hasCrossDomainInsight = item.insights?.cross_domain?.content;
 
-      // 버튼 행 (항상 한 줄 유지)
-      const domainBtnHtml = hasDomainInsight ? `
-        <button class="action-btn insight-btn domain-btn" data-target="domain-${uniqueId}">실용적 인사이트</button>
-      ` : '';
-
-      const crossBtnHtml = hasCrossDomainInsight ? `
-        <button class="action-btn insight-btn cross-btn" data-target="cross-${uniqueId}">확장 인사이트</button>
-      ` : '';
-
-      // 원문 보기 버튼 (원문 링크 없으면 Gmail 링크로 fallback)
+      // 원문 보기 버튼
       const gmailUrl = item.message_id ? `https://mail.google.com/mail/u/0/#all/${item.message_id}` : null;
       let articleLinkHtml = '';
       if (item.link) {
         articleLinkHtml = `<a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>`;
       } else if (gmailUrl) {
-        // 원문 링크 없을 때만 Gmail 버튼 표시 (해당 뉴스레터로 이동)
         articleLinkHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" class="action-btn gmail-btn" title="본인 Gmail에서만 열립니다">Gmail에서 보기</a>`;
       }
 
-      // 버튼 행 (버튼만, 펼침 영역 분리)
-      const hasButtons = domainBtnHtml || crossBtnHtml || articleLinkHtml;
-      const buttonsHtml = hasButtons ? `
+      const buttonsHtml = articleLinkHtml ? `
         <div class="action-buttons">
-          ${domainBtnHtml}
-          ${crossBtnHtml}
           ${articleLinkHtml}
         </div>
       ` : '';
 
-      // 인사이트 내용 영역 (버튼 아래 별도 영역)
+      // 인사이트 내용 영역 (기본 노출 - 프리뷰)
       const domainContentHtml = hasDomainInsight ? `
-        <div class="insight-content domain-content" id="domain-${uniqueId}" style="display:none;">
+        <div class="insight-content domain-content" id="domain-${uniqueId}">
           <div class="insight-header">
             <span class="insight-label domain-label">실용적 인사이트</span>
-            <button class="insight-close" data-target="domain-${uniqueId}">&times;</button>
           </div>
           <p>${escapeHtml(item.insights.domain.content)}</p>
         </div>
       ` : '';
 
       const crossContentHtml = hasCrossDomainInsight ? `
-        <div class="insight-content cross-content" id="cross-${uniqueId}" style="display:none;">
+        <div class="insight-content cross-content" id="cross-${uniqueId}">
           <div class="insight-header">
             <span class="insight-label cross-label">확장 인사이트</span>
-            <button class="insight-close" data-target="cross-${uniqueId}">&times;</button>
           </div>
           <p>${escapeHtml(item.insights.cross_domain.content)}</p>
         </div>
@@ -601,11 +591,21 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
         </div>
       ` : '';
 
+      // 출처 뱃지
+      const sourceBadge = item.source ? `<span class="source-badge">${escapeHtml(item.source)}</span>` : '';
+
+      // 인사이트 유무 뱃지
+      const hasAnyInsight = hasDomainInsight || hasCrossDomainInsight;
+      const insightBadge = hasAnyInsight ? '<span class="insight-badge">insight</span>' : '';
+
       return `
         <article class="item">
           <div class="item-header">
             <h3 class="item-title">${escapeHtml(item.title)}</h3>
             <span class="item-number">#${itemIndex + 1}</span>
+          </div>
+          <div class="item-meta-row">
+            ${sourceBadge}${insightBadge}
           </div>
           <p class="item-summary">${escapeHtml(item.summary)}</p>
           <div class="keywords">${keywordTags}</div>
@@ -620,6 +620,9 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
         <div class="label-stats">
           <span class="stat">기사 ${items.length}개</span>
           ${data.stats?.duplicates_removed ? `<span class="stat">중복 제거 ${data.stats.duplicates_removed}개</span>` : ''}
+          ${(() => { const insightCount = items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length; return insightCount > 0 ? `<span class="stat stat-insight">인사이트 ${insightCount}/${items.length}</span>` : ''; })()}
+          ${data.excluded?.length ? `<span class="stat stat-excluded">제외 ${data.excluded.length}건</span>` : ''}
+          ${data.quality_issues ? `<span class="stat stat-warning">품질 이슈 ${data.quality_issues}건</span>` : ''}
         </div>
         <div class="items-list">
           ${itemsHtml || '<p class="no-items">기사가 없습니다.</p>'}
@@ -628,27 +631,50 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     `;
   }).join('\n');
 
-  // 제외 탭 콘텐츠
-  const excludedTabContent = hasExcluded ? `
-    <div class="tab-content" id="tab-제외됨">
-      <div class="label-stats">
-        <span class="stat">제외 ${excludedMails.length}건</span>
-      </div>
-      <div class="items-list">
-        ${excludedMails.map((mail, i) => `
-          <article class="item-card excluded-card">
-            <div class="item-header">
-              <h3 class="item-title">${escapeHtml(mail.subject)}</h3>
-              <span class="item-number">#${i + 1}</span>
-            </div>
-            <p class="item-summary"><strong>발신:</strong> ${escapeHtml(mail.from || '')}</p>
-            <p class="item-summary"><strong>라벨:</strong> ${escapeHtml(mail.label || '')}</p>
-            <p class="item-summary" style="color: #9ca3af;"><strong>제외 사유:</strong> ${escapeHtml(mail.reason)}</p>
-          </article>
+  // 제외 탭 콘텐츠 — 사유별 그룹핑
+  let excludedTabContent = '';
+  if (hasExcluded) {
+    // 사유 패턴별 그룹핑
+    const groups = {};
+    for (const mail of excludedMails) {
+      let groupKey = mail.reason || '기타';
+      if (groupKey.includes('429')) groupKey = 'API 속도 제한 (429)';
+      else if (groupKey.includes('LLM 처리 실패')) groupKey = 'LLM 처리 실패';
+      else if (groupKey.includes('비뉴스')) groupKey = '비뉴스 메일 (사전 필터)';
+      else if (groupKey.includes('추출 가능한 뉴스 아이템 없음')) groupKey = '추출 가능한 아이템 없음';
+      else if (groupKey.includes('텍스트 부족')) groupKey = '본문 텍스트 부족';
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(mail);
+    }
+
+    const groupsHtml = Object.entries(groups).map(([reason, mails]) => `
+      <div class="excluded-group">
+        <div class="excluded-group-header">
+          <span class="excluded-reason">${escapeHtml(reason)}</span>
+          <span class="excluded-count">${mails.length}건</span>
+        </div>
+        ${mails.map((mail, i) => `
+          <div class="excluded-item">
+            <span class="excluded-subject">${escapeHtml(mail.subject)}</span>
+            <span class="excluded-from">${escapeHtml(mail.from || '')}</span>
+            ${mail.label ? `<span class="excluded-label-tag">${escapeHtml(mail.label)}</span>` : ''}
+          </div>
         `).join('\n')}
       </div>
-    </div>
-  ` : '';
+    `).join('\n');
+
+    excludedTabContent = `
+      <div class="tab-content" id="tab-제외됨">
+        <div class="label-stats">
+          <span class="stat">제외 ${excludedMails.length}건</span>
+          <span class="stat">${Object.keys(groups).length}개 사유</span>
+        </div>
+        <div class="items-list">
+          ${groupsHtml}
+        </div>
+      </div>
+    `;
+  }
 
   const allTabContents = tabContents + excludedTabContent;
 
@@ -1001,6 +1027,110 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       border: 1px solid #fde68a;
     }
 
+    /* 아이템 메타 행 (출처 + 뱃지) */
+    .item-meta-row {
+      display: flex;
+      gap: 0.375rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .source-badge {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      background: #eff6ff;
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .insight-badge {
+      font-size: 0.6rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: #f5f3ff;
+      color: var(--domain);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* 통계 색상 */
+    .stat-insight { color: var(--domain); }
+    .stat-excluded { color: #9ca3af; }
+    .stat-warning { color: #f59e0b; }
+
+    /* 제외 그룹 */
+    .excluded-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+    }
+
+    .excluded-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .excluded-reason {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .excluded-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--border);
+      padding: 0.1rem 0.5rem;
+      border-radius: 10px;
+    }
+
+    .excluded-item {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.8rem;
+    }
+
+    .excluded-item:last-child { border-bottom: none; }
+
+    .excluded-subject {
+      flex: 1;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .excluded-from {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .excluded-label-tag {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      background: var(--border);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
     .no-items { color: var(--text-muted); text-align: center; padding: 2rem; }
 
     /* 크로스 인사이트 탭 */
@@ -1259,6 +1389,29 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
         color: #f1f5f9;
       }
 
+      .source-badge {
+        background: #1e3a5f;
+        color: #93c5fd;
+      }
+
+      .insight-badge {
+        background: #1e1b4b;
+        color: var(--domain);
+      }
+
+      .excluded-group-header {
+        background: #1e293b;
+      }
+
+      .excluded-item {
+        border-bottom-color: #334155;
+      }
+
+      .excluded-label-tag {
+        background: #334155;
+        color: #94a3b8;
+      }
+
       .related-item-tag {
         background: #334155;
         color: #cbd5e1;
@@ -1289,6 +1442,20 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       .action-item-card {
         border-left-color: #34d399;
       }
+    }
+
+    /* 인쇄/PDF */
+    @media print {
+      .header-container { position: static; border: none; }
+      .tabs-wrapper { display: none; }
+      .tab-content { display: block !important; page-break-inside: avoid; margin-bottom: 2rem; }
+      .tab-content::before { content: attr(id); font-size: 1.2rem; font-weight: 700; display: block; margin-bottom: 1rem; }
+      .item { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+      .action-buttons { display: none; }
+      body { background: white; color: black; font-size: 11pt; }
+      .container { max-width: 100%; padding: 0; }
+      .insight-content { break-inside: avoid; }
+      .excluded-group { break-inside: avoid; }
     }
   </style>
 </head>
@@ -1338,32 +1505,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       });
     });
 
-    // 인사이트 버튼 토글
-    document.querySelectorAll('.insight-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetId = btn.dataset.target;
-        const content = document.getElementById(targetId);
-        if (content) {
-          const isVisible = content.style.display !== 'none';
-          content.style.display = isVisible ? 'none' : 'block';
-          btn.classList.toggle('active', !isVisible);
-        }
-      });
-    });
-
-    // 인사이트 닫기 버튼
-    document.querySelectorAll('.insight-close').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetId = btn.dataset.target;
-        const content = document.getElementById(targetId);
-        if (content) {
-          content.style.display = 'none';
-          // 해당 버튼의 active 클래스 제거
-          const toggleBtn = document.querySelector('[data-target="' + targetId + '"].insight-btn');
-          if (toggleBtn) toggleBtn.classList.remove('active');
-        }
-      });
-    });
+    // 인사이트는 기본 노출 (토글 불필요)
   </script>
 </body>
 </html>`;

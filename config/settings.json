@@ -2,29 +2,31 @@
   "schema_version": "2.0",
 
   "llm": {
-    "tier": "free",
+    "tier": "mixed",
 
     "providers": {
       "google": {
         "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
         "envKey": "GOOGLE_AI_API_KEY",
-        "metadataUrl": null
+        "metadataUrl": null,
+        "tier": "free"
       },
       "openrouter": {
         "baseUrl": "https://openrouter.ai/api/v1",
         "envKey": "OPENROUTER_API_KEY",
-        "metadataUrl": "https://openrouter.ai/api/v1/models"
+        "metadataUrl": "https://openrouter.ai/api/v1/models",
+        "tier": "paid"
       }
     },
 
     "models": {
       "extract": {
-        "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
-        "fallback": { "provider": "openrouter", "model": "nvidia/nemotron-3-super-120b-a12b:free" }
+        "primary": { "provider": "openrouter", "model": "deepseek/deepseek-v3.2" },
+        "fallback": { "provider": "google", "model": "gemini-3-flash-preview" }
       },
       "reasoning": {
-        "primary": { "provider": "google", "model": "gemini-3-flash-preview" },
-        "fallback": { "provider": "openrouter", "model": "nvidia/nemotron-3-super-120b-a12b:free" }
+        "primary": { "provider": "openrouter", "model": "deepseek/deepseek-v3.2" },
+        "fallback": { "provider": "google", "model": "gemini-3-flash-preview" }
       },
       "vision": { "provider": "openrouter", "model": "nvidia/nemotron-nano-12b-v2-vl:free" }
     },

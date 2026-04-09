@@ -41,7 +41,8 @@ class AgentRunner {
         baseUrl: config.baseUrl,
         apiKey: process.env[config.envKey] || '',
         metadataUrl: config.metadataUrl || null,
-        envKey: config.envKey
+        envKey: config.envKey,
+        tier: config.tier || 'free'
       };
     }
 
@@ -99,12 +100,24 @@ class AgentRunner {
     // 재시도 설정 (7회, 점진적 대기)
     this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
 
-    // Rate Limit 설정
+    // Rate Limit 설정 (프로바이더별 분리)
+    this.providerRateLimits = {};  // { providerName: { requestCount, windowStart, lastRequestTime } }
+    for (const [name, config] of Object.entries(this.providers)) {
+      const isFree = config.tier === 'free';
+      const rpm = isFree ? (this.freeLimits.requests_per_minute || 10) : 30;
+      this.providerRateLimits[name] = {
+        requestCount: 0,
+        windowStart: Date.now(),
+        lastRequestTime: 0,
+        maxRequestsPerMinute: rpm,
+        minRequestInterval: Math.ceil(60000 / rpm)
+      };
+    }
+    // 하위 호환용 글로벌 값 (fallback)
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
-    const rpm = this.tier === 'free' ? (this.freeLimits.requests_per_minute || 10) : 18;
-    this.maxRequestsPerMinute = rpm;
-    this.minRequestInterval = Math.ceil(60000 / rpm);
+    this.maxRequestsPerMinute = 30;
+    this.minRequestInterval = Math.ceil(60000 / 30);
     this.lastRequestTime = 0;
 
     // 모델 메타데이터 캐시
@@ -144,7 +157,10 @@ class AgentRunner {
    * @returns {boolean} 요청 가능 여부
    */
   checkDailyLimit(providerName) {
-    if (this.tier !== 'free') return true;
+    // 프로바이더별 tier 확인 (paid 프로바이더는 일일 한도 없음)
+    const provider = this.providers[providerName];
+    const providerTier = provider?.tier || this.tier || 'free';
+    if (providerTier !== 'free') return true;
 
     // 날짜 변경 시 모든 카운터 리셋
     const today = new Date().toDateString();
@@ -243,7 +259,7 @@ class AgentRunner {
             const supportsReasoning = supportedParams.includes('reasoning');
             const maxCompletionTokens = meta.top_provider?.max_completion_tokens || null;
             const contextLength = meta.context_length || 128000;
-            const isVision = modelId.includes('-vl') || modelId.includes('vision') || modelId.includes('nemotron');
+            const isVision = modelId.includes('-vl') || modelId.includes('vision');
 
             this.modelMetadataCache[modelId] = {
               supportsReasoning,
@@ -262,8 +278,12 @@ class AgentRunner {
       }
     }
 
-    // 티어 정보 로깅
-    this.log(`[티어] ${this.tier} (일일 한도: ${this.tier === 'free' ? this.freeLimits.daily_requests + '회' : '무제한'})`, 'info');
+    // 티어 정보 로깅 (프로바이더별)
+    for (const [name, config] of Object.entries(this.providers)) {
+      const t = config.tier || 'free';
+      const rl = this.providerRateLimits[name];
+      this.log(`[티어] ${name}: ${t} (RPM: ${rl?.maxRequestsPerMinute || '?'}, 일일 한도: ${t === 'free' ? this.freeLimits.daily_requests + '회' : '무제한'})`, 'info');
+    }
   }
 
   // ============================================
@@ -274,7 +294,7 @@ class AgentRunner {
    * 작업 유형에 따른 모델 쌍 (primary + fallback) 반환
    */
   getModelsForTask(taskType) {
-    const reasoningTasks = ['insight', 'crossInsight'];
+    const reasoningTasks = ['insight', 'crossInsight', 'singleTopic'];
     const category = reasoningTasks.includes(taskType) ? 'reasoning' : 'extract';
     return this.modelConfig[category] || this.modelConfig.extract;
   }
@@ -324,13 +344,20 @@ class AgentRunner {
 
 [핵심 임무] 뉴스레터 본문에서 모든 뉴스 아이템을 빠짐없이 추출합니다.
 
+[입력 형식] 입력은 구조화된 마크다운입니다:
+- ## 헤딩 → 아이템 제목 후보
+- **볼드** → 핵심 키워드
+- [텍스트](URL) → 원문 링크
+- ---SECTION_BREAK--- → 섹션 구분
+이 구조를 활용하여 아이템 경계를 정확하게 파악하세요.
+
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
 - 에이전트 지시사항과 SKILL 규칙에 따라 처리`,
         temperature: 0.1,
         reasoningEffort: 'low',
-        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요.'
+        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 각 요약은 200자 이상이어야 합니다.'
       },
       analyze: {
         systemPrompt: `당신은 뉴스레터 구조 분석 전문가입니다.
@@ -413,6 +440,50 @@ class AgentRunner {
         temperature: 0.3,
         reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요. 자연스러운 연결이 없으면 빈 배열을 출력하세요.'
+      },
+      itemExtract: {
+        systemPrompt: `당신은 한국어 뉴스 요약 전문가입니다.
+
+[핵심 임무] 주어진 텍스트에서 하나의 뉴스 아이템을 정밀하게 요약합니다.
+이 텍스트는 하나의 뉴스 아이템에 해당하는 부분만 발췌한 것입니다.
+모든 주의력을 이 하나의 아이템에 집중하여 최고 품질의 요약을 생성하세요.
+
+[필수 요소]
+- WHO(주체) + WHAT(핵심 사실) + 구체적 근거(수치/데이터)
+- 원문의 수치는 반드시 포함
+- 요약 200~500자 (긴 콘텐츠는 400~800자)
+- 제목 20~50자
+- 키워드 3~5개
+
+[출력 규칙]
+- 유효한 JSON만 출력
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
+        temperature: 0.1,
+        reasoningEffort: 'low',
+        tailInstruction: '위 지시사항에 따라 이 뉴스 아이템을 정밀하게 요약하고 JSON으로 출력하세요. 요약은 반드시 200자 이상이어야 합니다.'
+      },
+      singleTopic: {
+        systemPrompt: `당신은 한국어 뉴스레터 분석 전문가입니다.
+
+[핵심 임무] 이 뉴스레터는 **하나의 주제를 심층 분석**하는 형식입니다.
+전체 내용을 하나의 아이템으로 추출하되, 일반 뉴스보다 상세한 요약을 작성하세요.
+
+[입력 형식] 입력은 구조화된 마크다운입니다.
+
+[요약 규칙 (400~800자)]
+- 구조: [핵심 주장 1~2문장] → [근거/데이터/사례] → [결론/시사점]
+- 인터뷰인 경우: 인터뷰이 이름/직함 + 핵심 발언 인용 + 주요 논점
+- 분석 기사인 경우: 분석 대상 + 핵심 데이터 + 결론
+- 원문의 수치/인용구는 반드시 포함
+- 키워드 5~7개 (단일 주제이므로 더 세분화)
+
+[출력 규칙]
+- 유효한 JSON만 출력
+- items 배열에 1개의 아이템만 포함
+- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
+        temperature: 0.1,
+        reasoningEffort: 'low',
+        tailInstruction: '위 지시사항에 따라 전체 뉴스레터를 하나의 아이템으로 요약하고 JSON으로 출력하세요. 요약은 400~800자여야 합니다.'
       }
     };
     return configs[taskType] || configs.extract;
@@ -634,17 +705,89 @@ class AgentRunner {
   // ============================================
 
   /**
-   * 텍스트를 청크로 분할 (문단 경계 유지)
+   * 텍스트를 청크로 분할 (구조 기반 스마트 청킹)
+   *
+   * 분할 우선순위:
+   * 1. ---SECTION_BREAK--- 마커 (뉴스레터 섹션 경계)
+   * 2. ## / ### 마크다운 헤딩 (아이템 경계)
+   * 3. 문단 경계 (fallback)
    */
   splitTextIntoChunks(text, maxCharsPerChunk) {
     if (!text || text.length <= maxCharsPerChunk) {
       return [text];
     }
 
-    const chunks = [];
+    // 1. SECTION_BREAK 마커로 분할 시도
+    const sectionParts = text.split(/\n*---SECTION_BREAK---\n*/);
+    if (sectionParts.length > 1) {
+      const grouped = this._groupSectionsIntoChunks(sectionParts, maxCharsPerChunk);
+      if (grouped.length > 0) {
+        this.log(`구조 기반 청킹: SECTION_BREAK ${sectionParts.length}개 섹션 → ${grouped.length}개 청크`, 'info');
+        return grouped;
+      }
+    }
 
-    // 문단 단위로 분할 (빈 줄 또는 --- 구분자)
-    const paragraphs = text.split(/\n\n+|(?=^---+$)/m);
+    // 2. 마크다운 헤딩으로 분할 시도
+    const headingSections = text.split(/(?=\n##+ )/);
+    if (headingSections.length > 1) {
+      const grouped = this._groupSectionsIntoChunks(headingSections, maxCharsPerChunk);
+      if (grouped.length > 0) {
+        this.log(`구조 기반 청킹: 헤딩 ${headingSections.length}개 섹션 → ${grouped.length}개 청크`, 'info');
+        return grouped;
+      }
+    }
+
+    // 3. 문단 경계 fallback
+    this.log(`문단 기반 청킹 (구조 마커 없음)`, 'info');
+    return this._splitByParagraphs(text, maxCharsPerChunk);
+  }
+
+  /**
+   * 섹션들을 maxCharsPerChunk 이내로 그룹핑
+   */
+  _groupSectionsIntoChunks(sections, maxCharsPerChunk) {
+    const chunks = [];
+    let currentChunk = '';
+
+    for (const section of sections) {
+      const trimmed = section.trim();
+      if (!trimmed) continue;
+
+      const potential = currentChunk
+        ? currentChunk + '\n\n' + trimmed
+        : trimmed;
+
+      if (potential.length > maxCharsPerChunk) {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+
+        // 단일 섹션이 초과하면 문단 기반으로 재분할
+        if (trimmed.length > maxCharsPerChunk) {
+          const subChunks = this._splitByParagraphs(trimmed, maxCharsPerChunk);
+          chunks.push(...subChunks.slice(0, -1));
+          currentChunk = subChunks[subChunks.length - 1] || '';
+        } else {
+          currentChunk = trimmed;
+        }
+      } else {
+        currentChunk = potential;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks.length > 0 ? chunks : [];
+  }
+
+  /**
+   * 문단 경계 기반 분할 (최종 fallback)
+   */
+  _splitByParagraphs(text, maxCharsPerChunk) {
+    const paragraphs = text.split(/\n\n+/);
+    const chunks = [];
     let currentChunk = '';
 
     for (const para of paragraphs) {
@@ -656,12 +799,10 @@ class AgentRunner {
         : trimmedPara;
 
       if (potentialChunk.length > maxCharsPerChunk) {
-        // 현재 청크 저장
         if (currentChunk) {
           chunks.push(currentChunk);
         }
 
-        // 단일 문단이 청크 크기를 초과하면 강제 분할
         if (trimmedPara.length > maxCharsPerChunk) {
           const subChunks = this.forceSplitText(trimmedPara, maxCharsPerChunk);
           chunks.push(...subChunks.slice(0, -1));
@@ -674,7 +815,6 @@ class AgentRunner {
       }
     }
 
-    // 마지막 청크 저장
     if (currentChunk) {
       chunks.push(currentChunk);
     }
@@ -1054,7 +1194,8 @@ ${agentContent}`;
       }
 
       try {
-        await this.checkRateLimit();
+        const providerForRL = this._modelProviderMap[model];
+        await this.checkRateLimit(providerForRL);
 
         const response = await this.callLLM(prompt, retryOverrides);
 
@@ -1206,10 +1347,9 @@ ${agentContent}`;
         max_tokens: modelConfig.maxTokens
       };
 
-      await this.checkRateLimit();
-
       // 프로바이더별 API URL 및 헤더 구성
       const provider = this.getProviderForModel(visionModel);
+      await this.checkRateLimit(provider.name);
       const headers = {
         'Authorization': `Bearer ${provider.apiKey}`,
         'Content-Type': 'application/json'
@@ -1410,36 +1550,64 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * Rate Limit 체크 및 대기
+   * Rate Limit 체크 및 대기 (프로바이더별)
+   * @param {string} providerName - 프로바이더명 (없으면 글로벌 적용)
    */
-  async checkRateLimit() {
+  async checkRateLimit(providerName) {
+    const rl = providerName && this.providerRateLimits[providerName]
+      ? this.providerRateLimits[providerName]
+      : null;
+
+    if (!rl) {
+      // 하위 호환: 글로벌 rate limit
+      const now = Date.now();
+      if (now - this.requestWindowStart >= 60000) {
+        this.requestCount = 0;
+        this.requestWindowStart = now;
+      }
+      if (this.requestCount >= this.maxRequestsPerMinute) {
+        const waitTime = 60000 - (now - this.requestWindowStart) + 1000;
+        this.log(`분당 요청 한도 도달, ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
+        await this.sleep(waitTime);
+        this.requestCount = 0;
+        this.requestWindowStart = Date.now();
+      }
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      if (timeSinceLastRequest < this.minRequestInterval) {
+        await this.sleep(this.minRequestInterval - timeSinceLastRequest);
+      }
+      this.requestCount++;
+      this.lastRequestTime = Date.now();
+      return;
+    }
+
     const now = Date.now();
 
     // 1분 경과 시 카운터 리셋
-    if (now - this.requestWindowStart >= 60000) {
-      this.requestCount = 0;
-      this.requestWindowStart = now;
+    if (now - rl.windowStart >= 60000) {
+      rl.requestCount = 0;
+      rl.windowStart = now;
     }
 
     // 분당 한도 도달 시 대기
-    if (this.requestCount >= this.maxRequestsPerMinute) {
-      const waitTime = 60000 - (now - this.requestWindowStart) + 1000;
-      this.log(`분당 요청 한도 도달, ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
+    if (rl.requestCount >= rl.maxRequestsPerMinute) {
+      const waitTime = 60000 - (now - rl.windowStart) + 1000;
+      this.log(`[${providerName}] 분당 요청 한도 도달 (${rl.maxRequestsPerMinute}), ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
       await this.sleep(waitTime);
-      this.requestCount = 0;
-      this.requestWindowStart = Date.now();
+      rl.requestCount = 0;
+      rl.windowStart = Date.now();
     }
 
     // 최소 요청 간격 유지
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.minRequestInterval) {
-      const waitMs = this.minRequestInterval - timeSinceLastRequest;
-      this.log(`요청 간격 유지: ${Math.ceil(waitMs/1000)}초 대기`, 'debug');
+    const timeSinceLastRequest = now - rl.lastRequestTime;
+    if (timeSinceLastRequest < rl.minRequestInterval) {
+      const waitMs = rl.minRequestInterval - timeSinceLastRequest;
+      this.log(`[${providerName}] 요청 간격 유지: ${Math.ceil(waitMs/1000)}초 대기`, 'debug');
       await this.sleep(waitMs);
     }
 
-    this.requestCount++;
-    this.lastRequestTime = Date.now();
+    rl.requestCount++;
+    rl.lastRequestTime = Date.now();
   }
 
   // ============================================
