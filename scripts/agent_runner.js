@@ -357,6 +357,7 @@ class AgentRunner {
 - 에이전트 지시사항과 SKILL 규칙에 따라 처리`,
         temperature: 0.1,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 각 요약은 200자 이상이어야 합니다.'
       },
       analyze: {
@@ -371,6 +372,7 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 뉴스레터 구조를 분석하고 아이템을 추출하여 JSON으로 출력하세요.'
       },
       merge: {
@@ -389,6 +391,7 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 중복 아이템을 병합하고 JSON으로 출력하세요.'
       },
       summarize: {
@@ -401,6 +404,7 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.2,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 뉴스 아이템을 주제별로 분류/요약하고 JSON으로 출력하세요.'
       },
       insight: {
@@ -460,6 +464,7 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 이 뉴스 아이템을 정밀하게 요약하고 JSON으로 출력하세요. 요약은 반드시 200자 이상이어야 합니다.'
       },
       singleTopic: {
@@ -483,6 +488,7 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 전체 뉴스레터를 하나의 아이템으로 요약하고 JSON으로 출력하세요. 요약은 400~800자여야 합니다.'
       }
     };
@@ -1419,8 +1425,9 @@ ${agentContent}`;
       // 프로바이더별 API URL 및 헤더 구성
       const provider = this.getProviderForModel(model);
 
-      // reasoning 파라미터 추가 (Google AI Studio는 미지원 → 제외)
-      if (modelConfig.supportsReasoning && !overrides.disableReasoning && provider.name !== 'google') {
+      // reasoning 파라미터 추가 (Google AI Studio는 미지원 → 제외, 태스크 설정에서 비활성화 가능)
+      const reasoningDisabled = overrides.disableReasoning || taskConfig.disableReasoning;
+      if (modelConfig.supportsReasoning && !reasoningDisabled && provider.name !== 'google') {
         requestBody.reasoning = { effort: reasoningEffort };
         // 모델별 추론 토큰 상한 (GLM 등 추론 폭발 방지)
         if (modelConfig.reasoningMaxTokens) {
