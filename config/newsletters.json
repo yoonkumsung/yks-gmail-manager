@@ -1542,11 +1542,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "single-topic",
+        "item_count_avg": 1
       },
       "detected_at": "2026-02-26T04:56:07.037Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "seoul_promotion01",
@@ -1907,7 +1907,25 @@
       },
       "detected_at": "2026-04-02T04:13:26.940Z",
       "skill_generated": true
+    },
+    {
+      "id": "stibee_stick_catchup_gmail_com",
+      "sender": "stick.catchup-gmail.com@send.stibee.com",
+      "name": "\"캐치집(Catch_zip)\" <stick.catchup-gmail.com@send.stibee.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_stick_catchup_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "unknown",
+        "item_count_avg": null
+      },
+      "detected_at": "2026-04-10T02:57:30.158Z",
+      "skill_generated": false
     }
   ],
-  "last_scan": "2026-04-02T04:19:17.474Z"
+  "last_scan": "2026-04-10T02:57:30.159Z"
 }
