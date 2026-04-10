@@ -10,51 +10,51 @@ South China Morning Post <news@e.scmp.com> 뉴스레터의 구조 분석 및 추
 |------|-----|
 | 이름 | South China Morning Post <news@e.scmp.com> |
 | 발신자 | news@e.scmp.com |
-| 유형 | single-topic |
-| 언어 | ko |
-| 평균 아이템 수 | 1개 |
-| 생성일 | 2026-02-03 |
+| 유형 | multi-item |
+| 언어 | en |
+| 평균 아이템 수 | 9개 |
+| 생성일 | 2026-04-10 |
 
 ---
 
 ## 구조 분석
 
 ### 뉴스레터 특징
-- 단일 주제 심층 인터뷰
-- 'Open Questions' 섹션 포함
-- 이미지 및 푸터 제외
+- 각 아이템은 카테고리명(예: Entertainment, Food & Drink)과 제목으로 구성
+- 카테고리명은 대문자로 표시되고 제목은 그 아래 줄에 위치
+- 뉴스레터는 SCMP의 Life & Culture 섹션 콘텐츠를 제공
 
 ### 아이템 경계
-- 기사 제목은 대괄호와 링크로 구분
-- 본문은 제목 바로 아래 첫 번째 문단
+- 각 아이템은 카테고리명(예: 'Entertainment', 'Food & Drink', 'Arts')으로 시작하는 라인이 경계
+- 카테고리명과 제목 사이에 빈 줄 없음
 
 ### 제목 위치
-- 제목은 h1 수준의 강조 텍스트와 링크 포함
+- 카테고리명 바로 다음 줄에 위치한 텍스트가 제목 (예: 'Entertainment' 다음 줄의 'How Gingle Wang went from clueless novice...')
 
 ### 본문 위치
-- 본문은 제목 바로 아래 첫 번째 문단
+- 본문 텍스트는 제공되지 않음. clean_text에는 제목만 포함
 
 ### 링크 위치
-- 원문 링크는 제목 바로 뒤에 위치
+- 링크는 제공되지 않음. clean_text에는 URL이 없음. 'Read more in the SCMP App'는 일반적인 액션 호출
 
 ---
 
 ## 추출 규칙
 
-1. 제목은 주어+동사+핵심정보 구조로 20~50자 제한
-2. 요약은 핵심사실-배경-영향-시사점 순서로 300~500자 작성
-3. 키워드는 명사형 3~5개 선정
-4. 링크는 원문 URL만 포함, 없으면 빈 문자열
-5. 금지: 이모지, 미완성 문장, 원문 복붙, 의미없는 제목
+1. 'LIFE & CULTURE' 헤더와 날짜 이후부터 '| Read more in the SCMP App |' 표 이전까지의 텍스트에서 아이템 추출
+2. 카테고리명으로 시작하는 각 라인과 그 바로 다음 줄의 제목을 하나의 아이템으로 구성
+3. 카테고리명은 'source' 필드에 사용, 제목은 'title' 필드에 사용
 
 ---
 
 ## 제외 영역
 
-- 헤더/푸터, 이미지, 저작권 문구
+- 'LIFE & CULTURE' 헤더와 날짜 라인
+- '| Read more in the SCMP App |' 표 및 이후의 모든 텍스트
+- 'This email was sent to...' 및 Copyright 라인
 
 ---
 
 ## 특이사항
 
-특이사항: 'READ FULL ARTICLE' CTA 포함
+본문 내용(요약)이 clean_text에 포함되지 않음. 제목만 추출 가능. 링크 URL도 없음.

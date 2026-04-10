@@ -174,8 +174,8 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "single-topic",
-        "item_count_avg": 1
+        "type": "multi-item",
+        "item_count_avg": 9
       },
       "detected_at": "2026-02-03T20:50:44.695Z",
       "skill_generated": true
@@ -1920,12 +1920,12 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 4
       },
       "detected_at": "2026-04-10T02:57:30.158Z",
-      "skill_generated": false
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-04-10T02:57:30.159Z"
+  "last_scan": "2026-04-10T09:43:02.318Z"
 }
