@@ -1,12 +1,21 @@
 /**
- * Google Drive 업로드 스크립트
+ * Google Drive 업로드 스크립트 (OAuth 방식)
+ *
+ * Service Account는 무료 Gmail 계정의 "내 드라이브"에 업로드 불가능
+ * (Service Account는 자체 저장소 할당량이 0이고, Workspace shared drive 필요)
+ * → 사용자 OAuth 토큰을 사용하여 본인 Drive 할당량으로 업로드
  *
  * 환경변수:
- *   GDRIVE_SERVICE_ACCOUNT_KEY - Service Account JSON 키 (전체 내용)
+ *   GMAIL_TOKEN - OAuth token.json 내용 (Drive 스코프 포함 필수)
+ *   GMAIL_CREDENTIALS - client_secret.json 내용
  *   GDRIVE_FOLDER_ID - 부모 폴더 ID (예: Newsletter 폴더)
  *
+ * 또는 로컬 파일:
+ *   config/credentials/token.json
+ *   config/credentials/client_secret.json
+ *
  * 사용법:
- *   node scripts/upload_to_drive.js <local_md_path> [target_filename]
+ *   node scripts/upload_to_drive.js <local_md_path> [target_filename] [year]
  *
  * 동작:
  *   1. GDRIVE_FOLDER_ID 아래에 연도 하위 폴더 (예: 2026) 자동 생성/탐색
@@ -19,26 +28,53 @@ const path = require('path');
 const { google } = require('googleapis');
 
 // ============================================
-// 인증 (Service Account)
+// 인증 (OAuth 사용자 토큰)
 // ============================================
 
+function loadCredentialsFromEnvOrFile() {
+  const credDir = path.join(__dirname, '..', 'config', 'credentials');
+
+  // 1. 환경변수 우선
+  let token = null;
+  let credentials = null;
+
+  if (process.env.GMAIL_TOKEN) {
+    try {
+      token = JSON.parse(process.env.GMAIL_TOKEN);
+    } catch (e) {
+      throw new Error(`GMAIL_TOKEN 환경변수 파싱 실패: ${e.message}`);
+    }
+  } else {
+    const tokenPath = path.join(credDir, 'token.json');
+    if (!fs.existsSync(tokenPath)) {
+      throw new Error('token.json 또는 GMAIL_TOKEN 환경변수가 필요합니다.');
+    }
+    token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+  }
+
+  if (process.env.GMAIL_CREDENTIALS) {
+    try {
+      credentials = JSON.parse(process.env.GMAIL_CREDENTIALS);
+    } catch (e) {
+      throw new Error(`GMAIL_CREDENTIALS 환경변수 파싱 실패: ${e.message}`);
+    }
+  } else {
+    const credPath = path.join(credDir, 'client_secret.json');
+    if (!fs.existsSync(credPath)) {
+      throw new Error('client_secret.json 또는 GMAIL_CREDENTIALS 환경변수가 필요합니다.');
+    }
+    credentials = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+  }
+
+  return { token, credentials };
+}
+
 function getDriveClient() {
-  const keyJson = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) {
-    throw new Error('GDRIVE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.');
-  }
+  const { token, credentials } = loadCredentialsFromEnvOrFile();
+  const { client_id, client_secret } = credentials.installed || credentials.web;
 
-  let credentials;
-  try {
-    credentials = JSON.parse(keyJson);
-  } catch (e) {
-    throw new Error(`GDRIVE_SERVICE_ACCOUNT_KEY 파싱 실패: ${e.message}`);
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive']
-  });
+  const auth = new google.auth.OAuth2(client_id, client_secret);
+  auth.setCredentials(token);
 
   return google.drive({ version: 'v3', auth });
 }
@@ -48,7 +84,6 @@ function getDriveClient() {
 // ============================================
 
 async function getOrCreateYearFolder(drive, parentId, year) {
-  // 동일 이름의 폴더 검색
   const escaped = String(year).replace(/'/g, "\\'");
   const res = await drive.files.list({
     q: `'${parentId}' in parents and name='${escaped}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -61,7 +96,6 @@ async function getOrCreateYearFolder(drive, parentId, year) {
     return res.data.files[0].id;
   }
 
-  // 없으면 생성
   const folder = await drive.files.create({
     requestBody: {
       name: String(year),
@@ -136,10 +170,7 @@ async function uploadToYearFolder(localPath, targetName, year) {
 
   const drive = getDriveClient();
 
-  // 연도 폴더 찾기/생성
   const yearFolderId = await getOrCreateYearFolder(drive, parentId, year);
-
-  // 업로드
   const result = await uploadMarkdownFile(drive, localPath, yearFolderId, targetName);
   return result;
 }
@@ -158,16 +189,13 @@ async function main() {
   const localPath = args[0];
   const targetName = args[1] || path.basename(localPath);
 
-  // 연도 결정: 인자로 받거나, 파일명에서 추출(YYMMDD 또는 YYYY-MM-DD), 또는 현재 연도
   let year = args[2];
   if (!year) {
     const fname = path.basename(localPath);
-    // YYYY-MM-DD 형식
     let m = fname.match(/(\d{4})-\d{2}-\d{2}/);
     if (m) {
       year = m[1];
     } else {
-      // YYMMDD 형식
       m = fname.match(/^(\d{2})(\d{2})(\d{2})/);
       if (m) {
         year = '20' + m[1];

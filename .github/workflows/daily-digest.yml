@@ -335,13 +335,19 @@ jobs:
         id: drive-upload
         continue-on-error: true
         env:
-          GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+          GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
         run: |
-          if [ -z "$GDRIVE_SERVICE_ACCOUNT_KEY" ] || [ -z "$GDRIVE_FOLDER_ID" ]; then
-            echo "Drive 시크릿 미설정, 업로드 건너뜀"
+          if [ -z "$GDRIVE_FOLDER_ID" ]; then
+            echo "GDRIVE_FOLDER_ID 미설정, 업로드 건너뜀"
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          if [ -z "$GMAIL_TOKEN" ] || [ -z "$GMAIL_CREDENTIALS" ]; then
+            echo "Gmail OAuth 시크릿 미설정, 업로드 건너뜀"
             echo "uploaded=false" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -433,8 +439,6 @@ jobs:
 
           if [ "$DRIVE_UPLOADED" = "true" ]; then
             MESSAGE+="☁️ Obsidian Vault 동기화 완료"
-          elif [ -n "${GDRIVE_FOLDER_ID:-}" ]; then
-            MESSAGE+="⚠️ Drive 업로드 실패"
           fi
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
