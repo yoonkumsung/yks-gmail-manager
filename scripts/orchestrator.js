@@ -1993,16 +1993,23 @@ async function convertHtmlToText(rawDir, cleanDir, runner) {
 function generateMarkdown(merged, date) {
   const dateStr = formatKST(date).split(' ')[0];
 
+  const insightCount = merged.items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length;
+
   let md = `# ${merged.label} 메일 정리 (${dateStr})\n\n`;
-  md += `> 총 ${merged.items.length}개 아이템`;
-  if (merged.has_insights) {
-    md += ` | 인사이트 포함`;
-  }
-  md += `\n\n`;
-  md += `---\n\n`;
+  md += `> 📰 ${merged.items.length}개 아이템`;
+  if (insightCount > 0) md += ` · 💡 ${insightCount}개 인사이트`;
+  if (merged.stats?.duplicates_removed) md += ` · 🔗 ${merged.stats.duplicates_removed}개 중복 제거`;
+  md += `\n\n---\n\n`;
 
   merged.items.forEach((item, i) => {
     md += `## ${i + 1}. ${item.title || '(제목 없음)'}\n\n`;
+
+    // 출처 정보 (HTML과 동일 — source 또는 source_email 폴백)
+    const sourceDisplay = item.source || item.source_email;
+    if (sourceDisplay) {
+      md += `> 📰 **${sourceDisplay}**\n\n`;
+    }
+
     md += `${item.summary || ''}\n\n`;
 
     if (item.keywords && item.keywords.length > 0) {
@@ -2017,12 +2024,12 @@ function generateMarkdown(merged, date) {
     // 인사이트 추가
     if (item.insights) {
       if (item.insights.domain?.content) {
-        md += `### 실용적 인사이트\n\n`;
+        md += `### 💡 실용적 인사이트\n\n`;
         md += `${item.insights.domain.content}\n\n`;
       }
 
       if (item.insights.cross_domain?.content) {
-        md += `### 확장 인사이트\n\n`;
+        md += `### 🌐 확장 인사이트\n\n`;
         md += `${item.insights.cross_domain.content}\n\n`;
       }
     }
@@ -2059,18 +2066,48 @@ function generateCombinedMarkdown(mergedDir, date) {
 
   // 전체 아이템 수 계산
   const totalItems = allLabelsData.reduce((sum, data) => sum + (data.items?.length || 0), 0);
-  const hasInsights = allLabelsData.some(data => data.has_insights);
+  const totalInsights = allLabelsData.reduce((sum, data) =>
+    sum + (data.items?.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length || 0), 0);
+
+  // 실행 통계 로드
+  let runStats = null;
+  const runStatsPath = path.join(mergedDir, '_run_stats.json');
+  if (fs.existsSync(runStatsPath)) {
+    try { runStats = JSON.parse(fs.readFileSync(runStatsPath, 'utf8')); } catch { /* skip */ }
+  }
 
   let md = `# 전체 메일 정리 (${dateStr})\n\n`;
-  md += `> 총 ${totalItems}개 아이템`;
-  if (hasInsights) {
-    md += ` | 인사이트 포함`;
-  }
-  md += `\n\n`;
-  md += `## 📊 라벨별 요약\n\n`;
+  md += `> 📰 ${totalItems}개 아이템 · 💡 ${totalInsights}개 인사이트\n\n`;
 
+  // 실행 통계 섹션 (HTML의 Bento 통계와 동일)
+  if (runStats) {
+    const durMs = runStats.duration_ms || 0;
+    const durMin = Math.floor(durMs / 60000);
+    const durSec = Math.floor((durMs % 60000) / 1000);
+    const durStr = durMin >= 60
+      ? `${Math.floor(durMin / 60)}시간 ${durMin % 60}분`
+      : `${durMin}분 ${durSec}초`;
+    const totalTokens = (runStats.usage?.totalPromptTokens || 0) + (runStats.usage?.totalCompletionTokens || 0);
+    const tokensStr = totalTokens >= 1000000
+      ? `${(totalTokens / 1000000).toFixed(2)}M`
+      : totalTokens >= 1000
+      ? `${(totalTokens / 1000).toFixed(0)}K`
+      : String(totalTokens);
+    const costUsd = runStats.cost?.total_usd || 0;
+
+    md += `## 📊 실행 통계\n\n`;
+    md += `| 항목 | 값 |\n|---|---|\n`;
+    md += `| ⏱ 소요시간 | ${durStr} |\n`;
+    md += `| 🔤 총 토큰 | ${tokensStr} (입력 ${(runStats.usage?.totalPromptTokens || 0).toLocaleString()} + 출력 ${(runStats.usage?.totalCompletionTokens || 0).toLocaleString()}) |\n`;
+    md += `| 📡 API 호출 | ${runStats.usage?.totalCalls || 0}회 |\n`;
+    md += `| 💰 비용 | $${costUsd.toFixed(4)} |\n\n`;
+  }
+
+  md += `## 📋 라벨별 요약\n\n`;
   allLabelsData.forEach(data => {
-    md += `- **${data.label}**: ${data.items?.length || 0}개\n`;
+    const items = data.items || [];
+    const ins = items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length;
+    md += `- **${data.label}**: ${items.length}개${ins > 0 ? ` (💡 ${ins}개)` : ''}\n`;
   });
 
   md += `\n---\n\n`;
@@ -2125,12 +2162,20 @@ function generateCombinedMarkdown(mergedDir, date) {
   // 각 라벨별 내용
   allLabelsData.forEach((data, labelIndex) => {
     const items = data.items || [];
+    const labelInsights = items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length;
 
     md += `# ${data.label}\n\n`;
-    md += `> ${items.length}개 아이템\n\n`;
+    md += `> 📰 ${items.length}개 아이템${labelInsights > 0 ? ` · 💡 ${labelInsights}개 인사이트` : ''}\n\n`;
 
     items.forEach((item, i) => {
       md += `## ${i + 1}. ${item.title}\n\n`;
+
+      // 출처 정보 (HTML과 동일)
+      const sourceDisplay = item.source || item.source_email;
+      if (sourceDisplay) {
+        md += `> 📰 **${sourceDisplay}**\n\n`;
+      }
+
       md += `${item.summary}\n\n`;
 
       if (item.keywords && item.keywords.length > 0) {
@@ -2145,12 +2190,12 @@ function generateCombinedMarkdown(mergedDir, date) {
       // 인사이트 추가
       if (item.insights) {
         if (item.insights.domain?.content) {
-          md += `### 실용적 인사이트\n\n`;
+          md += `### 💡 실용적 인사이트\n\n`;
           md += `${item.insights.domain.content}\n\n`;
         }
 
         if (item.insights.cross_domain?.content) {
-          md += `### 확장 인사이트\n\n`;
+          md += `### 🌐 확장 인사이트\n\n`;
           md += `${item.insights.cross_domain.content}\n\n`;
         }
       }
