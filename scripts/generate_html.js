@@ -747,7 +747,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="robots" content="noindex, nofollow">
-  <title>메일 정리 - ${date}</title>
+  <title>YKS Newsletter Report · ${date}</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -1599,7 +1599,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
   <header class="header-container">
     <div class="header-inner">
       <div class="header-top">
-        <span class="header-title">메일 정리</span>
+        <span class="header-title">YKS Newsletter Report</span>
         <div class="header-meta">
           <span class="badge badge-date">${date}</span>
           <span class="badge badge-count">${totalItems}개</span>

@@ -133,7 +133,7 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
-          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리를 시작합니다.\n\n📅 %s\n📋 모드: %s" "$TARGET_DATE" "$MODE_KR")
+          MESSAGE=$(printf "[YKS Newsletter Report] 생성을 시작합니다.\n\n📅 %s\n📋 모드: %s" "$TARGET_DATE" "$MODE_KR")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
@@ -416,7 +416,7 @@ jobs:
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
-            MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 처리할 뉴스레터가 없었습니다.\n⏱ %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
+            MESSAGE=$(printf "[YKS Newsletter Report] 생성 완료\n\n📅 %s\n📊 처리할 뉴스레터가 없었습니다.\n⏱ %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
               -d text="$MESSAGE"
@@ -426,7 +426,7 @@ jobs:
           LABEL_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l | tr -d ' ')
 
           # 메시지 구성: 완료 정보 + 리포트 링크 + Drive 상태
-          MESSAGE="[Gmail Manager] 뉴스레터 정리 완료"$'\n\n'
+          MESSAGE="[YKS Newsletter Report] 생성 완료"$'\n\n'
           MESSAGE+="📅 ${TARGET_DATE}"$'\n'
           MESSAGE+="📊 ${LABEL_COUNT}개 라벨 처리 완료"$'\n'
           MESSAGE+="⏱ ${ELAPSED_MIN}분 ${ELAPSED_SEC}초"$'\n\n'
@@ -479,7 +479,7 @@ jobs:
             STATUS="에러"
           fi
 
-          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 실패\n\n📅 %s\n❌ 상태: %s\n⏱ %s\n\n🔗 <a href=\"%s\">로그 확인</a>" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
+          MESSAGE=$(printf "[YKS Newsletter Report] 생성 실패\n\n📅 %s\n❌ 상태: %s\n⏱ %s\n\n🔗 <a href=\"%s\">로그 확인</a>" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \

@@ -1995,7 +1995,7 @@ function generateMarkdown(merged, date) {
 
   const insightCount = merged.items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length;
 
-  let md = `# ${merged.label} 메일 정리 (${dateStr})\n\n`;
+  let md = `# YKS Newsletter Report · ${merged.label} (${dateStr})\n\n`;
   md += `> 📰 ${merged.items.length}개 아이템`;
   if (insightCount > 0) md += ` · 💡 ${insightCount}개 인사이트`;
   if (merged.stats?.duplicates_removed) md += ` · 🔗 ${merged.stats.duplicates_removed}개 중복 제거`;
@@ -2076,7 +2076,7 @@ function generateCombinedMarkdown(mergedDir, date) {
     try { runStats = JSON.parse(fs.readFileSync(runStatsPath, 'utf8')); } catch { /* skip */ }
   }
 
-  let md = `# 전체 메일 정리 (${dateStr})\n\n`;
+  let md = `# YKS Newsletter Report (${dateStr})\n\n`;
   md += `> 📰 ${totalItems}개 아이템 · 💡 ${totalInsights}개 인사이트\n\n`;
 
   // 실행 통계 섹션 (HTML의 Bento 통계와 동일)

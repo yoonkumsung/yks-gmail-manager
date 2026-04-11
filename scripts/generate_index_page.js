@@ -83,7 +83,7 @@ function generateIndexHtml(reports) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>뉴스레터 정리 리포트</title>
+  <title>YKS Newsletter Report</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -181,7 +181,7 @@ function generateIndexHtml(reports) {
 <body>
   <div class="container">
     <header>
-      <h1>뉴스레터 정리 리포트</h1>
+      <h1>YKS Newsletter Report</h1>
       <p class="subtitle">매일 자동으로 정리되는 뉴스 다이제스트</p>
     </header>
     ${reports.length === 0 ? '<p class="empty">아직 생성된 리포트가 없습니다.</p>' : sections}
