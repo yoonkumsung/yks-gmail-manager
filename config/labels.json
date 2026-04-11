@@ -52,9 +52,7 @@
     {
       "name": "라이프",
       "gmail_label": "라이프",
-      "sub_labels": [
-        "라이프/기관 홍보"
-      ],
+      "sub_labels": [],
       "enabled": true,
       "agent": "agents/labels/라이프.md",
       "focus_topics": [
@@ -68,9 +66,7 @@
     {
       "name": "IT",
       "gmail_label": "IT",
-      "sub_labels": [
-        "IT/AI"
-      ],
+      "sub_labels": [],
       "enabled": true,
       "agent": "agents/labels/IT.md",
       "focus_topics": [
@@ -86,9 +82,7 @@
     {
       "name": "경제",
       "gmail_label": "경제",
-      "sub_labels": [
-        "경제/기관 홍보"
-      ],
+      "sub_labels": [],
       "enabled": true,
       "agent": "agents/labels/경제.md",
       "focus_topics": [

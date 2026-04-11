@@ -22,6 +22,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.labels',
   'https://www.googleapis.com/auth/gmail.modify',  // 읽음 표시용
+  'https://www.googleapis.com/auth/gmail.settings.basic',  // 필터 관리용
   'https://www.googleapis.com/auth/drive'  // Google Drive (Obsidian Vault) 업로드용
 ];
 const REDIRECT_PORT = 3000;

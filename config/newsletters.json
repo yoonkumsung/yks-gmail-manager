@@ -149,7 +149,7 @@
       "sender": "news-noreply@thevc.kr",
       "name": "\"더브이씨 (The VC)\" <news-noreply@thevc.kr>",
       "labels": [
-        "투자"
+        "창업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_thevc.md",
@@ -509,7 +509,7 @@
       "sender": "newsletter@m-block.io",
       "name": "\"엠블록레터\" <newsletter@m-block.io>",
       "labels": [
-        "투자"
+        "IT"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_m_block.md",
@@ -1121,7 +1121,7 @@
       "sender": "dongahero2020-gmail.com@send.stibee.com",
       "name": "\"딥다이브\" <dongahero2020-gmail.com@send.stibee.com>",
       "labels": [
-        "경제"
+        "시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_stibee_dongahero2020_gmail_com.md",
@@ -1481,7 +1481,7 @@
       "sender": "content@mail.awarelab.io",
       "name": "\"어웨어\" <content@mail.awarelab.io>",
       "labels": [
-        "경제"
+        "창업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_awarelab.md",
