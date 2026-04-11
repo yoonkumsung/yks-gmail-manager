@@ -41,3 +41,6 @@ logs/
 # 임시 파일
 *.tmp
 *.temp
+
+# 런타임 생성 (SKILL 건강도 추적)
+config/skill_health.json
