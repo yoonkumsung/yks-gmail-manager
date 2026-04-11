@@ -287,7 +287,7 @@ jobs:
             exit 0
           fi
 
-          HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
+          HTML_FILE=$(find "$RUN_DIR" -name "*_Newsletter_report.html" 2>/dev/null | head -1)
           if [ -z "$HTML_FILE" ]; then
             echo "통합 HTML 파일 없음, GitHub Pages 배포 건너뜀"
             echo "deployed=false" >> $GITHUB_OUTPUT
@@ -362,7 +362,7 @@ jobs:
           fi
 
           RUN_DIR="output/final/${RUN_ID}"
-          MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
+          MD_FILE=$(find "$RUN_DIR" -name "*_Newsletter_report.md" 2>/dev/null | head -1)
           if [ -z "$MD_FILE" ]; then
             echo "통합 MD 파일 없음, 업로드 건너뜀"
             echo "uploaded=false" >> $GITHUB_OUTPUT
@@ -423,7 +423,7 @@ jobs:
             exit 0
           fi
 
-          LABEL_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l | tr -d ' ')
+          LABEL_COUNT=$(find "$RUN_DIR" -name "*_Newsletter_report_*.md" 2>/dev/null | wc -l | tr -d ' ')
 
           # 메시지 구성: 완료 정보 + 리포트 링크 + Drive 상태
           MESSAGE="[YKS Newsletter Report] 생성 완료"$'\n\n'

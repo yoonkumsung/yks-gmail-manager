@@ -1145,7 +1145,7 @@ async function main() {
     // KST 기준 날짜로 파일명 생성 (timeRange.end = 사용자 요청 날짜)
     const kstDate = new Date(timeRange.end.getTime() + 9 * 60 * 60 * 1000);
     const dateStr = `${String(kstDate.getUTCFullYear()).slice(2)}${String(kstDate.getUTCMonth() + 1).padStart(2, '0')}${String(kstDate.getUTCDate()).padStart(2, '0')}`;
-    const combinedHtmlPath = path.join(finalDir, `${dateStr}_통합_메일정리.html`);
+    const combinedHtmlPath = path.join(finalDir, `${dateStr}_Newsletter_report.html`);
 
     if (fs.existsSync(mergedDir)) {
       // HTML 통합 파일 생성
@@ -1154,7 +1154,7 @@ async function main() {
       generateCombinedFromMergedFiles(mergedDir, combinedHtmlPath, dateFormatted);
 
       // MD 통합 파일 생성
-      const combinedMdPath = path.join(finalDir, `${dateStr}_통합_메일정리.md`);
+      const combinedMdPath = path.join(finalDir, `${dateStr}_Newsletter_report.md`);
       const combinedMdContent = generateCombinedMarkdown(mergedDir, timeRange.end);
       if (combinedMdContent) {
         fs.writeFileSync(combinedMdPath, combinedMdContent, 'utf8');
@@ -1831,7 +1831,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   // KST 기준 날짜로 파일명 생성 (timeRange.end = 사용자 요청 날짜)
   const kstDateMd = new Date(timeRange.end.getTime() + 9 * 60 * 60 * 1000);
   const dateStr = `${String(kstDateMd.getUTCFullYear()).slice(2)}${String(kstDateMd.getUTCMonth() + 1).padStart(2, '0')}${String(kstDateMd.getUTCDate()).padStart(2, '0')}`;
-  const finalMd = path.join(finalDir, `${dateStr}_${label.name}_메일정리.md`);
+  const finalMd = path.join(finalDir, `${dateStr}_Newsletter_report_${label.name}.md`);
 
   // MD 파일 생성 (timeRange.end = 사용자 요청 날짜)
   try {
