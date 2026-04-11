@@ -554,12 +554,15 @@ async function validateAndReextractItems(items, cleanData, runner, label, skills
 
       if (reResult && reResult.items && reResult.items.length > 0) {
         const reItem = reResult.items[0];
-        // 재추출 결과가 원본보다 나으면 교체
+        // 재추출 결과가 원본보다 나으면 교체 (원본 메타데이터 모두 보존)
         if (reItem.summary && reItem.summary.length > (item.summary?.length || 0)) {
           items[index] = {
-            ...reItem,
-            source_email: senderEmail,
-            message_id: messageId
+            ...item,             // 원본 메타데이터 먼저 (source, source_email, received_at, message_id)
+            ...reItem,           // 재추출된 콘텐츠로 덮어쓰기 (title, summary, keywords, link 등)
+            source: reItem.source || item.source,
+            source_email: item.source_email || senderEmail,
+            received_at: item.received_at,
+            message_id: item.message_id || messageId
           };
           console.log(`        아이템 #${index + 1} 재추출 성공 (${reItem.summary.length}자)`);
         }
@@ -1818,7 +1821,9 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
                       return {
                         ...resultItem,
                         message_id: resultItem.message_id || originalItem?.message_id,
-                        source_email: resultItem.source_email || originalItem?.source_email
+                        source: resultItem.source || originalItem?.source,
+                        source_email: resultItem.source_email || originalItem?.source_email,
+                        received_at: resultItem.received_at || originalItem?.received_at
                       };
                     });
                     console.log(`    배치 ${batch.index + 1}/${batches.length}: 성공 (${enrichedItems.length}개 인사이트, 크기 ${trySize})`);
