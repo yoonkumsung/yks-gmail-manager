@@ -111,6 +111,7 @@ function generateHtmlReport(finalData, label, date) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>${escapeHtml(label)} 뉴스 다이제스트 - ${date}</title>
   <style>
     :root {
@@ -726,6 +727,7 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="robots" content="noindex, nofollow">
   <title>메일 정리 - ${date}</title>
   <style>
     :root {

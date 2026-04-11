@@ -254,7 +254,7 @@ jobs:
             echo "새로운 SKILL 파일 없음, 건너뜀"
           fi
 
-      - name: 결과물 업로드 (Artifacts)
+      - name: 결과물 업로드 (Artifacts - 백업용)
         if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -264,7 +264,118 @@ jobs:
             output/final/**/*.html
           retention-days: 30
 
-      - name: Telegram 알림 및 파일 전송
+      - name: HTML을 GitHub Pages에 배포 + 인덱스 생성
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        id: pages-deploy
+        env:
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_DATE: ${{ github.event.inputs.custom_date }}
+        run: |
+          # 대상 날짜 결정
+          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
+            TARGET_DATE="$INPUT_DATE"
+          else
+            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
+            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          fi
+
+          RUN_DIR="output/final/${RUN_ID}"
+          if [ ! -d "$RUN_DIR" ]; then
+            echo "결과물 폴더 없음, GitHub Pages 배포 건너뜀"
+            echo "deployed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
+          if [ -z "$HTML_FILE" ]; then
+            echo "통합 HTML 파일 없음, GitHub Pages 배포 건너뜀"
+            echo "deployed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # docs/reports 디렉토리 보장
+          mkdir -p docs/reports
+          [ -f docs/.nojekyll ] || touch docs/.nojekyll
+
+          # HTML 복사 (파일명: YYYY-MM-DD.html)
+          TARGET_HTML="docs/reports/${TARGET_DATE}.html"
+          cp "$HTML_FILE" "$TARGET_HTML"
+
+          # 인덱스 페이지 재생성
+          node scripts/generate_index_page.js
+
+          # Git commit
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "GitHub Pages: 변경사항 없음"
+          else
+            git commit -m "report: ${TARGET_DATE} 뉴스레터 리포트 추가" || true
+            # remote 변경사항 반영 후 푸시
+            if ! git pull --rebase; then
+              git rebase --abort
+              git pull --no-rebase --strategy-option theirs || true
+            fi
+            git push || echo "GitHub Pages 푸시 실패 (무시)"
+          fi
+
+          # GitHub Pages URL 출력
+          REPO_OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
+          PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/reports/${TARGET_DATE}.html"
+          echo "GitHub Pages URL: $PAGES_URL"
+          echo "pages_url=$PAGES_URL" >> $GITHUB_OUTPUT
+          echo "target_date=$TARGET_DATE" >> $GITHUB_OUTPUT
+          echo "deployed=true" >> $GITHUB_OUTPUT
+
+      - name: MD를 Google Drive에 업로드
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        id: drive-upload
+        continue-on-error: true
+        env:
+          GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_DATE: ${{ github.event.inputs.custom_date }}
+        run: |
+          if [ -z "$GDRIVE_SERVICE_ACCOUNT_KEY" ] || [ -z "$GDRIVE_FOLDER_ID" ]; then
+            echo "Drive 시크릿 미설정, 업로드 건너뜀"
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # 대상 날짜 결정
+          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
+            TARGET_DATE="$INPUT_DATE"
+          else
+            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
+            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          fi
+
+          RUN_DIR="output/final/${RUN_ID}"
+          MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
+          if [ -z "$MD_FILE" ]; then
+            echo "통합 MD 파일 없음, 업로드 건너뜀"
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # 파일명 형식: YYMMDD_Newsletter_report.md
+          YYMMDD=$(echo "$TARGET_DATE" | sed 's/20\(..\)-\(..\)-\(..\)/\1\2\3/')
+          TARGET_NAME="${YYMMDD}_Newsletter_report.md"
+          YEAR=$(echo "$TARGET_DATE" | cut -d'-' -f1)
+
+          echo "Drive 업로드: $TARGET_NAME → ${YEAR}/"
+          if node scripts/upload_to_drive.js "$MD_FILE" "$TARGET_NAME" "$YEAR"; then
+            echo "uploaded=true" >> $GITHUB_OUTPUT
+          else
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Telegram 알림 (링크 전송)
         if: success() && steps.check-secrets.outputs.skip != 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -272,10 +383,12 @@ jobs:
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
           START_EPOCH: ${{ steps.start-notify.outputs.start_epoch }}
+          PAGES_URL: ${{ steps.pages-deploy.outputs.pages_url }}
+          PAGES_DEPLOYED: ${{ steps.pages-deploy.outputs.deployed }}
+          DRIVE_UPLOADED: ${{ steps.drive-upload.outputs.uploaded }}
         run: |
-          # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
-            echo "TELEGRAM_TOKEN이 설정되지 않아 알림을 건너뜁니다."
+            echo "TELEGRAM_TOKEN 미설정, 알림 건너뜀"
             exit 0
           fi
 
@@ -285,7 +398,7 @@ jobs:
           ELAPSED_MIN=$(( ELAPSED / 60 ))
           ELAPSED_SEC=$(( ELAPSED % 60 ))
 
-          # 현재 실행의 RunID 계산 (YYYYMMDD)
+          # 대상 날짜 결정
           if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
             RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
             TARGET_DATE="$INPUT_DATE"
@@ -294,46 +407,40 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
-          # 결과물 폴더 확인
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
             MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 처리할 뉴스레터가 없었습니다.\n⏱ %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
-              -d text="$MESSAGE" \
-              -d parse_mode=HTML
+              -d text="$MESSAGE"
             exit 0
           fi
 
-          # 결과 집계
           LABEL_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l | tr -d ' ')
-          LABEL_NAMES=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
 
-          # 통합 파일 찾기
-          HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
-          MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
+          # 메시지 구성: 완료 정보 + 리포트 링크 + Drive 상태
+          MESSAGE="[Gmail Manager] 뉴스레터 정리 완료"$'\n\n'
+          MESSAGE+="📅 ${TARGET_DATE}"$'\n'
+          MESSAGE+="📊 ${LABEL_COUNT}개 라벨 처리 완료"$'\n'
+          MESSAGE+="⏱ ${ELAPSED_MIN}분 ${ELAPSED_SEC}초"$'\n\n'
 
-          # 완료 메시지 먼저 전송
-          MESSAGE=$(printf "[Gmail Manager] 뉴스레터 정리 완료\n\n📅 %s\n📊 %s개 라벨 처리 완료\n⏱ %d분 %d초" "$TARGET_DATE" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
+          if [ "$PAGES_DEPLOYED" = "true" ] && [ -n "$PAGES_URL" ]; then
+            MESSAGE+="🔗 리포트: ${PAGES_URL}"$'\n'
+          else
+            MESSAGE+="⚠️ GitHub Pages 배포 실패"$'\n'
+          fi
+
+          if [ "$DRIVE_UPLOADED" = "true" ]; then
+            MESSAGE+="☁️ Obsidian Vault 동기화 완료"
+          elif [ -n "${GDRIVE_FOLDER_ID:-}" ]; then
+            MESSAGE+="⚠️ Drive 업로드 실패"
+          fi
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE" \
-            -d parse_mode=HTML
-
-          # 파일 전송 (caption 없이 단순 첨부)
-          if [ -n "$HTML_FILE" ]; then
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
-              -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F document=@"${HTML_FILE}"
-          fi
-
-          if [ -n "$MD_FILE" ]; then
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
-              -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F document=@"${MD_FILE}"
-          fi
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" \
+            --data-urlencode "disable_web_page_preview=false"
 
       - name: 에러/타임아웃 알림
         if: failure() || cancelled()
