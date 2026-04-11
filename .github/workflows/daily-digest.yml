@@ -180,18 +180,43 @@ jobs:
             # 자동 실행
             node scripts/orchestrator.js --mode schedule
           else
-            # 수동 실행 (env로 전달받아 쉘 인젝션 방지)
-            ARGS="--mode $INPUT_MODE"
+            # 수동 실행 입력 검증 (쉘 인젝션 방지)
 
+            # mode 화이트리스트
+            case "$INPUT_MODE" in
+              today|last-24h|custom|schedule) ;;
+              *)
+                echo "ERROR: 잘못된 mode 값: $INPUT_MODE"
+                exit 1
+                ;;
+            esac
+
+            # custom_date 형식 검증 (YYYY-MM-DD)
             if [ -n "$INPUT_CUSTOM_DATE" ]; then
-              ARGS="$ARGS --date $INPUT_CUSTOM_DATE"
+              if ! echo "$INPUT_CUSTOM_DATE" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+                echo "ERROR: 잘못된 날짜 형식 (YYYY-MM-DD 필요): $INPUT_CUSTOM_DATE"
+                exit 1
+              fi
             fi
 
+            # labels 형식 검증 (한글/영문/숫자/쉼표/언더스코어/하이픈만 허용)
             if [ -n "$INPUT_LABELS" ]; then
-              ARGS="$ARGS --labels $INPUT_LABELS"
+              if ! echo "$INPUT_LABELS" | grep -qE '^[a-zA-Z0-9_,/가-힣-]+$'; then
+                echo "ERROR: 잘못된 labels 형식 (영문/숫자/한글/쉼표만 허용): $INPUT_LABELS"
+                exit 1
+              fi
             fi
 
-            node scripts/orchestrator.js $ARGS
+            # 검증된 인자로 실행 (쉘 분리 안전)
+            ARGS=(--mode "$INPUT_MODE")
+            if [ -n "$INPUT_CUSTOM_DATE" ]; then
+              ARGS+=(--date "$INPUT_CUSTOM_DATE")
+            fi
+            if [ -n "$INPUT_LABELS" ]; then
+              ARGS+=(--labels "$INPUT_LABELS")
+            fi
+
+            node scripts/orchestrator.js "${ARGS[@]}"
           fi
 
       - name: SKILL 파일 및 설정 커밋

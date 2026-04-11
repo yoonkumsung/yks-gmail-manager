@@ -39,8 +39,9 @@ function generateHtmlReport(finalData, label, date) {
     ` : '';
 
     // 원문 링크 버튼
-    const articleLink = item.link ? `
-      <a href="${escapeHtml(item.link)}" target="_blank" class="link-btn article-link">
+    const safeArticleUrl = safeUrl(item.link);
+    const articleLink = safeArticleUrl ? `
+      <a href="${escapeHtml(safeArticleUrl)}" target="_blank" rel="noopener noreferrer" class="link-btn article-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
           <polyline points="15 3 21 3 21 9"></polyline>
@@ -52,7 +53,7 @@ function generateHtmlReport(finalData, label, date) {
 
     // Gmail 링크 버튼
     const gmailLink = gmailUrl ? `
-      <a href="${escapeHtml(gmailUrl)}" target="_blank" class="link-btn gmail-link">
+      <a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="link-btn gmail-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
           <polyline points="22,6 12,13 2,6"></polyline>
@@ -484,6 +485,42 @@ function escapeHtml(text) {
 }
 
 /**
+ * URL 안전성 검증 (XSS 방지)
+ * - http(s), mailto만 허용
+ * - javascript:, data:, vbscript: 등 위험 스킴 차단
+ * - 빈 문자열 또는 null 반환 시 링크 생성 안 함
+ */
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // 절대 URL 스킴 검증
+  const schemeMatch = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    const allowedSchemes = ['http', 'https', 'mailto'];
+    if (!allowedSchemes.includes(scheme)) {
+      return ''; // 위험 스킴 차단
+    }
+  } else if (!trimmed.startsWith('/') && !trimmed.startsWith('#')) {
+    // 스킴 없고 상대 경로/앵커도 아니면 차단
+    return '';
+  }
+
+  // 추가: URL 파싱 검증 (http/https만)
+  if (/^https?:/i.test(trimmed)) {
+    try {
+      new URL(trimmed);
+    } catch {
+      return '';
+    }
+  }
+
+  return trimmed;
+}
+
+/**
  * Final JSON에서 HTML 생성
  */
 function generateFromFinalJson(finalJsonPath, outputPath) {
@@ -550,13 +587,15 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       const hasDomainInsight = item.insights?.domain?.content;
       const hasCrossDomainInsight = item.insights?.cross_domain?.content;
 
-      // 원문 보기 버튼
-      const gmailUrl = item.message_id ? `https://mail.google.com/mail/u/0/#all/${item.message_id}` : null;
+      // 원문 보기 버튼 (URL 안전성 검증)
+      const safeMessageId = item.message_id && /^[a-zA-Z0-9_-]+$/.test(item.message_id) ? item.message_id : null;
+      const gmailUrl = safeMessageId ? `https://mail.google.com/mail/u/0/#all/${safeMessageId}` : null;
       let articleLinkHtml = '';
-      if (item.link) {
-        articleLinkHtml = `<a href="${escapeHtml(item.link)}" target="_blank" class="action-btn article-btn">원문 보기</a>`;
+      const safeItemLink = safeUrl(item.link);
+      if (safeItemLink) {
+        articleLinkHtml = `<a href="${escapeHtml(safeItemLink)}" target="_blank" rel="noopener noreferrer" class="action-btn article-btn">원문 보기</a>`;
       } else if (gmailUrl) {
-        articleLinkHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" class="action-btn gmail-btn" title="본인 Gmail에서만 열립니다">Gmail에서 보기</a>`;
+        articleLinkHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="action-btn gmail-btn" title="본인 Gmail에서만 열립니다">Gmail에서 보기</a>`;
       }
 
       const buttonsHtml = articleLinkHtml ? `

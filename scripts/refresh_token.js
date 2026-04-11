@@ -48,7 +48,8 @@ async function refreshAccessToken() {
     // 토큰이 아직 유효함
     return {
       access_token: token.access_token,
-      refreshed: false
+      refreshed: false,
+      expiry_date: token.expiry_date
     };
   }
 
@@ -94,7 +95,8 @@ async function refreshAccessToken() {
 
   return {
     access_token: newToken.access_token,
-    refreshed: true
+    refreshed: true,
+    expiry_date: updatedToken.expiry_date
   };
 }
 
@@ -115,9 +117,11 @@ async function main() {
       console.log('토큰이 아직 유효합니다.');
     }
 
-    // access_token 출력 (PowerShell에서 캡처 가능)
-    console.log('\nAccess Token:');
-    console.log(result.access_token);
+    // 토큰 만료 시각만 출력 (실제 토큰 값은 노출 금지)
+    if (result.expiry_date) {
+      const expiryKst = new Date(result.expiry_date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+      console.log(`만료 시각: ${expiryKst}`);
+    }
 
   } catch (error) {
     console.error('오류:', error.message);

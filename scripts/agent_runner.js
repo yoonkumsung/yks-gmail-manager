@@ -1467,7 +1467,12 @@ ${agentContent}`;
       if (!response.ok) {
         const errorText = await response.text();
         clearTimeout(timeoutId);
-        const error = new Error(`API Error (${response.status}) [${model}]: ${errorText}`);
+        // 에러 메시지 길이 제한 + 잠재적 키 노출 마스킹
+        const sanitized = (errorText || '').substring(0, 500)
+          .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+          .replace(/AIza[a-zA-Z0-9_-]{30,}/g, 'AIza***')
+          .replace(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***');
+        const error = new Error(`API Error (${response.status}) [${model}]: ${sanitized}`);
         error.status = response.status;
         throw error;
       }
