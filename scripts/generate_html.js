@@ -78,6 +78,25 @@ function safeId(label) {
   return label.replace(/[^a-zA-Z0-9가-힣_-]/g, '_');
 }
 
+/**
+ * 수신 시각 포맷 (KST, MM/DD HH:MM)
+ */
+function formatReceivedAtKST(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getUTCDate()).padStart(2, '0');
+    const hh = String(kst.getUTCHours()).padStart(2, '0');
+    const mi = String(kst.getUTCMinutes()).padStart(2, '0');
+    return `${mm}/${dd} ${hh}:${mi}`;
+  } catch {
+    return '';
+  }
+}
+
 // ============================================
 // 메인: 통합 HTML 리포트 생성
 // ============================================
@@ -371,6 +390,7 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
   const title = item.title || '(제목 없음)';
   const summary = item.summary || '';
   const keywords = (item.keywords || []).slice(0, 8);
+  const receivedAt = formatReceivedAtKST(item.received_at);
 
   const hasDomain = !!item.insights?.domain?.content;
   const hasCross = !!item.insights?.cross_domain?.content;
@@ -437,8 +457,9 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
           data-long="${isLongSummary ? 'true' : 'false'}"
           data-keywords="${escapeHtml(keywordsDataStr)}">
           <span class="item-number">#${itemIdx + 1}</span>
-          ${source || sourceEmail ? `<div class="item-meta-top">
-            <span class="item-source">${escapeHtml(source || sourceEmail)}</span>
+          ${(source || sourceEmail || receivedAt) ? `<div class="item-meta-top">
+            ${(source || sourceEmail) ? `<span class="item-source">${escapeHtml(source || sourceEmail)}</span>` : ''}
+            ${receivedAt ? `<span class="item-time">${escapeHtml(receivedAt)}</span>` : ''}
           </div>` : ''}
           <h3 class="item-title">${escapeHtml(title)}</h3>
           <p class="item-summary">${escapeHtml(summary)}</p>
@@ -1113,6 +1134,20 @@ function generateStyles(labelColorCss) {
       content: '📰';
       margin-right: 0.3rem;
       opacity: 0.7;
+    }
+    .item-time {
+      color: var(--text-subtle);
+      font-weight: 500;
+      font-size: 0.68rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .item-time::before {
+      content: '·';
+      margin: 0 0.4rem;
+      opacity: 0.5;
+    }
+    .item-meta-top:not(:has(.item-source)) .item-time::before {
+      display: none;
     }
     .item-number {
       position: absolute;

@@ -577,6 +577,60 @@ async function validateAndReextractItems(items, cleanData, runner, label, skills
 // [개선 #7] SKILL 건강도 관리
 // ============================================
 
+// ============================================
+// 뉴스레터 이름 맵 (sender email → name)
+// ============================================
+
+let _newsletterMapCache = null;
+function loadNewsletterNameMap() {
+  if (_newsletterMapCache) return _newsletterMapCache;
+  const nlPath = path.join(__dirname, '..', 'config', 'newsletters.json');
+  const map = {};
+  if (fs.existsSync(nlPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(nlPath, 'utf8'));
+      for (const nl of (data.newsletters || [])) {
+        const senders = [];
+        if (nl.sender) senders.push(nl.sender);
+        if (Array.isArray(nl.senders)) senders.push(...nl.senders);
+        for (const s of senders) {
+          if (s && nl.name) map[s.toLowerCase()] = nl.name;
+        }
+      }
+    } catch (e) {
+      console.warn(`[뉴스레터 맵] 로드 실패: ${e.message}`);
+    }
+  }
+  _newsletterMapCache = new Proxy(map, {
+    get(target, prop) {
+      if (typeof prop !== 'string') return target[prop];
+      return target[prop.toLowerCase()];
+    }
+  });
+  return _newsletterMapCache;
+}
+
+// ============================================
+// 수신 시각 포맷팅 (KST, MM/DD HH:MM)
+// ============================================
+
+function formatReceivedAt(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    // KST로 변환
+    const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getUTCDate()).padStart(2, '0');
+    const hh = String(kst.getUTCHours()).padStart(2, '0');
+    const mi = String(kst.getUTCMinutes()).padStart(2, '0');
+    return `${mm}/${dd} ${hh}:${mi}`;
+  } catch {
+    return '';
+  }
+}
+
 function loadSkillHealth(healthPath) {
   if (fs.existsSync(healthPath)) {
     try { return JSON.parse(fs.readFileSync(healthPath, 'utf8')); }
@@ -1286,6 +1340,9 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
   console.log(`  메일 ${msgFiles.length}개 수집 완료`);
 
+  // 뉴스레터 이름 맵 (sender_email → name)
+  const newsletterNameMap = loadNewsletterNameMap();
+
   // 3. HTML → Text - 증분 처리 지원
   if (!progressManager.isStepCompleted(label.name, 'html_to_text')) {
     console.log('  HTML → Text 변환 중...');
@@ -1427,9 +1484,14 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
         // 공통: 메타데이터 추가 후 저장
         if (result && result.items && result.items.length > 0) {
+          const newsletterName = newsletterNameMap[senderEmail] || '';
+          const receivedAt = cleanData?.date || null;
           const enrichedItems = result.items.map(item => ({
             ...item,
+            // LLM이 채운 source가 있으면 우선, 없으면 newsletters.json 조회값
+            source: item.source || newsletterName,
             source_email: senderEmail,
+            received_at: receivedAt,
             message_id: messageId
           }));
 
@@ -2004,10 +2066,14 @@ function generateMarkdown(merged, date) {
   merged.items.forEach((item, i) => {
     md += `## ${i + 1}. ${item.title || '(제목 없음)'}\n\n`;
 
-    // 출처 정보 (HTML과 동일 — source 또는 source_email 폴백)
+    // 출처 정보 + 수신 시각 (HTML과 동일)
     const sourceDisplay = item.source || item.source_email;
-    if (sourceDisplay) {
-      md += `> 📰 **${sourceDisplay}**\n\n`;
+    const timeStr = formatReceivedAt(item.received_at);
+    if (sourceDisplay || timeStr) {
+      const parts = [];
+      if (sourceDisplay) parts.push(`**${sourceDisplay}**`);
+      if (timeStr) parts.push(timeStr);
+      md += `> 📰 ${parts.join(' · ')}\n\n`;
     }
 
     md += `${item.summary || ''}\n\n`;
