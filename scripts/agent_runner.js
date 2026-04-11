@@ -123,6 +123,15 @@ class AgentRunner {
     // 모델 메타데이터 캐시
     this.modelMetadataCache = {};
 
+    // 사용량 통계 (실행 동안 누적)
+    this.usageStats = {
+      totalCalls: 0,
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalReasoningTokens: 0,
+      byModel: {}
+    };
+
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
@@ -1487,12 +1496,26 @@ ${agentContent}`;
 
       const content = data.choices[0].message?.content || '';
 
-      // 디버그: 토큰 사용량 출력
+      // 디버그: 토큰 사용량 출력 + 사용량 누적 추적
       if (data.usage) {
         const reasoning = data.usage.completion_tokens_details?.reasoning_tokens || 0;
         const total = data.usage.completion_tokens || 0;
         const input = data.usage.prompt_tokens || 0;
         this.log(`  토큰 [${model}]: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
+
+        // 사용량 통계 누적
+        this.usageStats.totalCalls++;
+        this.usageStats.totalPromptTokens += input;
+        this.usageStats.totalCompletionTokens += total;
+        this.usageStats.totalReasoningTokens += reasoning;
+
+        if (!this.usageStats.byModel[model]) {
+          this.usageStats.byModel[model] = { calls: 0, prompt: 0, completion: 0, reasoning: 0 };
+        }
+        this.usageStats.byModel[model].calls++;
+        this.usageStats.byModel[model].prompt += input;
+        this.usageStats.byModel[model].completion += total;
+        this.usageStats.byModel[model].reasoning += reasoning;
       }
 
       if (!content) {
@@ -1871,6 +1894,69 @@ ${agentContent}`;
 
   getToday() {
     return new Date().toISOString().split('T')[0];
+  }
+
+  // ============================================
+  // 사용량 통계 / 비용 계산
+  // ============================================
+
+  /**
+   * 누적 사용량 통계 반환
+   */
+  getUsageStats() {
+    return {
+      totalCalls: this.usageStats.totalCalls,
+      totalPromptTokens: this.usageStats.totalPromptTokens,
+      totalCompletionTokens: this.usageStats.totalCompletionTokens,
+      totalReasoningTokens: this.usageStats.totalReasoningTokens,
+      byModel: { ...this.usageStats.byModel }
+    };
+  }
+
+  /**
+   * 모델별 가격표 (USD per 1M tokens)
+   * 기준: OpenRouter 표준 가격 (2026-04 기준)
+   */
+  static MODEL_PRICING = {
+    'deepseek/deepseek-v3.2': { input: 0.26, output: 0.38 },
+    'gemini-3-flash-preview': { input: 0, output: 0 },              // 무료 티어
+    'nvidia/nemotron-nano-12b-v2-vl:free': { input: 0, output: 0 },
+    'nvidia/nemotron-3-super-120b-a12b:free': { input: 0, output: 0 },
+  };
+
+  /**
+   * 누적 사용량 기반 비용 계산 (USD)
+   * - reasoning 토큰은 output 가격으로 계산 (DeepSeek 청구 방식)
+   */
+  calculateCost() {
+    let totalCost = 0;
+    const breakdown = {};
+
+    for (const [model, stats] of Object.entries(this.usageStats.byModel)) {
+      // 정확한 키 매칭 또는 prefix 매칭
+      let pricing = AgentRunner.MODEL_PRICING[model];
+      if (!pricing) {
+        // prefix 매칭 (deepseek-v3.2-20251201 같은 변형 처리)
+        const matchKey = Object.keys(AgentRunner.MODEL_PRICING).find(k => model.startsWith(k));
+        pricing = matchKey ? AgentRunner.MODEL_PRICING[matchKey] : { input: 0, output: 0 };
+      }
+
+      const inputCost = (stats.prompt / 1e6) * pricing.input;
+      // completion = reasoning + output, 둘 다 output 가격
+      const outputCost = (stats.completion / 1e6) * pricing.output;
+      const modelCost = inputCost + outputCost;
+
+      breakdown[model] = {
+        calls: stats.calls,
+        prompt: stats.prompt,
+        completion: stats.completion,
+        reasoning: stats.reasoning,
+        cost_usd: modelCost
+      };
+      totalCost += modelCost;
+    }
+
+    return { total_usd: totalCost, by_model: breakdown };
   }
 }
 

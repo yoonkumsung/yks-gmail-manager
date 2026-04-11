@@ -544,7 +544,26 @@ function generateFromFinalJson(finalJsonPath, outputPath) {
 /**
  * 통합 HTML 리포트 생성 (모든 라벨 포함)
  */
-function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedMails = []) {
+function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedMails = [], runStats = null) {
+  // 실행 통계 포맷팅
+  const formatStats = () => {
+    if (!runStats) return '';
+    const durMs = runStats.duration_ms || 0;
+    const durMin = Math.floor(durMs / 60000);
+    const durSec = Math.floor((durMs % 60000) / 1000);
+    const durStr = durMin >= 60
+      ? `${Math.floor(durMin / 60)}시간 ${durMin % 60}분`
+      : `${durMin}분 ${durSec}초`;
+    const totalTokens = (runStats.usage?.totalPromptTokens || 0) + (runStats.usage?.totalCompletionTokens || 0);
+    const tokensStr = totalTokens >= 1000
+      ? `${(totalTokens / 1000).toFixed(0)}K`
+      : String(totalTokens);
+    const costUsd = runStats.cost?.total_usd || 0;
+    const costStr = costUsd > 0 ? `$${costUsd.toFixed(3)}` : '$0';
+    const callsStr = runStats.usage?.totalCalls || 0;
+    return { durStr, tokensStr, costStr, callsStr, totalTokens };
+  };
+  const stats = formatStats();
   // 크로스 인사이트 탭 버튼 (있으면 첫 번째)
   const hasCrossInsight = crossInsight && (crossInsight.mega_trends?.length > 0 || crossInsight.cross_connections?.length > 0 || crossInsight.action_items?.length > 0);
   const crossTabButton = hasCrossInsight
@@ -1485,10 +1504,85 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
       }
     }
 
+    /* 실행 통계 바 */
+    .run-stats {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 0.75rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .run-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .run-stat-icon {
+      font-size: 0.85rem;
+    }
+    .run-stat + .run-stat::before {
+      content: '·';
+      margin-right: 0.5rem;
+      opacity: 0.5;
+    }
+
+    /* 검색바 */
+    .search-bar {
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    #search-input {
+      width: 100%;
+      padding: 0.6rem 0.875rem;
+      padding-right: 4rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    #search-input:focus {
+      border-color: var(--primary);
+    }
+    .search-count {
+      position: absolute;
+      right: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* 검색 결과 없음 안내 */
+    .no-search-results {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 2rem;
+      display: none;
+    }
+
+    /* 다크모드 검색바 */
+    @media (prefers-color-scheme: dark) {
+      #search-input::placeholder {
+        color: #64748b;
+      }
+    }
+
     /* 인쇄/PDF */
     @media print {
       .header-container { position: static; border: none; }
       .tabs-wrapper { display: none; }
+      .search-bar { display: none; }
+      .run-stats { display: none; }
       .tab-content { display: block !important; page-break-inside: avoid; margin-bottom: 2rem; }
       .tab-content::before { content: attr(id); font-size: 1.2rem; font-weight: 700; display: block; margin-bottom: 1rem; }
       .item { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
@@ -1510,6 +1604,18 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
           <span class="badge badge-date">${date}</span>
           <span class="badge badge-count">${totalItems}개</span>
         </div>
+      </div>
+      ${stats ? `
+      <div class="run-stats" title="이번 실행 통계">
+        <span class="run-stat" title="처리 시간"><span class="run-stat-icon">⏱</span> ${stats.durStr}</span>
+        <span class="run-stat" title="토큰 사용량 (입력+출력)"><span class="run-stat-icon">🔤</span> ${stats.tokensStr}</span>
+        <span class="run-stat" title="API 호출 횟수"><span class="run-stat-icon">📡</span> ${stats.callsStr}회</span>
+        <span class="run-stat" title="비용 (USD)"><span class="run-stat-icon">💰</span> ${stats.costStr}</span>
+      </div>
+      ` : ''}
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="🔍 제목/요약/키워드/출처에서 검색..." aria-label="검색">
+        <span class="search-count" id="search-count"></span>
       </div>
       <div class="tabs-wrapper">
         <nav class="tabs">
@@ -1547,6 +1653,83 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     });
 
     // 인사이트는 기본 노출 (토글 불필요)
+
+    // 검색/필터 기능
+    (function() {
+      const searchInput = document.getElementById('search-input');
+      const searchCount = document.getElementById('search-count');
+      if (!searchInput) return;
+
+      function applyFilter() {
+        const query = searchInput.value.toLowerCase().trim();
+        const activeTab = document.querySelector('.tab-content.active');
+        if (!activeTab) return;
+
+        const items = activeTab.querySelectorAll('.item, .excluded-group');
+        let visibleCount = 0;
+        let totalCount = 0;
+
+        items.forEach(item => {
+          totalCount++;
+          if (!query) {
+            item.style.display = '';
+            visibleCount++;
+            return;
+          }
+          const text = (item.textContent || '').toLowerCase();
+          const visible = text.includes(query);
+          item.style.display = visible ? '' : 'none';
+          if (visible) visibleCount++;
+        });
+
+        // 검색 결과 카운트 표시
+        if (searchCount) {
+          if (query) {
+            searchCount.textContent = visibleCount + '/' + totalCount;
+          } else {
+            searchCount.textContent = '';
+          }
+        }
+
+        // 결과 없음 안내
+        let noResultsEl = activeTab.querySelector('.no-search-results');
+        if (query && visibleCount === 0) {
+          if (!noResultsEl) {
+            noResultsEl = document.createElement('div');
+            noResultsEl.className = 'no-search-results';
+            noResultsEl.textContent = '검색 결과가 없습니다.';
+            const itemsList = activeTab.querySelector('.items-list');
+            if (itemsList) itemsList.appendChild(noResultsEl);
+          }
+          if (noResultsEl) noResultsEl.style.display = 'block';
+        } else if (noResultsEl) {
+          noResultsEl.style.display = 'none';
+        }
+      }
+
+      // 입력 시 디바운스 적용 (160ms)
+      let timer = null;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(applyFilter, 160);
+      });
+
+      // 탭 전환 시 현재 검색어로 다시 필터 적용
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setTimeout(applyFilter, 50);
+        });
+      });
+
+      // ESC로 검색 초기화
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchInput.value = '';
+          applyFilter();
+          searchInput.blur();
+        }
+      });
+    })();
   </script>
 </body>
 </html>`;
@@ -1605,7 +1788,18 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     }
   }
 
-  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight, allExcluded);
+  // 실행 통계 읽기
+  let runStats = null;
+  const runStatsPath = path.join(mergedDir, '_run_stats.json');
+  if (fs.existsSync(runStatsPath)) {
+    try {
+      runStats = JSON.parse(fs.readFileSync(runStatsPath, 'utf8'));
+    } catch (e) {
+      console.warn('실행 통계 파일 읽기 실패:', e.message);
+    }
+  }
+
+  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight, allExcluded, runStats);
   const outputDir = path.dirname(outputPath);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });

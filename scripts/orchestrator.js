@@ -1042,6 +1042,7 @@ async function main() {
   let tempDir = null;
   let runId = null;
   let success = false;
+  const runStartTime = Date.now();
 
   try {
     // 1. 인자 파싱
@@ -1106,6 +1107,32 @@ async function main() {
         }
       } catch (error) {
         console.error('  크로스 인사이트 생성 실패 (건너뜀):', error.message);
+      }
+    }
+
+    // 8-1. 실행 통계 저장 (HTML/MD 생성에서 사용)
+    if (fs.existsSync(mergedDir) && globalRunner) {
+      try {
+        const usage = globalRunner.getUsageStats();
+        const cost = globalRunner.calculateCost();
+        const totalItems = results.reduce((sum, r) => sum + (r.itemCount || 0), 0);
+        const totalMessages = results.reduce((sum, r) => sum + (r.messageCount || 0), 0);
+
+        const runStats = {
+          start_time: new Date(runStartTime).toISOString(),
+          end_time: new Date().toISOString(),
+          duration_ms: Date.now() - runStartTime,
+          total_messages: totalMessages,
+          total_items: totalItems,
+          successful_labels: results.filter(r => r.success).length,
+          failed_labels: results.filter(r => !r.success).length,
+          usage,
+          cost
+        };
+        fs.writeFileSync(path.join(mergedDir, '_run_stats.json'), JSON.stringify(runStats, null, 2), 'utf8');
+        console.log(`\n[통계] 시간 ${Math.round(runStats.duration_ms / 1000 / 60)}분 / 토큰 입력 ${usage.totalPromptTokens.toLocaleString()} 출력 ${usage.totalCompletionTokens.toLocaleString()} / 비용 $${cost.total_usd.toFixed(4)}`);
+      } catch (e) {
+        console.warn(`  [통계] 저장 실패 (무시): ${e.message}`);
       }
     }
 
