@@ -427,11 +427,6 @@ function isNonNewsEmail(subject, from) {
     { pattern: /^(re:\s*)?감사\s*(합니다|드립니다|인사)/, reason: '감사 인사 메일' },
     { pattern: /설문\s*(조사|참여|응답)/, reason: '설문 요청' },
     { pattern: /^(re:\s*)?survey\b/i, reason: '설문 요청 (영문)' },
-    // 연말 결산/어워즈/베스트 (뉴스가 아닌 회고성 콘텐츠)
-    { pattern: /어워즈|어워드|awards?\b/i, reason: '연말 결산/어워즈' },
-    { pattern: /(올해|20\d{2}).*베스트|best\s*of\s*20\d{2}/i, reason: '연말 베스트' },
-    { pattern: /연말\s*결산|year\s*in\s*review/i, reason: '연말 결산' },
-    { pattern: /가장\s*많이\s*(읽|열어본|클릭)/, reason: '인기 콘텐츠 회고' },
   ];
 
   for (const { pattern, reason } of patterns) {
