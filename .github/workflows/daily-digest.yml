@@ -1,10 +1,10 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 10시 30분 KST (01:30 UTC)
-  # 정각/00 UTC는 GitHub Actions 큐 경합이 심해 1~3시간 지연되므로 30분 슬롯 사용
+  # 매일 오전 10시 KST (01:00 UTC)
+  # GitHub Actions cron은 1~2시간 지연 가능 (KST 11~12시경 실제 실행)
   schedule:
-    - cron: '30 1 * * *'
+    - cron: '0 1 * * *'
 
   # 수동 실행 버튼
   workflow_dispatch:
