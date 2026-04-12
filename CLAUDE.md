@@ -1,5 +1,10 @@
 # Gmail Manager - Project Rules
 
+## 작업 원칙
+
+- 간단한 수정(1줄, 리스크 없음)은 "후순위"로 미루지 말고 즉시 처리한다
+- deprecation 경고, 버전 업데이트 등 명확한 수정은 발견 즉시 적용한다
+
 ## Gitignore 파일의 시크릿 배포 규칙
 
 `config/user_profile.json`은 `.gitignore`에 포함된 시크릿 파일이다.
