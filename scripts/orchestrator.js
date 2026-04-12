@@ -1988,7 +1988,7 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
  * HTML → Text 변환 (병렬 처리)
  */
 async function convertHtmlToText(rawDir, cleanDir, runner) {
-  const { htmlToStructuredMarkdown, cleanNewsletterMarkdown, extractImageUrls, isNonNewsEmail } = require('./html_to_text');
+  const { htmlToStructuredMarkdown, cleanNewsletterMarkdown, extractImageUrls, isNonNewsEmail, enrichLinkAggregator } = require('./html_to_text');
 
   if (!fs.existsSync(rawDir)) {
     console.warn(`  raw 디렉토리 없음: ${rawDir}`);
@@ -2011,6 +2011,17 @@ async function convertHtmlToText(rawDir, cleanDir, runner) {
         if (msgData.html_body) {
           cleanText = htmlToStructuredMarkdown(msgData.html_body);
           cleanText = cleanNewsletterMarkdown(cleanText);
+
+          // 링크 어그리게이터 감지: 원본 HTML에서 콘텐츠 링크가 많고 본문이 짧으면 외부 og:description fetch
+          try {
+            const { enriched, linksFetched } = await enrichLinkAggregator(msgData.html_body, cleanText);
+            if (linksFetched > 0) {
+              cleanText = enriched;
+              console.log(`    [LinkEnrich] ${msgData.subject || messageId}: ${linksFetched}개 링크 콘텐츠 보강 (${cleanText.length}자)`);
+            }
+          } catch (e) {
+            // 링크 보강 실패 시 원본 텍스트 유지
+          }
 
           // 이미지 기반 메일 감지: clean_text < 500자이면 vision 모델로 텍스트 추출 시도
           const visionModelId = CONFIG.llm.models?.vision?.model || CONFIG.llm.models?.vision;

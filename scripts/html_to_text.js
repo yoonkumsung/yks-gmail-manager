@@ -541,6 +541,121 @@ async function main() {
 // 모듈 내보내기
 // ============================================
 
+// ============================================
+// 링크 어그리게이터 감지 및 콘텐츠 보강
+// ============================================
+
+/**
+ * 원본 HTML에서 링크 어그리게이터 패턴을 감지하고,
+ * 외부 링크의 og:description을 fetch하여 clean text에 보강한다.
+ *
+ * 감지 기준: 콘텐츠 링크 10개 이상 (tracking/navigation 링크 제외)
+ *
+ * @param {string} rawHtml - 원본 이메일 HTML
+ * @param {string} cleanText - 변환된 clean text (마크다운)
+ * @returns {{ enriched: string, linksFetched: number }}
+ */
+async function enrichLinkAggregator(rawHtml, cleanText) {
+  if (!rawHtml || rawHtml.length === 0) return { enriched: cleanText, linksFetched: 0 };
+
+  // HTML에서 <a href="url">텍스트</a> 추출
+  const anchorPattern = /<a\s[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const rawLinks = [];
+  let match;
+  while ((match = anchorPattern.exec(rawHtml))) {
+    const url = match[1].replace(/&amp;/g, '&');
+    const text = match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if (url.startsWith('http') && text.length > 5 && text.length < 200) {
+      rawLinks.push({ url, text });
+    }
+  }
+
+  // navigation/tracking 링크 제외
+  const skipPatterns = /unsubscribe|stibee\.com\/v2|mailto:|fonts\.|\.css(\?|$)|\.js(\?|$)|open\/|click\/track/i;
+  const contentLinks = rawLinks.filter(l => !skipPatterns.test(l.url));
+
+  if (contentLinks.length < 5) return { enriched: cleanText, linksFetched: 0 };
+
+  // 중복 제거 (같은 URL 여러 번 등장)
+  const seen = new Set();
+  const uniqueLinks = contentLinks.filter(l => {
+    if (seen.has(l.url)) return false;
+    seen.add(l.url);
+    return true;
+  });
+
+  // cleanText에 이미 충분한 본문이 있으면 스킵
+  // (링크당 평균 텍스트가 100자 이상이면 이미 본문이 있는 뉴스레터)
+  const textWithoutWhitespace = cleanText.replace(/\s+/g, ' ').trim();
+  if (textWithoutWhitespace.length / uniqueLinks.length > 100) {
+    return { enriched: cleanText, linksFetched: 0 };
+  }
+
+  const https = require('https');
+
+  async function fetchOgDescription(url, timeoutMs = 8000) {
+    // 공공기관 사이트 TLS 인증서 문제 대응: fetch 중 임시로 검증 비활성화
+    const prevTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    try {
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(timeoutMs),
+        redirect: 'follow',
+      });
+      const html = await resp.text();
+      const descMatch = html.match(/og:description[^>]*content\s*=\s*"([^"]*)"/);
+      return descMatch ? descMatch[1]
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'").replace(/&quot;/g, '"') : '';
+    } catch {
+      return '';
+    } finally {
+      // TLS 설정 복원
+      if (prevTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTls;
+    }
+  }
+
+  // tracking wrapper URL 해석 (lp= 파라미터)
+  function resolveUrl(url) {
+    const lpMatch = url.match(/[?&]lp=(https?[^&]+)/);
+    return lpMatch ? decodeURIComponent(lpMatch[1]) : url;
+  }
+
+  // 병렬 fetch (5개씩, 최대 80개)
+  const fetchTargets = uniqueLinks.slice(0, 80);
+  const descMap = new Map();
+
+  for (let i = 0; i < fetchTargets.length; i += 5) {
+    const batch = fetchTargets.slice(i, i + 5);
+    const results = await Promise.all(
+      batch.map(l => fetchOgDescription(resolveUrl(l.url)))
+    );
+    batch.forEach((l, idx) => {
+      if (results[idx] && results[idx].length > 30) {
+        descMap.set(l.text, results[idx]);
+      }
+    });
+  }
+
+  if (descMap.size === 0) return { enriched: cleanText, linksFetched: 0 };
+
+  // cleanText에서 각 링크 제목을 찾아 뒤에 설명 삽입
+  let enriched = cleanText;
+  for (const [title, desc] of descMap) {
+    // 제목이 cleanText에 있으면 그 줄 뒤에 설명 추가
+    const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const titleRegex = new RegExp(`(.*${escapedTitle}.*)`, 'i');
+    const titleMatch = enriched.match(titleRegex);
+    if (titleMatch) {
+      enriched = enriched.replace(titleMatch[0], `${titleMatch[0]}\n> ${desc}`);
+    }
+  }
+
+  return { enriched, linksFetched: descMap.size };
+}
+
 module.exports = {
   htmlToText,
   htmlToStructuredMarkdown,
@@ -550,7 +665,8 @@ module.exports = {
   decodeHtmlEntities,
   extractImageUrls,
   cleanTrackingParams,
-  isNonNewsEmail
+  isNonNewsEmail,
+  enrichLinkAggregator
 };
 
 if (require.main === module) {
