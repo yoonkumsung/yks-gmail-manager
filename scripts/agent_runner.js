@@ -378,7 +378,7 @@ class AgentRunner {
         temperature: 0.1,
         reasoningEffort: 'low',
         disableReasoning: true,
-        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 각 요약은 200자 이상이어야 합니다.'
+        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 요약은 원문 분량에 비례하여 작성하세요 (짧은 원문은 짧은 요약 OK, 긴 원문은 200자 이상).'
       },
       analyze: {
         systemPrompt: `당신은 뉴스레터 구조 분석 전문가입니다.

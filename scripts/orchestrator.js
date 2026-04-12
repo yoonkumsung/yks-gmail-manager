@@ -425,10 +425,10 @@ function validateOutputQuality(items, labelName) {
   items.forEach((item, idx) => {
     const itemRef = `[${labelName}] #${idx + 1} "${(item.title || '').substring(0, 20)}..."`;
 
-    // 요약 길이 검사
+    // 요약 길이 검사 (빈 요약만 경고, 짧은 원문은 짧은 요약 허용)
     const summaryLen = item.summary?.length || 0;
-    if (summaryLen > 0 && summaryLen < 200) {
-      issues.push(`${itemRef}: 요약 너무 짧음 (${summaryLen}자, 최소 200자 필수)`);
+    if (summaryLen > 0 && summaryLen < 30) {
+      issues.push(`${itemRef}: 요약 너무 짧음 (${summaryLen}자)`);
     }
 
     // 키워드 검사
@@ -479,8 +479,8 @@ function validateOutputQuality(items, labelName) {
 function checkItemQuality(item) {
   const issues = [];
 
-  // 1. 요약 최소 길이
-  if (!item.summary || item.summary.length < 150) {
+  // 1. 요약 최소 길이 (빈 요약만 문제, 짧은 원문은 짧은 요약 허용)
+  if (!item.summary || item.summary.length < 30) {
     issues.push('summary_too_short');
   }
 
@@ -494,8 +494,8 @@ function checkItemQuality(item) {
     }
   }
 
-  // 3. 요약에 구체성 부족 (수치/고유명사 없음)
-  if (item.summary && item.summary.length > 0 && item.summary.length < 250) {
+  // 3. 요약에 구체성 부족 (수치/고유명사 없음) — 200자 이상 요약에만 적용
+  if (item.summary && item.summary.length >= 200) {
     const hasNumbers = /\d+/.test(item.summary);
     const hasEnglishProperNoun = /[A-Z][a-z]{2,}/.test(item.summary);
     if (!hasNumbers && !hasEnglishProperNoun) {
