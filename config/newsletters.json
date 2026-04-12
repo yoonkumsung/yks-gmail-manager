@@ -167,7 +167,7 @@
       "sender": "news@e.scmp.com",
       "name": "South China Morning Post <news@e.scmp.com>",
       "labels": [
-        "해외"
+        "중국"
       ],
       "frequency": 8,
       "skill_file": "skills/newsletters/SKILL_scmp.md",
@@ -181,29 +181,11 @@
       "skill_generated": true
     },
     {
-      "id": "redditmail",
-      "sender": "noreply@redditmail.com",
-      "name": "Reddit <noreply@redditmail.com>",
-      "labels": [
-        "해외"
-      ],
-      "frequency": 1,
-      "skill_file": "skills/newsletters/SKILL_redditmail.md",
-      "encoding": "utf-8",
-      "encoding_ok": true,
-      "structure": {
-        "type": "multi-item",
-        "item_count_avg": 5
-      },
-      "detected_at": "2026-02-03T20:50:44.695Z",
-      "skill_generated": true
-    },
-    {
       "id": "axios",
       "sender": "markets@axios.com",
       "name": "Axios Markets <markets@axios.com>",
       "labels": [
-        "해외"
+        "경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios.md",
@@ -221,7 +203,7 @@
       "sender": "mike@axios.com",
       "name": "Mike Allen <mike@axios.com>",
       "labels": [
-        "해외"
+        "미국"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios_mike.md",
@@ -239,7 +221,7 @@
       "sender": "noreply@thewirechina.com",
       "name": "The Wire <noreply@thewirechina.com>",
       "labels": [
-        "해외"
+        "중국"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_thewirechina.md",
@@ -527,7 +509,7 @@
       "sender": "crew@morningbrew.com",
       "name": "Morning Brew <crew@morningbrew.com>",
       "labels": [
-        "해외"
+        "경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_morningbrew.md",
@@ -545,7 +527,7 @@
       "sender": "macro@axios.com",
       "name": "Axios Macro <macro@axios.com>",
       "labels": [
-        "해외"
+        "경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios_macro.md",
@@ -779,7 +761,7 @@
       "sender": "no-reply@substack.com",
       "name": "Substack <no-reply@substack.com>",
       "labels": [
-        "인문학"
+        "기타"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_substack_2.md",
@@ -1013,7 +995,7 @@
       "sender": "account@seekingalpha.com",
       "name": "Must Reads <account@seekingalpha.com>",
       "labels": [
-        "해외"
+        "투자"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_seekingalpha.md",
@@ -1049,7 +1031,7 @@
       "sender": "connie@strictlyvc.com",
       "name": "StrictlyVC <connie@strictlyvc.com>",
       "labels": [
-        "해외"
+        "창업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_strictlyvc.md",
@@ -1103,7 +1085,7 @@
       "sender": "byteteam365@mydailybyte.com",
       "name": "COIN_BYTE <byteteam365@mydailybyte.com>",
       "labels": [
-        "경제"
+        "투자"
       ],
       "frequency": 2,
       "skill_file": "skills/newsletters/SKILL_mydailybyte.md",
@@ -1175,7 +1157,7 @@
       "sender": "1p@minumsa.com",
       "name": "\"한편\" <1p@minumsa.com>",
       "labels": [
-        "라이프"
+        "인문학"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_minumsa.md",
@@ -1787,7 +1769,7 @@
       "sender": "craig.addison@e.scmp.com",
       "name": "\"Craig Addison, SCMP\" <craig.addison@e.scmp.com>",
       "labels": [
-        "해외"
+        "IT"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_scmp_craig_addison.md",
@@ -1805,7 +1787,7 @@
       "sender": "shi.huang@e.scmp.com",
       "name": "\"Shi Huang, SCMP\" <shi.huang@e.scmp.com>",
       "labels": [
-        "해외"
+        "라이프"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_scmp_shi_huang.md",

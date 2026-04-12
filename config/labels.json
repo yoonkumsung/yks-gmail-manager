@@ -172,6 +172,34 @@
       "enabled": false,
       "agent": null,
       "focus_topics": []
+    },
+    {
+      "name": "미국",
+      "gmail_label": "미국",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/미국.md",
+      "focus_topics": [
+        "정치",
+        "경제",
+        "기술",
+        "국방",
+        "문화"
+      ]
+    },
+    {
+      "name": "중국",
+      "gmail_label": "중국",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/중국.md",
+      "focus_topics": [
+        "정치",
+        "경제",
+        "기술",
+        "외교",
+        "사회"
+      ]
     }
   ]
 }
