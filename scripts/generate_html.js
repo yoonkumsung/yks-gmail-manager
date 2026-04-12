@@ -406,13 +406,15 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
   const isLongSummary = summary.length >= 400;
 
   // 링크 버튼: Gmail은 항상 표시, 원문은 link가 있을 때만 추가
-  let linkBtnHtml = '';
+  // div로 묶어서 모바일에서 버튼이 따로 줄바꿈되지 않도록 함
+  let linkBtns = '';
   if (gmailUrl) {
-    linkBtnHtml += `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
+    linkBtns += `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
   }
   if (safeLink) {
-    linkBtnHtml += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
+    linkBtns += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
   }
+  const linkBtnHtml = linkBtns ? `<div class="item-btns">${linkBtns}</div>` : '';
 
   // 키워드
   const keywordsHtml = keywords.map(kw =>
@@ -1208,6 +1210,11 @@ function generateStyles(labelColorCss) {
     .insights-tabs-spacer {
       flex: 1;
     }
+    .item-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
     .item-btn {
       display: inline-flex;
       align-items: center;
@@ -1221,6 +1228,7 @@ function generateStyles(labelColorCss) {
       font-family: inherit;
       border: none;
       cursor: pointer;
+      white-space: nowrap;
     }
     .item-btn-primary {
       background: var(--label-color, var(--primary));
