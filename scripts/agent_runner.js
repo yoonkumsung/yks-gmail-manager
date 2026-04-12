@@ -436,6 +436,7 @@ class AgentRunner {
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 단순 팩트 뉴스는 insights를 null로. 모든 기존 필드를 반드시 유지하세요.'
       },
       crossInsight: {
@@ -454,6 +455,7 @@ class AgentRunner {
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
         reasoningEffort: 'low',
+        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요. 자연스러운 연결이 없으면 빈 배열을 출력하세요.'
       },
       itemExtract: {
@@ -1415,7 +1417,9 @@ ${agentContent}`;
     const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
-    this.log(`API 호출: ${model} (${prompt.length}자, ${this.currentTaskType}, reasoning: ${modelConfig.supportsReasoning ? reasoningEffort : 'N/A'})`, 'debug');
+    const reasoningDisabledForLog = overrides.disableReasoning || taskConfig.disableReasoning;
+    const reasoningStatus = !modelConfig.supportsReasoning ? 'N/A' : reasoningDisabledForLog ? 'disabled' : reasoningEffort;
+    this.log(`API 호출: ${model} (${prompt.length}자, ${this.currentTaskType}, reasoning: ${reasoningStatus})`, 'debug');
 
     // 모델별 타임아웃 설정
     const controller = new AbortController();
