@@ -418,6 +418,15 @@ function isNonNewsEmail(subject, from) {
     { pattern: /결제\s*(완료|확인|영수증)/, reason: '결제 관련' },
     { pattern: /^(receipt|invoice)\b/i, reason: '결제 영수증' },
     { pattern: /이메일\s*주소\s*(변경|확인|인증)/, reason: '이메일 주소 관련' },
+    // 인사/감사/연하장/프로모션 메일
+    { pattern: /함께해\s*주셔서\s*감사/, reason: '인사/감사 메일' },
+    { pattern: /한\s*해\s*동안.*감사/, reason: '연말 인사 메일' },
+    { pattern: /새해\s*복\s*많이/, reason: '새해 인사 메일' },
+    { pattern: /happy\s*(new\s*year|holidays?|thanksgiving)/i, reason: '인사 메일 (영문)' },
+    { pattern: /season'?s?\s*greetings?/i, reason: '인사 메일 (영문)' },
+    { pattern: /^(re:\s*)?감사\s*(합니다|드립니다|인사)/, reason: '감사 인사 메일' },
+    { pattern: /설문\s*(조사|참여|응답)/, reason: '설문 요청' },
+    { pattern: /^(re:\s*)?survey\b/i, reason: '설문 요청 (영문)' },
   ];
 
   for (const { pattern, reason } of patterns) {
