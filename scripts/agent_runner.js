@@ -425,7 +425,7 @@ class AgentRunner {
 1. domain: 뉴스 자체의 산업/정책/경제적 파급 효과를 원문 데이터 기반으로 분석.
 2. cross_domain: 뉴스의 본질과 자연스럽게 연결되는 경우에만 인문/철학적 통찰을 인용.
 
-[절대 금지] "사용자의 사업", "사용자의 제품", "사용자의 회사"에 뉴스를 연결하지 마세요. 특정 개인/기업 맞춤 조언이 아닌 뉴스 자체의 의미를 분석하세요.
+[사업 연결 기준] 뉴스가 사용자의 관심 분야(AI, 반도체, 스포츠 등)와 직접 관련될 때만 해당 분야 관점을 포함하세요. 관련 없는 뉴스는 뉴스 자체의 파급효과만 분석하세요. "사용자의 사업/제품/회사" 같은 직접 지칭 표현은 금지합니다.
 [중요] 단순 팩트 뉴스(일정 공지, 휴장 안내 등)는 insights를 null로 출력하세요.
 [중요] 원문에 없는 수치, 보고서, 논문, 실험을 절대 생성하지 마세요.
 
@@ -1000,14 +1000,14 @@ ${agentContent}`;
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
       const user = profile.user;
+      const occ = user.occupation;
       const interests = user.interests;
 
-      // 직업 상세 설명은 주입하지 않음 (LLM이 모든 뉴스를 사용자 사업에 억지 연결하는 문제 방지)
-      // 관심 분야 키워드만 전달하여 인사이트 방향성만 제공
-      let context = '';
+      // 직업은 핵심 키워드만 (포부/비전 문구 제외), 관심 분야는 키워드 전달
+      let context = `- **직업**: ${occ.title}`;
 
       if (interests.technical?.length > 0) {
-        context += `- **기술 관심**: ${interests.technical.join(', ')}`;
+        context += `\n- **기술 관심**: ${interests.technical.join(', ')}`;
       }
       if (interests.business?.length > 0) {
         context += `\n- **비즈니스 관심**: ${interests.business.join(', ')}`;
@@ -1016,7 +1016,7 @@ ${agentContent}`;
         context += `\n- **지적 관심**: ${interests.intellectual.join(', ')}`;
       }
 
-      return context || '- 관심 분야 미설정';
+      return context;
     } catch (e) {
       this.log(`user_profile.json 로드 실패: ${e.message}`, 'warn');
       return '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
