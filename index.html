@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>YKS Newsletter Report</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 3rem;
+    }
+    .year-section {
+      margin-bottom: 2.5rem;
+    }
+    .year-section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .report-list {
+      list-style: none;
+    }
+    .report-list li {
+      margin-bottom: 0.5rem;
+    }
+    .report-list a {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.875rem 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .report-list a:hover {
+      border-color: var(--primary);
+      transform: translateX(2px);
+    }
+    .date {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .arrow {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f1f5f9;
+        --text-muted: #94a3b8;
+        --border: #334155;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>YKS Newsletter Report</h1>
+      <p class="subtitle">매일 자동으로 정리되는 뉴스 다이제스트</p>
+    </header>
+    
+      <section class="year-section">
+        <h2>2026년</h2>
+        <ul class="report-list">
+      <li>
+        <a href="reports/2026-04-11.html">
+          <span class="date">2026년 04월 11일</span>
+          <span class="arrow">→</span>
+        </a>
+      </li>
+    </ul>
+      </section>
+    
+  </div>
+</body>
+</html>
