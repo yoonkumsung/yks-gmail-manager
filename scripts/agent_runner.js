@@ -94,7 +94,9 @@ class AgentRunner {
     this.dailyCountResetDate = new Date().toDateString();
 
     // 청크 분할 설정
-    this.chunkSize = options.chunkSize || 15000;
+    // DeepSeek V3.2 (164K 컨텍스트) 기준 40,000자 = 약 27K 토큰, 효과 품질 구간(64K) 내.
+    // 대부분의 뉴스레터(<10,000자)는 단일 청크로 처리되어 header 중복 과금 제거.
+    this.chunkSize = options.chunkSize || 40000;
     this.maxHeaderSize = options.maxHeaderSize || 5000;
 
     // 재시도 설정 (7회, 점진적 대기)
