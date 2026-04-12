@@ -405,12 +405,13 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
   const hasLink = !!safeLink;
   const isLongSummary = summary.length >= 400;
 
-  // 링크 버튼
+  // 링크 버튼: Gmail은 항상 표시, 원문은 link가 있을 때만 추가
   let linkBtnHtml = '';
+  if (gmailUrl) {
+    linkBtnHtml += `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
+  }
   if (safeLink) {
-    linkBtnHtml = `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
-  } else if (gmailUrl) {
-    linkBtnHtml = `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
+    linkBtnHtml += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
   }
 
   // 키워드

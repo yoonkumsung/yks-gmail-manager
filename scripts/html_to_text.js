@@ -585,9 +585,10 @@ async function enrichLinkAggregator(rawHtml, cleanText) {
   });
 
   // cleanText에 이미 충분한 본문이 있으면 스킵
-  // (링크당 평균 텍스트가 100자 이상이면 이미 본문이 있는 뉴스레터)
+  // (링크당 평균 텍스트가 150자 이상이면 이미 본문이 있는 뉴스레터)
+  // KDI: ~99, KIF: ~115, Axios: ~341 → 150 기준으로 KDI/KIF는 fetch, Axios는 skip
   const textWithoutWhitespace = cleanText.replace(/\s+/g, ' ').trim();
-  if (textWithoutWhitespace.length / uniqueLinks.length > 100) {
+  if (textWithoutWhitespace.length / uniqueLinks.length > 150) {
     return { enriched: cleanText, linksFetched: 0 };
   }
 
