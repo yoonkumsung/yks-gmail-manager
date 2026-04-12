@@ -237,8 +237,8 @@ class AgentRunner {
           const supportsReasoning = modelId.includes('gemini') && !modelId.includes('lite');
           this.modelMetadataCache[modelId] = {
             supportsReasoning,
-            maxTokens: isVision ? 4000 : 8192,
-            timeoutMs: supportsReasoning ? 300000 : 180000,
+            maxTokens: isVision ? 4000 : 16384,
+            timeoutMs: supportsReasoning ? 480000 : 240000,
             contextLength: 1000000,  // Gemini 기본 1M
           };
           this.log(`[모델 메타데이터] ${modelId} (${providerName}): reasoning=${supportsReasoning}, maxTokens=8192 (기본값)`, 'info');
@@ -274,8 +274,8 @@ class AgentRunner {
 
             this.modelMetadataCache[modelId] = {
               supportsReasoning,
-              maxTokens: isVision ? 4000 : (maxCompletionTokens || 16000),
-              timeoutMs: supportsReasoning ? 300000 : (isVision ? 120000 : 180000),
+              maxTokens: isVision ? 4000 : (maxCompletionTokens || 16384),
+              timeoutMs: supportsReasoning ? 480000 : (isVision ? 120000 : 240000),
               contextLength,
             };
 
