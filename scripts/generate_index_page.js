@@ -1,17 +1,36 @@
 /**
- * docs/reports/ 디렉토리의 모든 HTML 리포트를 나열하는 인덱스 페이지 생성
+ * reports/ 디렉토리의 모든 HTML 리포트를 나열하는 인덱스 페이지 생성
  *
- * 사용법: node scripts/generate_index_page.js
+ * 사용법:
+ *   node scripts/generate_index_page.js                    # 기본: <repo>/docs 를 base로 사용 (하위 호환)
+ *   node scripts/generate_index_page.js --base-dir <path>  # 지정한 디렉토리를 base로 사용
+ *     (예: gh-pages 브랜치 worktree 경로)
  *
- * 출력: docs/index.html, docs/reports/index.html
+ * 출력: <base-dir>/index.html, <base-dir>/reports/index.html
  */
 
 const fs = require('fs');
 const path = require('path');
 
+// CLI 인자 파싱: --base-dir <path>
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--base-dir' && i + 1 < argv.length) {
+      out.baseDir = argv[i + 1];
+      i++;
+    }
+  }
+  return out;
+}
+
+const cliArgs = parseArgs(process.argv.slice(2));
 const REPO_ROOT = path.join(__dirname, '..');
-const REPORTS_DIR = path.join(REPO_ROOT, 'docs', 'reports');
-const INDEX_PATH = path.join(REPO_ROOT, 'docs', 'index.html');
+const BASE_DIR = cliArgs.baseDir
+  ? path.resolve(cliArgs.baseDir)
+  : path.join(REPO_ROOT, 'docs');
+const REPORTS_DIR = path.join(BASE_DIR, 'reports');
+const INDEX_PATH = path.join(BASE_DIR, 'index.html');
 const REPORTS_INDEX_PATH = path.join(REPORTS_DIR, 'index.html');
 
 function escapeHtml(text) {

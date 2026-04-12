@@ -294,32 +294,41 @@ jobs:
             exit 0
           fi
 
-          # docs/reports 디렉토리 보장
-          mkdir -p docs/reports
-          [ -f docs/.nojekyll ] || touch docs/.nojekyll
+          # gh-pages 브랜치를 worktree로 체크아웃
+          git fetch origin gh-pages
+          git worktree add _ghpages gh-pages
+
+          # reports 디렉토리 보장
+          mkdir -p _ghpages/reports
+          [ -f _ghpages/.nojekyll ] || touch _ghpages/.nojekyll
 
           # HTML 복사 (파일명: YYYY-MM-DD.html)
-          TARGET_HTML="docs/reports/${TARGET_DATE}.html"
+          TARGET_HTML="_ghpages/reports/${TARGET_DATE}.html"
           cp "$HTML_FILE" "$TARGET_HTML"
 
-          # 인덱스 페이지 재생성
-          node scripts/generate_index_page.js
+          # 인덱스 페이지 재생성 (base-dir을 gh-pages worktree로 지정)
+          node scripts/generate_index_page.js --base-dir _ghpages
 
-          # Git commit
+          # gh-pages 브랜치에 커밋/푸시 (worktree 내부에서 실행)
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/
+          cd _ghpages
+          git add -A
           if git diff --staged --quiet; then
-            echo "GitHub Pages: 변경사항 없음"
+            echo "gh-pages: 변경사항 없음"
           else
             git commit -m "report: ${TARGET_DATE} 뉴스레터 리포트 추가" || true
             # remote 변경사항 반영 후 푸시
-            if ! git pull --rebase; then
+            if ! git pull --rebase origin gh-pages; then
               git rebase --abort
-              git pull --no-rebase --strategy-option theirs || true
+              git pull --no-rebase --strategy-option theirs origin gh-pages || true
             fi
-            git push || echo "GitHub Pages 푸시 실패 (무시)"
+            git push origin gh-pages || echo "gh-pages 푸시 실패 (무시)"
           fi
+          cd ..
+
+          # worktree 정리
+          git worktree remove _ghpages --force || true
 
           # GitHub Pages URL 출력
           REPO_OWNER="${GITHUB_REPOSITORY_OWNER}"
