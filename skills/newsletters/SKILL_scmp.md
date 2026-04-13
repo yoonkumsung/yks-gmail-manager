@@ -12,49 +12,61 @@ South China Morning Post <news@e.scmp.com> 뉴스레터의 구조 분석 및 추
 | 발신자 | news@e.scmp.com |
 | 유형 | multi-item |
 | 언어 | en |
-| 평균 아이템 수 | 9개 |
-| 생성일 | 2026-04-10 |
+| 평균 아이템 수 | 20개 |
+| 생성일 | 2026-04-13 |
 
 ---
 
 ## 구조 분석
 
 ### 뉴스레터 특징
-- 각 아이템은 카테고리명(예: Entertainment, Food & Drink)과 제목으로 구성
-- 카테고리명은 대문자로 표시되고 제목은 그 아래 줄에 위치
-- 뉴스레터는 SCMP의 Life & Culture 섹션 콘텐츠를 제공
+- 섹션별로 뉴스 아이템을 나열하는 다중 아이템 구조
+- 각 아이템은 섹션명(예: Diplomacy, Science, Politics)과 제목, 요약(>로 시작)으로 구성
+- 'Video of the Day', 'Opinion', 'This Week in Asia'와 같은 특별 섹션 포함
+- 날짜 표시줄('| | 12 Apr 2026 |')과 앱 홍보, 저작권 정보로 끝남
 
 ### 아이템 경계
-- 각 아이템은 카테고리명(예: 'Entertainment', 'Food & Drink', 'Arts')으로 시작하는 라인이 경계
-- 카테고리명과 제목 사이에 빈 줄 없음
+- 빈 줄로 구분된 블록
+- 각 블록은 섹션명(대문자 또는 첫 글자 대문자)으로 시작하는 라인
+- 섹션명 다음 줄에 제목이 오고, 그 다음 줄에 '>'로 시작하는 요약문이 옴
 
 ### 제목 위치
-- 카테고리명 바로 다음 줄에 위치한 텍스트가 제목 (예: 'Entertainment' 다음 줄의 'How Gingle Wang went from clueless novice...')
+- 섹션명 다음 줄에 위치한 일반 텍스트 라인
+- 제목은 섹션명과 빈 줄 없이 연속적으로 배치됨
 
 ### 본문 위치
-- 본문 텍스트는 제공되지 않음. clean_text에는 제목만 포함
+- 제목 다음 줄에 '>' 문자로 시작하는 요약문
+- 요약문은 한 줄 또는 두 줄로 구성됨
+- 본문은 다음 섹션명이 나오거나 빈 줄이 나올 때까지 지속됨
 
 ### 링크 위치
-- 링크는 제공되지 않음. clean_text에는 URL이 없음. 'Read more in the SCMP App'는 일반적인 액션 호출
+- 이 뉴스레터 본문에는 개별 아이템에 대한 직접적인 URL 링크가 포함되어 있지 않음
+- 'Read more in the SCMP App' 섹션에서 앱으로의 일반적인 링크만 제공됨
 
 ---
 
 ## 추출 규칙
 
-1. 'LIFE & CULTURE' 헤더와 날짜 이후부터 '| Read more in the SCMP App |' 표 이전까지의 텍스트에서 아이템 추출
-2. 카테고리명으로 시작하는 각 라인과 그 바로 다음 줄의 제목을 하나의 아이템으로 구성
-3. 카테고리명은 'source' 필드에 사용, 제목은 'title' 필드에 사용
+1. 'Diplomacy', 'Science', 'Politics' 등의 섹션명으로 시작하는 블록을 아이템으로 식별
+2. 섹션명 다음 줄의 텍스트를 제목으로 추출
+3. '>'로 시작하는 다음 줄(들)의 텍스트를 요약으로 추출
+4. 'Video of the Day', 'This Week in Asia'와 같은 특수 섹션도 동일한 패턴으로 처리
+5. 'US-China Trade War' 섹션처럼 '>'로 시작하는 설명문만 있고 제목이 없는 경우는 제외
+6. '| Read more in the SCMP App |' 이후의 모든 내용은 제외
 
 ---
 
 ## 제외 영역
 
-- 'LIFE & CULTURE' 헤더와 날짜 라인
-- '| Read more in the SCMP App |' 표 및 이후의 모든 텍스트
-- 'This email was sent to...' 및 Copyright 라인
+- 'US-China Trade War' 섹션 (제목 없이 설명만 있음)
+- '| Read more in the SCMP App |' 이후의 모든 텍스트
+- 'This email was sent to...' 이후의 저작권 및 발신 정보
+- 날짜 표시줄('| | 12 Apr 2026 |')
 
 ---
 
 ## 특이사항
 
-본문 내용(요약)이 clean_text에 포함되지 않음. 제목만 추출 가능. 링크 URL도 없음.
+- 개별 뉴스 아이템에 대한 직접적인 URL 링크가 없으므로 'link' 필드는 빈 문자열로 설정
+- 일부 아이템은 제목만 있고 '>'로 시작하는 요약문이 없음 (예: 'Video of the Day' 아래 항목)
+- 'Opinion' 섹션은 여러 개의 의견 기사 제목을 나열하지만 요약문이 없음
