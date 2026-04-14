@@ -1997,7 +1997,61 @@
       },
       "detected_at": "2026-04-13T04:35:04.111Z",
       "skill_generated": true
+    },
+    {
+      "id": "substack_klementoninvesting",
+      "sender": "klementoninvesting@substack.com",
+      "name": "Klement on Investing <klementoninvesting@substack.com>",
+      "labels": [
+        "투자"
+      ],
+      "frequency": 2,
+      "skill_file": "skills/newsletters/SKILL_substack_klementoninvesting.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-04-14T04:12:00.965Z",
+      "skill_generated": true
+    },
+    {
+      "id": "mk_pulse",
+      "sender": "pulse@mk.co.kr",
+      "name": "Pulse by Maeil Business News Korea <pulse@mk.co.kr>",
+      "labels": [
+        "경제"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_mk_pulse.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 10
+      },
+      "detected_at": "2026-04-14T04:22:10.278Z",
+      "skill_generated": true
+    },
+    {
+      "id": "egbiz",
+      "sender": "notice@egbiz.or.kr",
+      "name": "egbiz <notice@egbiz.or.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_egbiz.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-04-14T04:32:35.112Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-04-13T04:55:54.559Z"
+  "last_scan": "2026-04-14T04:33:43.782Z"
 }
