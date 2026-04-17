@@ -2051,7 +2051,43 @@
       },
       "detected_at": "2026-04-14T04:32:35.112Z",
       "skill_generated": true
+    },
+    {
+      "id": "claude",
+      "sender": "no-reply@email.claude.com",
+      "name": "Claude Team <no-reply@email.claude.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_claude.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 7
+      },
+      "detected_at": "2026-04-17T04:19:38.711Z",
+      "skill_generated": true
+    },
+    {
+      "id": "sba",
+      "sender": "sbapick@sba.seoul.kr",
+      "name": "\"SBA사업알리미\" <sbapick@sba.seoul.kr>",
+      "labels": [
+        "창업"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_sba.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 25
+      },
+      "detected_at": "2026-04-17T04:43:49.535Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-04-15T04:14:51.123Z"
+  "last_scan": "2026-04-17T05:13:45.487Z"
 }
