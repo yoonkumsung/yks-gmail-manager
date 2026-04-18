@@ -1,0 +1,3132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="robots" content="noindex, nofollow">
+  <title>YKS Newsletter Report · 2026-04-18</title>
+  <style>
+    
+    :root {
+      --primary: #2563eb;
+      --primary-light: #3b82f6;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --success: #10b981;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.06);
+      --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    [data-label="IT"] { --label-color: #3b82f6; }
+    [data-label="경제"] { --label-color: #10b981; }
+    [data-label="투자"] { --label-color: #8b5cf6; }
+    [data-label="시사"] { --label-color: #ef4444; }
+    [data-label="인문학"] { --label-color: #ec4899; }
+    [data-label="해외"] { --label-color: #f97316; }
+    [data-label="라이프"] { --label-color: #06b6d4; }
+    [data-label="창업"] { --label-color: #f59e0b; }
+    [data-label="기타"] { --label-color: #64748b; }
+    [data-label="마케팅"] { --label-color: #84cc16; }
+    [data-label="스포츠"] { --label-color: #14b8a6; }
+    [data-label="소셜포럼"] { --label-color: #a855f7; }
+
+    /* ============================================
+       Header — 고정
+       ============================================ */
+    .header-container {
+      position: sticky;
+      top: 0;
+      background: rgba(248, 250, 252, 0.92);
+      backdrop-filter: saturate(180%) blur(12px);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0.875rem 1rem 0;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.875rem;
+    }
+    .header-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .header-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .header-meta { display: flex; gap: 0.5rem; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .badge-total {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* ============================================
+       헤더 액션 버튼 (검색/통계 아이콘)
+       ============================================ */
+    .header-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .header-action-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+    .header-action-btn:active {
+      transform: translateY(0);
+    }
+    .header-action-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .header-action-btn {
+      position: relative;
+    }
+    .header-action-dot {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: none;
+    }
+    .header-action-btn.has-active .header-action-dot {
+      display: block;
+    }
+
+    /* ============================================
+       모달 (검색/통계)
+       ============================================ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 5rem 1rem 1rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-content {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      transform: translateY(-16px);
+      opacity: 0;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+    .modal-backdrop.open .modal-content {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.875rem 1.125rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.4rem;
+      line-height: 1;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .modal-close:hover {
+      background: var(--border-light);
+      color: var(--text);
+    }
+    .modal-body {
+      padding: 1rem 1.125rem 1.25rem;
+    }
+    .modal-section {
+      margin-top: 1rem;
+    }
+    .modal-section-first { margin-top: 0; }
+    .modal-section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .modal-hint {
+      margin-top: 0.75rem;
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      text-align: center;
+    }
+
+    /* ============================================
+       통계 Bento 그리드 (모달 내부)
+       ============================================ */
+    .stats-bento {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+    }
+    @media (min-width: 520px) {
+      .stats-bento { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 400px) {
+      .stats-bento { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stats-bento-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .stats-bento-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    .stats-bento-icon {
+      font-size: 1rem;
+      opacity: 0.8;
+      margin-bottom: 0.2rem;
+    }
+    .stats-bento-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .stats-bento-suffix {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      font-weight: 500;
+    }
+    .stats-bento-label {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .stats-bento { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .stats-bento { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ============================================
+       검색바 + 필터
+       ============================================ */
+    .search-bar {
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    #search-input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      padding-right: 4.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.15s;
+      -webkit-appearance: none;
+    }
+    #search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .search-count {
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      pointer-events: none;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-chips {
+      display: flex;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 0.3rem 0.75rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .filter-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .filter-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+    .grouping-toggle {
+      display: inline-flex;
+      background: var(--border-light);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .grouping-toggle-btn {
+      padding: 0.25rem 0.7rem;
+      border: none;
+      background: transparent;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 999px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .grouping-toggle-btn:hover {
+      color: var(--text);
+    }
+    .grouping-toggle-btn.active {
+      background: var(--card-bg);
+      color: var(--label-color, var(--text));
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ============================================
+       탭 (가로 스크롤)
+       ============================================ */
+    .tabs-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin: 0 -1rem;
+      padding: 0 1rem 0.6rem;
+    }
+    .tabs-wrapper::-webkit-scrollbar { display: none; }
+    .tabs {
+      display: flex;
+      gap: 0.375rem;
+      min-width: max-content;
+    }
+    .tab-btn {
+      padding: 0.5rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: inherit;
+    }
+    .tab-btn:hover {
+      border-color: var(--label-color, var(--primary));
+      color: var(--label-color, var(--primary));
+    }
+    .tab-btn.active {
+      background: var(--label-color, var(--primary));
+      color: white;
+      border-color: var(--label-color, var(--primary));
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--label-color, var(--primary)) 30%, transparent);
+    }
+    .tab-btn .count {
+      background: rgba(0,0,0,0.08);
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .tab-btn.active .count {
+      background: rgba(255,255,255,0.25);
+    }
+    .tab-label-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .tab-btn.active .tab-label-dot { display: none; }
+    .cross-tab-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border-color: transparent;
+    }
+    .cross-tab-btn.active {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    }
+    .excluded-tab-btn {
+      opacity: 0.65;
+    }
+
+    /* ============================================
+       메인 컨테이너
+       ============================================ */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       라벨 통계 바
+       ============================================ */
+    .label-stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0.8rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--label-color, var(--primary));
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .label-stats-left {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .label-stat-main {
+      font-weight: 700;
+      color: var(--text);
+    }
+    .label-stat {
+      font-weight: 500;
+    }
+
+    /* ============================================
+       출처 그룹 헤더 (출처별 모드)
+       ============================================ */
+    .source-group-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 0.5rem 0.75rem;
+      background: var(--card-bg);
+      border-left: 3px solid var(--label-color, var(--primary));
+      border-radius: 6px;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .items-list > .source-group-header:first-child {
+      margin-top: 0;
+    }
+
+    /* ============================================
+       아이템 카드 (F-패턴 최적화)
+       ============================================ */
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--label-color, var(--primary));
+      border-radius: var(--radius);
+      padding: 1.125rem 1.25rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .item:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+    .item-meta-top {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.7rem;
+      flex-wrap: wrap;
+      padding-right: 2.5rem; /* #번호 공간 확보 */
+    }
+    .item-source {
+      color: var(--label-color, var(--text-muted));
+      font-weight: 700;
+      text-transform: none;
+      letter-spacing: 0.01em;
+    }
+    .item-source::before {
+      content: '📰';
+      margin-right: 0.3rem;
+      opacity: 0.7;
+    }
+    .item-time {
+      color: var(--text-subtle);
+      font-weight: 500;
+      font-size: 0.68rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .item-time::before {
+      content: '·';
+      margin: 0 0.4rem;
+      opacity: 0.5;
+    }
+    .item-meta-top:not(:has(.item-source)) .item-time::before {
+      display: none;
+    }
+    .item-number {
+      position: absolute;
+      top: 0.85rem;
+      right: 1rem;
+      font-size: 0.62rem;
+      color: var(--text-subtle);
+      background: var(--border-light);
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .item-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.45;
+      color: var(--text);
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.005em;
+      padding-right: 2.5rem; /* #번호 공간 확보 */
+    }
+    .item-summary {
+      font-size: 0.875rem;
+      line-height: 1.75;
+      color: var(--text);
+      margin-bottom: 0.875rem;
+      white-space: pre-wrap;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.875rem;
+    }
+    .tag {
+      background: color-mix(in srgb, var(--label-color, var(--primary)) 8%, transparent);
+      color: var(--label-color, var(--primary));
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid color-mix(in srgb, var(--label-color, var(--primary)) 18%, transparent);
+    }
+    /* 인사이트 탭 + 원문 버튼이 같이 있는 푸터 행 */
+    .item-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .insights-tabs-spacer {
+      flex: 1;
+    }
+    .item-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .item-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .item-btn-primary {
+      background: var(--label-color, var(--primary));
+      color: white;
+    }
+    .item-btn-primary:hover {
+      transform: translateX(2px);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--label-color, var(--primary)) 35%, transparent);
+    }
+    .item-btn-gmail {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid var(--border);
+    }
+    .item-btn-gmail:hover {
+      background: #e2e8f0;
+    }
+
+    /* ============================================
+       인사이트 탭 (카드 내부) + 원문 버튼
+       ============================================ */
+    .insights-container {
+      margin-top: 0.875rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+    }
+    .insights-tabs {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+    .insight-tab {
+      padding: 0.4rem 0.75rem;
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .insight-tab:hover {
+      background: var(--border-light);
+      color: var(--text);
+    }
+    .insight-tab.active {
+      background: color-mix(in srgb, var(--label-color, var(--primary)) 10%, transparent);
+      color: var(--label-color, var(--primary));
+    }
+    .insight-panel {
+      display: none;
+      padding: 0.875rem 1rem;
+      background: color-mix(in srgb, var(--label-color, var(--primary)) 4%, transparent);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.75;
+      color: var(--text);
+      animation: fadeIn 0.2s ease;
+    }
+    .insight-panel.active { display: block; }
+
+    /* ============================================
+       크로스 인사이트 카드
+       ============================================ */
+    .cross-section {
+      margin-bottom: 1.5rem;
+    }
+    .cross-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .cross-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.125rem 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: box-shadow 0.15s;
+    }
+    .cross-card:hover { box-shadow: var(--shadow-md); }
+    .mega-trend-card { border-left: 4px solid #6366f1; }
+    .cross-connection-card { border-left: 4px solid #f59e0b; }
+    .action-item-card { border-left: 4px solid #10b981; }
+    .cross-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+    .cross-card-desc {
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+    .related-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+    .related-item-tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--label-color, var(--text-muted)) 10%, transparent);
+      color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--label-color, var(--text-muted)) 20%, transparent);
+    }
+    .related-item-tag .label-name {
+      font-weight: 700;
+      color: var(--label-color, var(--primary));
+      margin-right: 0.3rem;
+    }
+    .action-top {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .action-timeline {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #065f46;
+      text-transform: uppercase;
+    }
+    .action-label-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    /* ============================================
+       제외 그룹
+       ============================================ */
+    .excluded-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+    }
+    .excluded-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+    .excluded-reason { font-weight: 700; font-size: 0.85rem; }
+    .excluded-count {
+      font-size: 0.7rem;
+      background: var(--border);
+      color: var(--text-muted);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .excluded-item {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 0.78rem;
+    }
+    .excluded-item:last-child { border-bottom: none; }
+    .excluded-subject {
+      flex: 1;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .excluded-from {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .excluded-label-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--border-light);
+    }
+
+    /* ============================================
+       검색 하이라이트
+       ============================================ */
+    mark {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 0.1rem 0.25rem;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    /* ============================================
+       No results / empty state
+       ============================================ */
+    .no-items, .no-search-results {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 3rem 1rem;
+      font-size: 0.9rem;
+    }
+    .no-search-results { display: none; }
+
+    /* ============================================
+       미니맵 (데스크톱 좌측, 컨테이너에 가까이 배치)
+       ============================================ */
+    .minimap {
+      position: fixed;
+      /* 컨테이너(max-width 900px) 좌측 바로 옆 — 12px gap */
+      /* minimap width(160) + gap(12) = 172 */
+      left: calc(50vw - 450px - 172px);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 160px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.7rem;
+      box-shadow: var(--shadow-md);
+      display: none;
+      z-index: 50;
+    }
+    .minimap-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      padding: 0 0.4rem;
+    }
+    .minimap-item {
+      display: block;
+      padding: 0.3rem 0.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: none;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      transition: all 0.1s;
+      border-left: 2px solid transparent;
+    }
+    .minimap-item:hover {
+      background: var(--border-light);
+      color: var(--text);
+    }
+    .minimap-item.active {
+      background: color-mix(in srgb, var(--label-color, var(--primary)) 10%, transparent);
+      color: var(--label-color, var(--primary));
+      border-left-color: var(--label-color, var(--primary));
+      font-weight: 600;
+    }
+    /* 미니맵 표시: 컨테이너(900) + 미니맵(160) + gap(12) + 여백(24) = 1120px 이상 */
+    @media (min-width: 1120px) {
+      .minimap { display: block; }
+    }
+
+    /* ============================================
+       Scroll to top button
+       ============================================ */
+    .scroll-top-btn {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 90;
+      transition: transform 0.2s;
+    }
+    .scroll-top-btn.visible { display: block; }
+    .scroll-top-btn:hover { transform: translateY(-2px); }
+
+    /* ============================================
+       다크모드 (정교화)
+       ============================================ */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1120;
+        --card-bg: #1e293b;
+        --text: #f1f5f9;
+        --text-muted: #94a3b8;
+        --text-subtle: #64748b;
+        --border: #334155;
+        --border-light: #1e293b;
+      }
+      .header-container {
+        background: rgba(11, 17, 32, 0.85);
+      }
+      mark {
+        background: #facc15;
+        color: #422006;
+      }
+      .excluded-group-header {
+        background: #0f172a;
+      }
+      .item-btn-gmail {
+        background: #334155;
+        color: #cbd5e1;
+      }
+      .item-btn-gmail:hover {
+        background: #475569;
+      }
+      .action-timeline {
+        background: #064e3b;
+        color: #6ee7b7;
+      }
+    }
+
+    /* ============================================
+       인쇄 최적화
+       ============================================ */
+    @media print {
+      .header-container { position: static; border: none; background: white; }
+      .tabs-wrapper, .search-bar, .filter-bar, .minimap, .scroll-top-btn, .item-actions, .insights-tabs { display: none !important; }
+      .tab-content { display: block !important; page-break-after: always; }
+      .tab-content::before { content: attr(id); font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 1rem; }
+      .item { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+      .insight-panel { display: block !important; margin-top: 0.5rem; background: #f8f8f8 !important; }
+      body { background: white; color: black; font-size: 10pt; line-height: 1.5; }
+      .container { max-width: 100%; padding: 0.5rem; }
+      .stats-bento { grid-template-columns: repeat(6, 1fr); page-break-after: avoid; }
+    }
+
+    /* ============================================
+       모바일
+       ============================================ */
+    @media (max-width: 640px) {
+      .header-inner { padding: 0.625rem 0.75rem 0; }
+      .header-title { font-size: 1.1rem; }
+      .container { padding: 0.75rem; }
+      .item { padding: 1rem; }
+      .item-title { font-size: 1rem; }
+      .item-summary { font-size: 0.84rem; }
+      .filter-bar { gap: 0.375rem; }
+      .filter-chip, .grouping-toggle-btn { font-size: 0.65rem; padding: 0.25rem 0.55rem; }
+    }
+  
+  </style>
+</head>
+<body>
+  <header class="header-container">
+    <div class="header-inner">
+      <div class="header-top">
+        <div class="header-title-wrap">
+          <h1 class="header-title">YKS Newsletter Report</h1>
+          <span class="header-date">2026-04-18</span>
+        </div>
+        <div class="header-meta">
+          <span class="badge badge-total">49개</span>
+          <button class="header-action-btn" id="search-btn" type="button" aria-label="검색" title="검색 (Cmd/Ctrl+K)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+          </button>
+          <button class="header-action-btn" id="filter-btn" type="button" aria-label="필터" title="필터">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            <span class="header-action-dot" id="filter-dot"></span>
+          </button>
+          <button class="header-action-btn" id="stats-btn" type="button" aria-label="실행 통계" title="실행 통계">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs-wrapper">
+        <nav class="tabs"><button class="tab-btn active" data-tab="경제" data-label="경제" style="--label-color: #10b981">
+      <span class="tab-label-dot" style="background: #10b981"></span>
+      경제
+      <span class="count">11</span>
+    </button><button class="tab-btn " data-tab="기타" data-label="기타" style="--label-color: #64748b">
+      <span class="tab-label-dot" style="background: #64748b"></span>
+      기타
+      <span class="count">1</span>
+    </button><button class="tab-btn " data-tab="인문학" data-label="인문학" style="--label-color: #ec4899">
+      <span class="tab-label-dot" style="background: #ec4899"></span>
+      인문학
+      <span class="count">6</span>
+    </button><button class="tab-btn " data-tab="투자" data-label="투자" style="--label-color: #8b5cf6">
+      <span class="tab-label-dot" style="background: #8b5cf6"></span>
+      투자
+      <span class="count">12</span>
+    </button><button class="tab-btn " data-tab="IT" data-label="IT" style="--label-color: #3b82f6">
+      <span class="tab-label-dot" style="background: #3b82f6"></span>
+      IT
+      <span class="count">19</span>
+    </button><button class="tab-btn excluded-tab-btn" data-tab="제외됨">제외<span class="count">28</span></button></nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+      <div class="tab-content active" id="tab-경제" data-label="경제" style="--label-color: #10b981">
+        <div class="label-stats-bar">
+    <div class="label-stats-left">
+      <span class="label-stat-main">📰 11개 아이템</span>
+      
+      
+    </div>
+    <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
+      <button class="grouping-toggle-btn active" data-group="label" title="라벨별">라벨별</button>
+      <button class="grouping-toggle-btn" data-group="source" title="출처별">출처별</button>
+    </div>
+  </div>
+        <div class="items-list">
+          
+        <article class="item"
+          data-label="경제"
+          data-source="한국금융연구원"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="true"
+          data-keywords="#물가연동제 #명목금액 #규제 실효성 #화폐가치 #한국금융연구원">
+          <span class="item-number">#1</span>
+          <div class="item-meta-top">
+            <span class="item-source">한국금융연구원</span>
+            <span class="item-time">04/17 10:48</span>
+          </div>
+          <h3 class="item-title">법령 내 명목금액 기준 규제의 실효성 저하와 물가연동제 도입 필요성</h3>
+          <p class="item-summary">[핵심 내용] 한국금융연구원 서병호 선임연구위원은 법령상 명목금액 기준 규제가 물가 상승에 따른 화폐가치 하락을 반영하지 못해 발생하는 실효성 저하 문제를 지적하며, 물가연동제 도입을 통한 입법 패러다임 전환을 제안했습니다.
+
+[전개 구조]
+- 도입: 현재 많은 법령이 특정 명목금액을 기준으로 규제나 혜택을 설정하고 있으나, 지속적인 물가 상승으로 인해 화폐의 실질 가치가 하락하면서 당초 입법 취지가 왜곡되는 현상이 발생하고 있습니다.
+- 전개: 구체적으로 기업 규모 기준 규제, 투자 한도 설정, 상속세 공제액 등이 고정된 명목금액으로 유지될 경우, 규제 대상이 의도치 않게 확대되거나 자본 시장의 위축을 초래할 수 있습니다. 해외 주요국들은 이러한 부작용을 방지하기 위해 명목금액을 경제 규모나 물가 변동률에 연동하여 규제의 실질적 가치를 유지하는 방식을 채택하고 있습니다.
+- 결론: 따라서 우리나라도 법령 내 금액 기준에 물가연동제를 도입하여 정책의 예측 가능성을 높이고, 경제 환경 변화에 유연하게 대응할 수 있는 입법 체계를 구축해야 한다는 주장입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9920297a4c547" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#코로나19 #변이 바이러스 #수젠텍 #백신주 #주가 급등">
+          <span class="item-number">#2</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">코로나19 변이 확산에 국내 관련주 급등, 수젠텍 30% 상한가</h3>
+          <p class="item-summary">새로운 코로나19 변이 바이러스의 전 세계적 확산 조짐이 나타나면서 금요일 오전 국내 백신 및 치료제 관련 주가가 급등했다. 특히 진단키트 및 관련 기술을 보유한 수젠텍(Sugentech Inc.)의 주가는 전일 대비 30% 상승하며 강한 시장 반응을 보였다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#신세계그룹 #리플렉션 AI #AI 커머스 #인공지능 #유통 혁신">
+          <span class="item-number">#3</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">신세계그룹, 미국 리플렉션 AI와 협력해 AI 커머스 사업 확대</h3>
+          <p class="item-summary">한국의 유통 공룡 신세계그룹이 미국 인공지능(AI) 전문 기업인 리플렉션 AI(Reflection AI Inc.)와의 파트너십을 강화한다. 양사는 기존에 진행하던 데이터 센터 프로젝트를 넘어, 신세계의 핵심 유통 사업 전반에 AI 기술을 도입하고 배치하는 등 협력 범위를 대폭 확장할 계획이다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#삼성전자 #노동조합 #파업 #가처분 신청 #노사 갈등">
+          <span class="item-number">#4</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">삼성전자, 노조의 다음 달 파업 저지 위해 법원에 가처분 신청</h3>
+          <p class="item-summary">삼성전자가 노동조합이 다음 달 계획 중인 파업을 불법으로 규정하고, 이를 금지하기 위한 가처분 신청을 법원에 제출했다. 삼성전자는 목요일 공지를 통해 노조의 파업 계획이 법적 근거가 부족하다고 주장하며 강력한 대응 의사를 밝혔다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#K-메모리 ETF #반도체 #AI 붐 #투자 유입 #삼성전자">
+          <span class="item-number">#5</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">AI 붐에 미국 상장 K-메모리 ETF로 2주 만에 1조 원 유입</h3>
+          <p class="item-summary">인공지능(AI) 수요 급증에 힘입어 한국 메모리 반도체 기업에 집중 투자하는 미국 상장 상장지수펀드(ETF)에 막대한 자금이 몰리고 있다. 해당 ETF는 최근 2주 동안에만 1조 원(약 6억 7,570만 달러) 이상의 자금을 유치하며 반도체 시장의 뜨거운 열기를 입증했다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#한국석유공사 #산업은행 #수출입은행 #원유 공급 #금융 지원">
+          <span class="item-number">#6</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">국책은행, 한국석유공사에 원유 공급망 확보 위해 30억 달러 지원</h3>
+          <p class="item-summary">한국산업은행과 한국수출입은행은 한국석유공사(KNOC)의 안정적인 원유 공급 확보를 지원하기 위해 총 30억 달러 규모의 금융 지원을 공동으로 제공하기로 했다고 목요일 발표했다. 이번 지원은 국가 에너지 안보 강화 차원에서 이루어졌다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#수출 결제 #원화 비중 #한국은행 #무역 통계 #역대 최고">
+          <span class="item-number">#7</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">2025년 한국 수출 결제 대금 중 원화 비중 3.4%로 역대 최고치 기록</h3>
+          <p class="item-summary">한국은행이 목요일 발표한 무역결제대금 통계에 따르면, 2025년 한국의 수출 결제 대금 중 원화가 차지하는 비중이 3.4%를 기록하며 역대 최고 수준에 도달했다. 이는 국제 무역에서 원화의 위상과 활용도가 점진적으로 높아지고 있음을 보여주는 지표다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#현대자동차 #노동조합 #성과급 #임금 협상 #상생 협력">
+          <span class="item-number">#8</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">현대차 노조, 순이익 30% 성과급 지급 및 협력사 공유 요구</h3>
+          <p class="item-summary">현대자동차 노동조합은 올해 임금 협상에서 지난해 순이익의 30%를 성과급으로 지급할 것을 요구했다. 특히 노조는 이 성과급을 자사 직원뿐만 아니라 협력사 직원들에게도 분배해야 한다는 파격적인 상생안을 제시하며 협상에 나섰다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#삼성전자 #LG디스플레이 #OLED #중국 경쟁 #디스플레이 협력">
+          <span class="item-number">#9</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">중국의 OLED 공세에 맞서 삼성과 LG의 디스플레이 협력 가속화</h3>
+          <p class="item-summary">중국 디스플레이 제조업체들이 유기발광다이오드(OLED) 시장에서 빠르게 기술력을 확보하며 추격해옴에 따라, 한국의 대표 전자 기업인 삼성과 LG 간의 협력이 강화되고 있다. 양사는 시장 주도권을 지키기 위해 전략적 파트너십을 확대하는 추세다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#현대자동차그룹 #GBC #익스플로라토리움 #과학 박물관 #2032년 개관">
+          <span class="item-number">#10</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">현대차그룹, GBC에 샌프란시스코 익스플로라토리움과 과학관 건립</h3>
+          <p class="item-summary">현대자동차그룹은 서울 글로벌비즈니스콤플렉스(GBC) 내에 체험형 과학 박물관을 건립할 계획이다. 이를 위해 미국 샌프란시스코의 유명 과학관인 익스플로라토리움(Exploratorium)과 파트너십을 맺었으며, 2032년 개관을 목표로 프로젝트를 추진 중이다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="경제"
+          data-source="Pulse by Maeil Business News Korea"
+          data-has-insight="false"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#IMF #국가 부채 #한국 경제 #재정 건전성 #벨기에">
+          <span class="item-number">#11</span>
+          <div class="item-meta-top">
+            <span class="item-source">Pulse by Maeil Business News Korea</span>
+            <span class="item-time">04/17 11:16</span>
+          </div>
+          <h3 class="item-title">IMF, 한국과 벨기에의 급격한 국가 부채 증가 가능성 경고</h3>
+          <p class="item-summary">국제통화기금(IMF)은 한국의 정부 부채 비율이 중장기적으로 급격히 상승할 수 있다고 경고하며, 벨기에와 함께 부채 증가 위험이 높은 국가로 지목했다. 명목 성장률 개선에도 불구하고 인구 구조 변화 등에 따른 재정 부담이 우려되는 상황이다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs-spacer"></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d993999d1fca6f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        
+      </div>
+        </article>
+        </div>
+      </div>
+
+      <div class="tab-content " id="tab-기타" data-label="기타" style="--label-color: #64748b">
+        <div class="label-stats-bar">
+    <div class="label-stats-left">
+      <span class="label-stat-main">📰 1개 아이템</span>
+      <span class="label-stat">💡 1개 인사이트</span>
+      
+    </div>
+    <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
+      <button class="grouping-toggle-btn active" data-group="label" title="라벨별">라벨별</button>
+      <button class="grouping-toggle-btn" data-group="source" title="출처별">출처별</button>
+    </div>
+  </div>
+        <div class="items-list">
+          
+        <article class="item"
+          data-label="기타"
+          data-source="(사)녹색소비자연대"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="true"
+          data-keywords="#녹색소비자연대 #플라스틱 조화 #국회토론회 #장사법 #자원순환">
+          <span class="item-number">#1</span>
+          <div class="item-meta-top">
+            <span class="item-source">(사)녹색소비자연대</span>
+            <span class="item-time">04/17 13:27</span>
+          </div>
+          <h3 class="item-title">전국 공원묘원 플라스틱 조화 문제 해결 위한 국회토론회 개최 및 장사법 개정 논의</h3>
+          <p class="item-summary">[핵심 내용] GCN녹색소비자연대와 김정호 국회의원 등은 전국 공원묘원의 플라스틱 조화 사용에 따른 환경 문제를 해결하고 생화 소비 문화를 확산하기 위한 국회토론회를 개최했습니다.
+
+[전개 구조]
+- 도입: 4월 16일 국회의원회관에서 열린 이번 토론회는 관행적인 플라스틱 조화 사용의 환경적 폐해를 짚고, 이를 개선하기 위한 제도적 대안을 모색하기 위해 마련되었습니다.
+- 전개: 발제자들은 조화가 재활용 체계 없이 폐기되는 실태를 지적하며 이를 1회용품 항목에 포함하고, 지자체가 환경 보전 조례를 제정할 수 있도록 &#039;장사법&#039;을 개정해야 한다고 주장했습니다. 토론 과정에서 폐기물 처리 비용이 자원순환 분석의 55%를 차지한다는 데이터가 제시되었으며, 현재 kg당 150원인 플라스틱 폐기물 부담금을 상향 조정하는 방안 등이 검토되었습니다. 정부 관계자들은 유족들의 수용성과 예산 문제를 고려하면서도 소비자 인식 개선을 통한 생화 헌화 문화 확대가 필요하다는 데 공감했습니다.
+- 결론: 녹색소비자연대는 소비자 책무 이행을 위한 교육과 캠페인을 지속할 예정이며, 오는 5월 8일 어버이날에는 천안추모공원에서 생화 헌화 캠페인을 전개하고 플라스틱 조화 근절을 위한 법률적 근거 마련 활동을 이어갈 계획입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-기타-0">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-기타-0">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d99b2193de9526" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-기타-0">장사법 개정을 통한 플라스틱 조화의 1회용품 지정은 연간 대량 발생하는 미세플라스틱 및 소각 폐기물 저감을 목적으로 한다. 폐기물 처리 비용이 자원순환 분석의 55%를 차지하고 kg당 150원인 부담금 상향이 검토됨에 따라, 공원묘원 운영 주체의 비용 구조 변화와 화훼 산업의 수요 증대가 예상된다. 이는 단순 규제를 넘어 환경 비용의 내부화를 통한 장례 문화의 경제적 재편을 의미한다.</div><div class="insight-panel " id="cross-기타-0">장 보드리야르(1970)의 &#039;소비의 사회&#039; 관점에서 조화는 영속성을 모방한 기호일 뿐이다. 죽음을 기리는 공간에서조차 효율성을 위해 플라스틱이라는 인공물을 선택했던 근대적 합리주의가 생태적 가치와 충돌하고 있다. 생화로의 회귀는 사라짐의 미학을 복원하고, 죽음의 유한성을 인정하는 의례 본연의 심리적 기능을 회복하는 과정으로 해석할 수 있다.</div>
+      </div>
+        </article>
+        </div>
+      </div>
+
+      <div class="tab-content " id="tab-인문학" data-label="인문학" style="--label-color: #ec4899">
+        <div class="label-stats-bar">
+    <div class="label-stats-left">
+      <span class="label-stat-main">📰 6개 아이템</span>
+      <span class="label-stat">💡 6개 인사이트</span>
+      
+    </div>
+    <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
+      <button class="grouping-toggle-btn active" data-group="label" title="라벨별">라벨별</button>
+      <button class="grouping-toggle-btn" data-group="source" title="출처별">출처별</button>
+    </div>
+  </div>
+        <div class="items-list">
+          
+        <article class="item"
+          data-label="인문학"
+          data-source="ED 📙 대가들의 지혜"
+          data-has-insight="true"
+          data-has-link="true"
+          data-long="true"
+          data-keywords="#AI전략 #스티브잡스 #찰리멍거 #브랜딩 #레버리지 #신뢰자산 #업무위임">
+          <span class="item-number">#1</span>
+          <div class="item-meta-top">
+            <span class="item-source">ED 📙 대가들의 지혜</span>
+            <span class="item-time">04/18 07:57</span>
+          </div>
+          <h3 class="item-title">AI 시대의 본질, 기술보다 중요한 집중과 신뢰의 전략</h3>
+          <p class="item-summary">[핵심 내용] AI 기술이 급변하는 시대에 진정으로 필요한 역량은 최신 도구의 습득이 아니라, 업무의 본질에 집중하고 자신만의 독보적인 우위를 확보하며 지속 가능한 신뢰 자산을 구축하는 것입니다.
+
+[전개 구조]
+- 도입: 저자는 AI 최신 기법을 모두 섭렵했음에도 오히려 결과물의 퀄리티가 떨어지는 경험을 통해, AI가 단순히 일을 늘리는 도구가 되어서는 안 된다는 점을 강조합니다.
+- 전개: 첫째, 스티브 잡스의 조언처럼 혁신은 수많은 유혹에 &#039;노&#039;라고 하는 것입니다. AI로 새로운 일을 추가하기보다 기존 업무를 위임하여 본질에 집중해야 합니다. 둘째, 찰리 멍거의 지혜를 빌려 내가 남들보다 유리한 게임판을 먼저 선택해야 함을 역설합니다. 누구나 쉽게 할 수 있는 AI 활용은 차별화가 되지 않으므로, 자신의 강점 위에 AI를 얹어야 합니다. 셋째, 기술의 휘발성을 경고합니다. Chain of Thought나 RAG 같은 기법들이 모델 내장 기능으로 흡수되는 주기가 1~2개월로 짧아지고 있으며, 컨텍스트 윈도우가 100만 토큰으로 늘어나는 등 기술적 우위의 유통기한은 매우 짧습니다.
+- 결론: 결국 기술은 빠르게 낡지만 사람 간의 신뢰와 브랜드 가치는 시간이 흐를수록 누적됩니다. 따라서 휘발성 강한 기술에 매몰되기보다, AI를 레버리지 삼아 장기적인 신뢰와 브랜딩에 투자하는 것이 AI 시대를 살아가는 가장 현명한 전략입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-0">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-0">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9daa546ae9220" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a><a href="https://substack.com/@ed12821549" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-0">CoT, RAG 등 소프트웨어적 최적화 기법이 1~2개월 만에 모델 자체 기능으로 내재화되는 현상은 AI 기술의 급격한 범용화(Commoditization)를 의미한다. 100만 토큰 컨텍스트 윈도우 확장은 기존의 복잡한 검색 증강 생성 아키텍처의 가치를 하락시킨다. 하드웨어 및 엣지AI 관점에서는 휘발성 높은 소프트웨어 트릭보다 NPU 효율성이나 물리적 데이터 획득의 독점성 같은 물리적 우위가 장기적 TCO 절감과 차별화의 실질적 동력이 된다.</div><div class="insight-panel " id="cross-인문학-0">찰리 멍거(2023 타계)의 &#039;능력 범위(Circle of Competence)&#039; 개념과 일맥상통한다. 멍거는 자신이 가장 잘 이해하고 유리한 고지를 점할 수 있는 영역에 집중할 것을 강조했다. 기술적 유행을 쫓는 &#039;FOMO&#039;는 자원 분산을 초래하며, 19세기 철도 산업의 과잉 투자 시기처럼 기술 표준이 정립되기 전까지는 범용 기술보다 독점적 신뢰 자산이 생존율을 결정한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="인문학"
+          data-source="썸원(somewon)"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="true"
+          data-keywords="#이준혁 #스위퍼 #SSW이론 #데이터야구 #공부법">
+          <span class="item-number">#2</span>
+          <div class="item-meta-top">
+            <span class="item-source">썸원(somewon)</span>
+            <span class="item-time">04/18 09:00</span>
+          </div>
+          <h3 class="item-title">NC 이준혁 투수 사례로 본 데이터 기반 공부와 훈련의 패러다임 변화</h3>
+          <p class="item-summary">[핵심 내용] 현대 야구와 비즈니스에서 단순 반복 노력이 아닌 과학적 연구와 분석을 통한 공부가 혁신의 핵심임을 강조합니다.
+
+[전개 구조]
+- 도입: NC 다이노스의 이준혁 투수가 리그 최고 수준의 &#039;스위퍼&#039;를 던지게 된 배경을 설명합니다.
+- 전개: 이준혁은 2021년 바턴 스미스 교수가 발표한 SSW(Seam Shifted Wake) 이론을 공부하여 공기 흐름의 원리와 자신의 스윙 동작을 분석했습니다. 마냥 열심히 하는 것이 아니라 최신 이론을 실제 투구에 적용하는 공부를 병행했습니다.
+- 결론: 그 결과 지난해 평균자책 7.30에서 올 시즌 5경기 무실점이라는 압도적인 성적을 거두었습니다. 이는 리더가 단순히 훈련량을 강요하는 것이 아니라, 원리와 체계를 공부하여 효율적인 방향을 제시해야 함을 시사합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-1">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-1">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9de381eeb148f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-1">SSW(Seam Shifted Wake) 이론을 적용해 평균자책점을 7.30에서 0으로 낮춘 사례는 스포츠 공학의 실효성을 입증한다. 컴퓨터비전 기반의 투구 분석 기술이 단순한 통계 제공을 넘어, 공기역학적 원리를 선수의 신체 동작과 동기화하는 &#039;피지컬 AI&#039;의 영역으로 확장되고 있음을 보여준다. 이는 자동 촬영 및 분석 디바이스가 단순 기록용을 넘어 선수 기량 교정의 필수 장비로 자리 잡는 근거가 된다.</div><div class="insight-panel " id="cross-인문학-1">프랜시스 베이컨(1620)이 &#039;신기관&#039;에서 주창한 귀납적 관찰과 실험 철학의 현대적 재현이다. 막연한 경험론적 훈련에서 벗어나 물리적 법칙(SSW)을 가설로 세우고 투구라는 실험을 통해 검증한 과정은 지식이 실질적인 힘(Potentia)으로 전환되는 전형적인 과학적 방법론의 승리다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="인문학"
+          data-source="썸원(somewon)"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#안광복 #철학 #글쓰기루틴 #공부법 #인문학">
+          <span class="item-number">#3</span>
+          <div class="item-meta-top">
+            <span class="item-source">썸원(somewon)</span>
+            <span class="item-time">04/18 09:00</span>
+          </div>
+          <h3 class="item-title">안광복 철학 교사가 실천하는 매일 3시간 공부와 글쓰기 루틴</h3>
+          <p class="item-summary">[핵심 내용] 30년 차 철학 교사이자 베스트셀러 저자인 안광복 선생님의 지속적인 공부와 글쓰기 철학을 다룹니다.
+
+[전개 구조]
+- 도입: &#039;처음 읽는 서양 철학사&#039; 등 25권의 책을 낸 안광복 선생님의 꾸준한 집필 비결을 소개합니다.
+- 전개: 그는 매일 3시간씩 공부하는 루틴을 유지하며, 교사와 작가의 정체성을 동일시합니다. 퇴근 후에는 칸트처럼 엄격한 일상을 살며 자유인으로서 공부에 매진합니다. 특히 좋은 콘텐츠를 읽는 것이 글쓰기의 자양분이 된다고 강조합니다.
+- 결론: &quot;삶이 아파야 글이 나온다&quot;는 철학 아래, 고통과 성찰이 지적 감수성을 키운다는 점을 역설하며 자존심을 내려놓고 편집자의 조언을 수용하는 태도를 권장합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-2">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-2">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9de381eeb148f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-2">30년간 25권의 저서를 집필한 성과는 지적 자산의 복리 효과를 증명한다. 매일 3시간의 루틴은 콘텐츠 생산의 한계 비용을 낮추는 운영 체계로 작동한다. 전문가 개인의 브랜딩이 기업의 신뢰 자산과 직결되는 지식 산업 구조에서, 이러한 엄격한 자기 관리 모델은 고부가가치 콘텐츠 비즈니스의 지속 가능성을 확보하는 핵심 동력으로 분석된다.</div><div class="insight-panel " id="cross-인문학-2">임마누엘 칸트(1724-1804)의 정언명령적 삶과 닮아 있다. 칸트가 매일 정해진 시간에 산책하며 사유의 질서를 세운 것처럼, 외부의 강제가 아닌 스스로 부여한 엄격한 규칙(루틴)이 오히려 지적 창조의 자유를 극대화한다는 역설적 진리를 보여준다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="인문학"
+          data-source="썸원(somewon)"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#최강록 #내향인 #에너지관리 #서비스철학 #롤플레잉">
+          <span class="item-number">#4</span>
+          <div class="item-meta-top">
+            <span class="item-source">썸원(somewon)</span>
+            <span class="item-time">04/18 09:00</span>
+          </div>
+          <h3 class="item-title">내향인 최강록 셰프가 제안하는 사회적 역할 수행과 에너지 관리법</h3>
+          <p class="item-summary">[핵심 내용] 내향적인 성격의 최강록 셰프가 식당 운영에서 에너지를 관리하고 손님을 대하는 독특한 방식을 소개합니다.
+
+[전개 구조]
+- 도입: 저녁 영업 전 최소 1시간의 휴식을 통해 에너지를 충전하는 최강록 셰프의 습관을 다룹니다.
+- 전개: 그는 식당을 대화의 장이 아닌 &#039;정해진 음식을 내놓는 역할의 공간&#039;으로 정의합니다. 내향인으로서 낯선 손님과의 대화가 어색할 수 있음을 인정하고, 광장에 나가 롤플레잉을 하듯 성실히 역할을 수행한 뒤 다시 동굴로 돌아오는 생활을 반복합니다.
+- 결론: 메뉴 추천 시 부끄러움을 피하기 위해 당일 들어온 식재료 정보를 제공하는 등 자신만의 효율적인 소통 방식을 구축했습니다. 이는 내향인이 사회생활을 지속하기 위한 전략적 태도를 보여줍니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-3">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-3">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9de381eeb148f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-3">서비스 운영에서 인적 자원의 에너지 관리를 시스템화한 사례다. 영업 전 1시간 휴식을 &#039;배터리 완충&#039;으로 정의하고, 감정 노동을 &#039;역할 수행(Role-playing)&#039;으로 치환함으로써 직무 소진(Burn-out)을 방지한다. 이는 고도의 집중력이 필요한 기술직군이나 리더십 영역에서 인적 자원의 가동률을 최적화하고 서비스 품질의 일관성을 유지하는 운영 전략으로 유효하다.</div><div class="insight-panel " id="cross-인문학-3">어빙 고프먼(1959)의 &#039;자아 연출의 사회학&#039; 관점에서 볼 때, 최강록은 식당이라는 &#039;전면 영역(Front Region)&#039;에서 셰프라는 배역을 완벽히 수행하고 &#039;후면 영역(Back Region)&#039;에서 에너지를 재충전하는 전략적 연기자다. 사회적 상호작용을 본질적 자아의 노출이 아닌 기능적 역할의 수행으로 규정함으로써 심리적 안전거리를 확보하는 지혜다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="인문학"
+          data-source="썸원(somewon)"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#야나이다다시 #유니클로 #경영철학 #목표설정 #패스트리테일링">
+          <span class="item-number">#5</span>
+          <div class="item-meta-top">
+            <span class="item-source">썸원(somewon)</span>
+            <span class="item-time">04/18 09:00</span>
+          </div>
+          <h3 class="item-title">유니클로 창업자 야나이 다다시가 정의하는 경영과 장사의 차이</h3>
+          <p class="item-summary">[핵심 내용] 유니클로 창업자 야나이 다다시가 단순한 물건 판매를 넘어 기업을 성장시키는 경영의 본질과 목표 설정의 중요성을 설명합니다.
+
+[전개 구조]
+- 도입: 상인과 경영자의 차이를 구분하며, 확실한 목표와 계획의 필요성을 강조합니다.
+- 전개: 회사명을 &#039;패스트 리테일링&#039;으로 변경하고 상품 기획부터 판매까지 일관된 시스템을 구축했습니다. 3년 단위의 중기 계획과 1,000억 엔 이상의 매출을 목표로 하는 장기 계획을 세워 실천했습니다. 불가능해 보이는 높은 목표라도 종이에 쓰고 실천하며 수정해 나가는 과정이 성장의 핵심입니다.
+- 결론: 올림픽 선수들이 세계 신기록을 목표로 훈련하듯, 경영자 역시 높은 목표를 설정하고 포기하지 않는 자세를 가져야 함을 역설합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-4">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-4">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9de381eeb148f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-4">야나이 다다시의 경영론은 수직 계열화(Vertical Integration)를 통한 공급망 최적화가 핵심이다. 300억 엔에서 1,000억 엔으로의 스케일업을 위해 단순 판매(상인)를 넘어 기획-제조-판매를 통합하는 시스템(경영)을 구축했다. 이는 하드웨어 제조와 플랫폼 서비스를 병행하는 기술 기업이 초기 시장 점유율 확보 후 수익성을 극대화하기 위해 반드시 거쳐야 하는 구조적 고도화 모델이다.</div><div class="insight-panel " id="cross-인문학-4">카를 폰 클라우제비츠(1832)의 &#039;전쟁론&#039;에서 강조한 &#039;목적-수단-방법&#039;의 일치와 맥락을 같이 한다. 승리라는 명확한 목적(End state)이 설정되어야만 한정된 자원(Means)을 효율적으로 배분하는 방법(Ways)이 도출된다. 불가능해 보이는 목표를 종이에 적는 행위는 조직의 전략적 지향점을 동기화하는 결정적 기제다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="인문학"
+          data-source="썸원(somewon)"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#시니어비즈니스 #하루메쿠 #고객정의 #타겟팅 #마케팅전략">
+          <span class="item-number">#6</span>
+          <div class="item-meta-top">
+            <span class="item-source">썸원(somewon)</span>
+            <span class="item-time">04/18 09:00</span>
+          </div>
+          <h3 class="item-title">시니어라는 단어를 배제하고 고객의 욕망에 집중하는 비즈니스 전략</h3>
+          <p class="item-summary">[핵심 내용] 시니어 비즈니스에서 타겟을 나이로 구분하기보다 고객의 정체성과 욕망에 집중해야 한다는 인사이트를 전합니다.
+
+[전개 구조]
+- 도입: 시니어들이 &#039;시니어&#039;로 불리는 것을 싫어한다는 점이 비즈니스의 가장 큰 어려움임을 지적합니다.
+- 전개: 일본의 잡지 &#039;하루메쿠&#039;는 시니어, 고령자 등의 표현을 쓰지 않는 원칙을 세우고, 독자들의 삶의 유형을 7가지(건강 중시형, 교양 추구형 등)로 세분화했습니다. 고객의 욕망에 집중한 결과 디지털 시대에도 종이 잡지로서 성장을 거듭하고 있습니다.
+- 결론: 비즈니스의 본질은 고객을 정확히 정의하고 이해하는 데 있으며, 최근 MZ세대 사이에서도 멋진 노년을 꿈꾸는 등 연령 경계가 허물어지는 추세를 반영하여 시장을 연구해야 합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-인문학-5">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-인문학-5">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9de381eeb148f" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-인문학-5">인구 구조 변화에 따른 시장 세분화 전략의 정교화를 보여준다. 생물학적 연령이 아닌 7가지 라이프스타일 유형으로 고객을 재정의함으로써 마케팅 효율을 극대화했다. 이는 스포츠나 엔터테인먼트 플랫폼 비즈니스에서 사용자 층을 단순히 연령대로 나누기보다, &#039;데이터 분석 선호형&#039;, &#039;커뮤니티 활동형&#039; 등 행동 패턴과 욕망 기반으로 클러스터링해야 함을 시사한다.</div><div class="insight-panel " id="cross-인문학-5">피에르 부르디외(1979)의 &#039;구별짓기&#039; 이론으로 설명 가능하다. 소비는 단순히 물적 필요를 채우는 행위가 아니라 자신의 사회적 위치와 취향(Habitus)을 드러내는 수단이다. &#039;시니어&#039;라는 낙인을 거부하고 자신의 지향성을 긍정하려는 욕망을 파고든 &#039;하루메쿠&#039;의 전략은 인간의 자아 정체성 유지 본능을 정확히 관통한 사례다.</div>
+      </div>
+        </article>
+        </div>
+      </div>
+
+      <div class="tab-content " id="tab-투자" data-label="투자" style="--label-color: #8b5cf6">
+        <div class="label-stats-bar">
+    <div class="label-stats-left">
+      <span class="label-stat-main">📰 12개 아이템</span>
+      <span class="label-stat">💡 12개 인사이트</span>
+      
+    </div>
+    <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
+      <button class="grouping-toggle-btn active" data-group="label" title="라벨별">라벨별</button>
+      <button class="grouping-toggle-btn" data-group="source" title="출처별">출처별</button>
+    </div>
+  </div>
+        <div class="items-list">
+          
+        <article class="item"
+          data-label="투자"
+          data-source="Klement on Investing"
+          data-has-insight="true"
+          data-has-link="true"
+          data-long="true"
+          data-keywords="#영국 #희망 지수 #소득 불평등 #종교성 #행복 학술지 #글로벌 플로리싱 설문조사">
+          <span class="item-number">#1</span>
+          <div class="item-meta-top">
+            <span class="item-source">Klement on Investing</span>
+            <span class="item-time">04/17 15:01</span>
+          </div>
+          <h3 class="item-title">영국을 포함한 선진국의 낮은 희망 지수와 소득 불평등 및 종교성의 상관관계 분석</h3>
+          <p class="item-summary">[핵심 내용] 최근 &#039;행복 학술지(Journal of Happiness)&#039;에 발표된 연구에 따르면, 영국은 일본, 스웨덴과 함께 미래에 대한 희망이 가장 낮은 국가군에 속하는 것으로 나타났습니다.
+
+[전개 구조]
+- 도입: 전 세계 인구의 64%를 대표하는 22개국 20만 명 이상을 대상으로 한 &#039;글로벌 플로리싱 설문조사(Global Flourishing Survey)&#039; 결과, &quot;도전 과제에도 불구하고 나는 항상 미래에 대해 희망적이다&quot;라는 질문에 대해 영국은 홍콩, 스웨덴과 함께 최하위권을 기록했습니다. 특히 일본은 가장 낮은 희망 수치를 보인 반면, 라틴 아메리카와 동남아시아 국가들은 매우 높은 희망 수치를 기록했습니다.
+- 전개: 연구 데이터 분석 결과, 희망을 결정하는 주요 요인 중 하나는 &#039;종교성&#039;으로 나타났습니다. 종교 행사에 자주 참여하는 사람들은 사회적 연결망이 강화되어 그렇지 않은 사람들보다 훨씬 더 희망적인 태도를 보였습니다. 또한, 국가별 소득 불평등과 희망 지수 사이에는 0.38의 유의미한 상관관계가 발견되었습니다. 흥미롭게도 영국, 일본, 스웨덴처럼 소득 불평등이 상대적으로 낮은 국가들이 오히려 희망 지수가 낮았으며, 불평등이 심한 라틴 아메리카나 아프리카 국가들은 높은 희망과 종교성을 동시에 보였습니다.
+- 결론: 이러한 변수들 사이의 인과관계는 아직 명확하지 않으나, 경제적 평등이나 물질적 풍요가 반드시 심리적 희망으로 이어지지 않는다는 점은 사회 구조적 분석에 있어 중요한 시사점을 제공합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-0">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-0">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9a0759fe6a860" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a><a href="https://substack.com/redirect/00a403a2-0c7d-4b03-92fc-8a43653cc13c?j=eyJ1IjoiNTJjYmgxIn0.TxnXl9_ZWwMZvWDGphL9dqInTSeZKkptKOIUN2IEb_w" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-0">22개국 20만 명 대상 조사에서 소득 불평등과 희망 지수의 상관관계가 0.38로 나타난 점은 물질적 풍요가 심리적 안녕과 비례하지 않는다는 &#039;이스털린의 역설&#039;을 뒷받침합니다. 특히 일본, 영국 등 선진국의 낮은 수치는 사회적 자본(종교, 공동체)의 해체가 경제적 성취를 상쇄하고 있음을 입증하며, 이는 고도화된 산업 사회일수록 정서적 연결망을 대체할 새로운 사회적 기제가 필요함을 의미합니다.</div><div class="insight-panel " id="cross-투자-0">빅터 프랭클(1946)의 &#039;의미를 향한 의지&#039;와 맥락을 같이 합니다. 생존 조건이 충족된 사회에서 오히려 &#039;실존적 진공&#039; 상태가 심화되는 현상은, 기술적 진보와 경제적 평등이 인간의 목적론적 갈증을 자동적으로 해결하지 못한다는 한계를 드러냅니다. 라틴 아메리카의 높은 희망 지수는 고통 속에서도 의미를 찾는 공동체적 서사가 심리적 회복탄력성에 기여함을 보여줍니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="Seeking Alpha"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#기술주 #나스닥 #미국-이란 관계 #시장 반등">
+          <span class="item-number">#2</span>
+          <div class="item-meta-top">
+            <span class="item-source">Seeking Alpha</span>
+            <span class="item-time">04/18 00:42</span>
+          </div>
+          <h3 class="item-title">미국-이란 긴장 완화로 기술주 2주간 20% 급등하며 역사적 반등 기록</h3>
+          <p class="item-summary">미국과 이란 사이의 지정학적 긴장이 완화됨에 따라 기술주 섹터가 강력한 회복세를 보이고 있습니다. 기술주들은 지난 13거래일 동안 약 20% 급등하며 역사적인 반등을 기록했습니다. 이번 상승세는 중동 지역의 군사적 충돌 우려가 줄어들면서 투자자들이 다시 성장주와 기술주로 눈을 돌린 결과로 풀이됩니다. 특히 단기간 내에 20%라는 기록적인 수익률을 기록하며 시장의 강력한 매수세를 증명했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-1">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-1">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9c1b69f491cd5" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-1">13거래일간 20% 급등은 지정학적 리스크 해소에 따른 숏커버링과 성장주 선호 심리의 결합 결과입니다. 금리 경로에 대한 불확실성 속에서도 기술 섹터의 펀더멘털이 매크로 변수를 압도하는 양상을 보입니다. 특히 AI 및 반도체 등 고성장 기술 기업의 밸류에이션 회복은 자본 시장의 유동성이 다시 기술 집약적 자산으로 빠르게 회귀하고 있음을 시사합니다.</div><div class="insight-panel " id="cross-투자-1">찰스 킨들버거(1978)의 &#039;광기, 패닉, 붕괴&#039;에서 언급된 시장의 과잉 반응 패턴과 일치합니다. 외부 충격이 제거될 때 발생하는 급격한 자산 가격 복원은 투자자들의 공포가 탐욕으로 전환되는 심리적 임계점을 보여줍니다. 이는 불확실성 시대에 자산의 내재 가치보다 외부 환경의 변화가 단기 가격 결정의 지배적 요인이 됨을 확인시켜 줍니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="Seeking Alpha"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Sandisk #SNDK #반도체 #투자전략">
+          <span class="item-number">#3</span>
+          <div class="item-meta-top">
+            <span class="item-source">Seeking Alpha</span>
+            <span class="item-time">04/18 00:42</span>
+          </div>
+          <h3 class="item-title">샌디스크(Sandisk), 고성장 매수 기회이나 4월 &#039;뉴스에 팔아라&#039; 경고 제기</h3>
+          <p class="item-summary">샌디스크(SNDK)는 고성장이 기대되는 매수 종목으로 평가받고 있으나, 4월 중 호재가 선반영된 후 가격이 하락하는 &#039;뉴스에 팔아라(Sell the news)&#039; 현상이 나타날 수 있다는 경고가 제기되었습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-2">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-2">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9c1b69f491cd5" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-2">반도체 업황 회복 기대감이 주가에 선반영된 상태에서 낸드 플래시 시장의 고성장세에도 불구하고 단기 차익 실현 매물 출회 가능성이 높습니다. 하드웨어 제조사의 수익성 개선 수치보다 시장의 기대치 충족 여부가 향후 주가 향방의 변수입니다. 엣지AI 기기 확산에 따른 메모리 수요 증가는 장기적 호재이나, 공급망 안정화 속도에 따른 가격 변동성을 주시해야 합니다.</div><div class="insight-panel " id="cross-투자-2">효율적 시장 가설(Fama, 1970)의 관점에서 정보의 주가 반영 속도를 고찰할 필요가 있습니다. 모든 공표된 정보가 즉각 반영되는 시장에서 초과 수익을 얻기 위해서는 정보의 해석 너머에 있는 물리적 제약 조건과 심리적 편향을 분석해야 합니다. 이는 기술적 우위가 반드시 시장 수익률로 직결되지 않는다는 투자 공학의 기본 원칙을 상기시킵니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="Seeking Alpha"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#이란 #호르무즈 해협 #지정학적 리스크 #해운">
+          <span class="item-number">#4</span>
+          <div class="item-meta-top">
+            <span class="item-source">Seeking Alpha</span>
+            <span class="item-time">04/18 00:42</span>
+          </div>
+          <h3 class="item-title">이란, 호르무즈 해협 상업용 선박 통행 개방 선언</h3>
+          <p class="item-summary">이란 정부가 호르무즈 해협을 상업용 선박에 개방한다고 공식 선언했습니다. 이는 국제 해상 물류의 핵심 경로인 해당 지역의 지정학적 긴장이 완화되고 있음을 시사하는 중요한 조치입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-3">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-3">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9c1b69f491cd5" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-3">세계 원유 물동량의 약 20%가 통과하는 핵심 경로의 개방은 에너지 가격 안정화와 글로벌 공급망 리스크 감소를 의미합니다. 물류비용 하락은 하드웨어 제조 및 유통 전반의 비용 구조 개선에 긍정적 요인으로 작용하며, 특히 에너지 집약적인 반도체 및 ICT 제조 산업의 운영 비용 부담을 완화하는 효과를 기대할 수 있습니다.</div><div class="insight-panel " id="cross-투자-3">페르낭 브로델(1949)이 강조한 &#039;지중해적 공간&#039;의 중요성처럼, 특정 지리적 요충지가 세계 경제의 동맥 역할을 수행하는 역사적 연속성을 확인하게 됩니다. 지정학적 긴장 완화는 경제적 상호의존성이 갈등의 비용을 압도할 때 발생하는 현상으로, 이는 &#039;상업적 평화론&#039;의 현대적 실증 사례로 볼 수 있습니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="Seeking Alpha"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#콜로라도강 #수자원 위기 #담수화 #미국 서부">
+          <span class="item-number">#5</span>
+          <div class="item-meta-top">
+            <span class="item-source">Seeking Alpha</span>
+            <span class="item-time">04/18 00:42</span>
+          </div>
+          <h3 class="item-title">콜로라도강 수자원 위기 심화로 미국 서부 주들의 담수화 거래 추진</h3>
+          <p class="item-summary">월스트리트저널(WSJ) 보도에 따르면, 콜로라도강의 수자원 위기가 심화됨에 따라 미국 서부 지역 주들이 물 부족 문제를 해결하기 위해 담수화 프로젝트 관련 계약 및 협력을 적극적으로 추진하고 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-4">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-4">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9c1b69f491cd5" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-4">수자원 고갈에 따른 담수화 프로젝트 추진은 기후 변화가 인프라 투자의 강제적 동인이 됨을 시사합니다. 에너지 집약적인 담수화 공정의 특성상 향후 저전력 제어 기술 및 효율적인 수처리 시스템 수요가 증가할 것입니다. 이는 에너지 최적화 기술을 보유한 하드웨어 및 제어 시스템 기업들에게 새로운 시장 기회를 제공하는 정책적 변화입니다.</div><div class="insight-panel " id="cross-투자-4">개릿 하딘(1968)의 &#039;공유지의 비극&#039; 사례입니다. 한정된 자원인 강물을 둘러싼 주 정부 간의 갈등과 협력은, 공공재 관리 실패를 기술적 대안(담수화)으로 해결하려는 인류의 전형적인 대응 방식을 보여줍니다. 자원 희소성이 기술 발전을 강제하는 역사적 패턴의 반복입니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="true"
+          data-keywords="#폴리마켓 #예측시장 #스테이블코인 #파생상품 #ICE">
+          <span class="item-number">#6</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">대선과 전쟁도 자산이 되는 예측 시장의 성장과 폴리마켓 사례 분석</h3>
+          <p class="item-summary">[핵심 내용] 집단 지성 기반의 예측 플랫폼 폴리마켓이 지정학적, 경제적 불확실성을 바탕으로 폭발적으로 성장하며 새로운 정보 인프라로 주목받고 있습니다.
+
+[전개 구조]
+- 도입: 우크라이나 전쟁 등 불확실성 증대로 전문가 예측 대신 폴리마켓의 데이터가 메이저 언론에서 인용되는 등 예측 시장이 부상하고 있습니다.
+- 전개: 폴리마켓은 마켓의 다양성, 실제 금전적 이해관계(Skin in the game), USDC 기반 거래를 동력으로 성장했습니다. 옵션 상품과 유사한 금융 구조를 지니며 헤지 기능과 실시간 정보 제공 역할을 수행합니다. 다만 기관투자자 참여 제한, 내부자 거래 위험, 유동성 부족 및 판정 불확실성이라는 한계가 존재합니다.
+- 결론: 폴리마켓은 최근 파생상품 거래소 QCEX 인수와 ICE로부터 누적 20억 달러 투자를 유치하며 기업가치 90억 달러를 평가받았습니다. 규제 대응과 기술적 보완을 통해 대안적 정보 인프라로의 도약을 시도 중입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-5">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-5">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-5">ICE로부터 20억 달러 투자를 유치하고 90억 달러 가치를 인정받은 것은 예측 시장이 단순 도박을 넘어 실시간 데이터 인프라로 격상되었음을 의미합니다. USDC 기반의 투명한 정산 체계는 AI 분석 모델의 기초 데이터로서 높은 신뢰도를 제공하며, 이는 불확실성이 높은 스포츠 경기 결과 예측 및 데이터 분석 시장에도 유사한 메커니즘이 적용될 가능성을 시사합니다.</div><div class="insight-panel " id="cross-투자-5">하이에크(1945)의 &#039;사회에서의 지식의 이용&#039; 이론과 일치합니다. 파편화된 정보를 가격이라는 단일 지표로 통합하는 시장의 메커니즘이 블록체인 기술을 통해 극대화된 사례입니다. 전문가 집단의 하향식 예측보다 실제 자본이 투입된 집단 지성의 상향식 베팅이 더 정확할 수 있다는 인식의 확산을 보여줍니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#한화솔루션 #유상증자 #주주환원 #자사주소각">
+          <span class="item-number">#7</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">한화솔루션 유상증자 규모 1.8조 원으로 축소 및 주주 환원책 발표</h3>
+          <p class="item-summary">한화솔루션이 이사회를 열어 유상증자 금액을 기존 2조 3,976억 원에서 1조 8,144억 원으로 축소하고 신주 발행 물량도 5,600만 주로 줄였습니다. 금융감독원의 정정 요구에 따른 조치로, 채무상환 자금은 9,067억 원으로 조정되었으며 부족분은 투자자산 유동화 등으로 충당할 계획입니다. 회사는 2030년까지 추가 증자를 하지 않겠다고 선언했으며, 2026년부터 당기순이익의 10%를 배당 또는 자사주 매입 및 소각에 활용하는 주주 환원 정책을 시행할 예정입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-6">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-6">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-6">유상증자 규모를 1.8조 원으로 축소한 것은 시장의 자금 조달 압박과 주주 가치 훼손 우려를 반영한 결과입니다. 2026년부터 순이익의 10%를 환원하겠다는 정책은 자본 집약적 장치 산업에서 재무 건전성 확보와 투자자 신뢰 회복 사이의 균형을 맞추려는 시도입니다. 이는 대규모 설비 투자가 필요한 하드웨어 기업의 자본 조달 전략에 시사점을 줍니다.</div><div class="insight-panel " id="cross-투자-6">젠슨과 메클링(1976)의 대리인 비용 이론으로 설명 가능합니다. 경영진의 자금 조달 욕구와 주주의 부 극대화 사이의 갈등을 주주 환원책이라는 인센티브 정렬을 통해 해결하려는 기업 거버넌스의 전형적 사례입니다. 규제 기관의 개입이 기업의 자본 구조 최적화를 강제하는 양상을 보여줍니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#은행연체율 #금융감독원 #원화대출 #대손충당금">
+          <span class="item-number">#8</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">2월 국내은행 대출 연체율 0.62% 기록하며 9개월 만에 최고치</h3>
+          <p class="item-summary">금융감독원에 따르면 2026년 2월 말 국내은행의 원화대출 연체율이 전월 대비 0.06%P 상승한 0.62%를 기록했습니다. 이는 작년 5월 이후 가장 높은 수준으로, 특히 중소법인 대출 연체율이 1.02%로 급등하며 경기 둔화의 영향이 뚜렷하게 나타나고 있습니다. 신규 연체채권 발생액도 3조 원으로 두 달 연속 증가세를 보임에 따라, 금감원은 은행권의 대손충당금 적립 강화 등 자산건전성 관리를 지도할 방침입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-7">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-7">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-7">연체율 0.62% 및 중소법인 1.02% 도달은 고금리 누적 효과가 실물 경제의 약한 고리부터 타격하고 있음을 증명합니다. 신규 연체 발생액 3조 원은 은행의 대손충당금 적립 부담을 높여 향후 기업 대출 심사 문턱이 높아지는 신용 경색의 전조로 작용할 수 있습니다. 이는 스타트업을 포함한 중소 기업들의 자금 조달 환경이 더욱 보수적으로 변할 것임을 예고합니다.</div><div class="insight-panel " id="cross-투자-7">하이먼 민스키(1986)의 금융 불안정성 가설과 맥락이 닿아 있습니다. 안정적인 시기에 축적된 부채가 금리 인상기에 &#039;폰지 금융&#039; 단계로 진입하며 시스템 리스크를 유발하는 과정입니다. 부채의 질적 악화가 임계점에 도달했음을 알리는 신호로, 경제 주체들의 디레버리징 압력이 거세질 것임을 시사합니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#코로나19 #수젠텍 #진원생명과학 #변이바이러스">
+          <span class="item-number">#9</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">코로나19 변이 바이러스 확산세에 백신 및 진단키트 관련주 급등</h3>
+          <p class="item-summary">전 세계적으로 코로나19 변이 바이러스가 확산 조짐을 보이면서 백신과 치료제 등 관련 테마주가 강세를 보였습니다. 감염 확인 국가가 지난달 23개국에서 이번 달 33개국 이상으로 늘어난 것이 매수세를 자극했습니다. 자가진단키트 생산 업체인 수젠텍이 30.00% 상승하며 상한가를 기록했고, 진원생명과학(29.89%), 신풍제약(26.48%), 그린생명과학(10.51%) 등 관련 종목들이 일제히 급등했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-8">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-8">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-8">33개국 확산에 따른 관련주 급등은 펀더멘털보다 공포 심리에 기반한 단기 유동성 쏠림 현상입니다. 진단키트 및 백신 수요의 일시적 증가는 예상되나, 과거 팬데믹 수준의 구조적 성장을 기대하기에는 시장의 학습 효과와 방역 체계의 성숙도가 변수입니다. 바이오 섹터 내에서의 순환매적 성격이 강하며, 실질적인 매출 기여도를 확인하는 과정이 선행되어야 합니다.</div><div class="insight-panel " id="cross-투자-8">나심 탈레브(2007)의 &#039;블랙 스완&#039; 이후 시장은 유사한 위협에 대해 과민 반응하거나 극단적인 헤지 성향을 보입니다. 반복되는 위기 신호 속에서 노이즈와 시그널을 구분하는 능력이 자산 배분의 핵심임을 시사합니다. 이는 불확실성을 자산화하려는 투자자들의 심리적 기제를 잘 보여주는 사례입니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#넷플릭스 #영업이익 #M&amp;A위약금 #리드헤이스팅스">
+          <span class="item-number">#10</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">넷플릭스 1분기 영업이익 5.9조 원 달성하며 시장 전망치 상회</h3>
+          <p class="item-summary">넷플릭스의 올해 1분기 영업이익이 전년 동기 대비 18.2% 증가한 약 39억 5,700만 달러(약 5조 8,595억 원)를 기록했습니다. 매출은 122억 5천만 달러로 전년 대비 16.2% 늘어났으며, 워너브러더스 디스커버리와의 M&amp;A 계약 파기로 수령한 위약금 28억 달러가 순이익 급증에 기여했습니다. 한편 공동창업자인 리드 헤이스팅스 회장은 오는 6월 임기 만료와 함께 회장직에서 물러날 예정입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-9">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-9">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-9">영업이익 5.9조 원 달성은 광고 요금제 안착과 계정 공유 제한 정책의 성공을 입증합니다. M&amp;A 위약금 28억 달러라는 일회성 이익을 제외하더라도 16.2%의 매출 성장은 콘텐츠 플랫폼의 규모의 경제가 임계점을 넘어 수익 극대화 단계에 진입했음을 보여줍니다. 이는 영상 플랫폼 비즈니스에서 데이터 기반의 사용자 통제가 수익성에 미치는 결정적 영향을 확인시켜 줍니다.</div><div class="insight-panel " id="cross-투자-9">조지프 슘페터(1942)의 &#039;창조적 파괴&#039; 관점에서 볼 때, 전통적 미디어 제국과의 결합 실패가 오히려 넷플릭스의 독자적 플랫폼 지배력을 공고히 하는 결과로 이어졌습니다. 리더십 교체 시기에 달성한 사상 최대 실적은 창업자의 카리스마를 넘어선 시스템 경영의 정착을 의미하며, 이는 기술 기업의 성숙 단계를 상징합니다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#TSMC #파운드리 #반도체실적 #순이익">
+          <span class="item-number">#11</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">TSMC 1분기 순이익 26.7조 원으로 사상 최대 실적 달성</h3>
+          <p class="item-summary">세계 최대 파운드리 업체 TSMC가 1분기 순이익 5,725억 대만달러(약 26조 7천억 원)를 기록하며 전년 동기 대비 58.3% 증가한 사상 최대 실적을 달성했습니다. 중동 전쟁으로 인한 소재 공급 차질 우려에도 불구하고 다변화된 공급망을 통해 단기적 영향을 제한했습니다. TSMC는 2분기 매출이 최대 402억 달러에 달할 것으로 전망하며, 올해 연간 매출도 달러 기준 30% 이상 성장할 것이라는 강한 확신을 유지했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-10">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-10">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-10">1분기 순이익 58.3% 급증과 연간 30% 성장 전망은 AI 가속기 및 고성능 컴퓨팅 수요의 견고함을 증명한다. 헬륨·네온 등 소재 공급망 다변화로 지정학적 리스크를 관리한 점은 하드웨어 제조 기업에 필수적인 회복탄력성 전략이다. 2분기 매출 가이던스 상단 402억 달러 달성 여부는 엣지AI 및 NPU 시장의 하반기 확장 속도를 가늠할 지표가 된다.</div><div class="insight-panel " id="cross-투자-10">나심 탈레브(2012)의 &#039;안티프래질&#039; 개념을 실현한 사례다. 중동 전쟁이라는 외부 충격을 공급망 다변화와 안전 재고 확보를 통해 오히려 시장 지배력을 공고히 하는 기회로 전환했다. 19세기 로스차일드 가문이 정보망을 통해 전쟁의 불확실성을 수익화했던 역사적 패턴의 현대적 변용으로 해석 가능하다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="투자"
+          data-source="DAILY_BYTE"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#트럼프 #이란협상 #중간선거 #세금정책">
+          <span class="item-number">#12</span>
+          <div class="item-meta-top">
+            <span class="item-source">DAILY_BYTE</span>
+            <span class="item-time">04/18 05:48</span>
+          </div>
+          <h3 class="item-title">트럼프 대통령 이란과 협상 진전 발표 및 중간선거 세금 정책 홍보</h3>
+          <p class="item-summary">도널드 트럼프 미국 대통령은 이란과의 전쟁 종결을 위한 협상에 상당한 진전이 있으며 합의에 매우 근접했다고 밝혔습니다. 이번 주말 추가 협상 가능성을 언급하며 지정학적 긴장 완화에 대한 기대감을 높였습니다. 또한 라스베이거스 원탁회의를 통해 팁 세금 감면 등 공화당의 세금 정책 성과를 홍보하며, 오는 11월 중간선거 승리가 세금 혜택 유지를 위해 필수적이라고 강조했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-투자-11">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-투자-11">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d33a61b8fd46" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-투자-11">이란과의 협상 진전은 에너지 가격 안정 및 글로벌 공급망의 불확실성 해소에 기여할 수 있다. 팁 세금 감면 등 세제 혜택은 단기적으로 소비 진작 효과를 낼 수 있으나, 중간선거 결과에 따른 정책 지속성 여부가 기업의 중장기 재무 계획 수립에 변수로 작용할 것이다. 지정학적 긴장 완화는 위험 자산에 대한 투자 심리 회복으로 이어질 가능성이 크다.</div><div class="insight-panel " id="cross-투자-11">마키아벨리(1513)가 &#039;군주론&#039;에서 강조한 &#039;여론의 지지를 얻기 위한 시혜적 조치&#039;와 맥을 같이 한다. 선거를 앞두고 즉각적인 경제적 이득을 제시하여 정치적 정당성을 확보하려는 행위는 고대 로마의 &#039;빵과 서커스&#039; 정책부터 이어진 권력 유지의 고전적 심리 기제다.</div>
+      </div>
+        </article>
+        </div>
+      </div>
+
+      <div class="tab-content " id="tab-IT" data-label="IT" style="--label-color: #3b82f6">
+        <div class="label-stats-bar">
+    <div class="label-stats-left">
+      <span class="label-stat-main">📰 19개 아이템</span>
+      <span class="label-stat">💡 19개 인사이트</span>
+      <span class="label-stat">🔗 2개 중복 제거</span>
+    </div>
+    <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
+      <button class="grouping-toggle-btn active" data-group="label" title="라벨별">라벨별</button>
+      <button class="grouping-toggle-btn" data-group="source" title="출처별">출처별</button>
+    </div>
+  </div>
+        <div class="items-list">
+          
+        <article class="item"
+          data-label="IT"
+          data-source="요즘IT"
+          data-has-insight="true"
+          data-has-link="true"
+          data-long="false"
+          data-keywords="#GEO #AI 검색 #구조화 데이터 #자동화 파이프라인 #SEO">
+          <span class="item-number">#1</span>
+          <div class="item-meta-top">
+            <span class="item-source">요즘IT</span>
+            <span class="item-time">04/17 16:33</span>
+          </div>
+          <h3 class="item-title">AI 검색 시대의 필수 전략, GEO 자동화 파이프라인 구축과 대응 방안</h3>
+          <p class="item-summary">AI 검색 엔진이 사용자의 질문에 직접 답변을 생성하는 시대로 진입함에 따라, 기존 SEO를 대체할 생성 엔진 최적화(GEO)가 기업의 필수 전략으로 부상했습니다. GEO는 AI 모델이 정보를 정확히 파악하고 인용할 수 있도록 구조화된 데이터를 제공하는 것이 핵심입니다. 기업들은 수동 관리의 비효율성을 해결하기 위해 AI 기반의 GEO 자동화 파이프라인을 도입하고 있으며, 이를 통해 대규모 콘텐츠 분석과 데이터 구조화 작업을 자동화하여 검색 노출 경쟁력을 강화하고 있습니다. 12분 분량의 본 가이드는 AI 서비스의 답변 생성 메커니즘을 분석하고, 인용 가능성을 극대화하기 위한 구조화 데이터 생성 전략 및 자동화 시스템 구축 시의 핵심 고려 사항을 구체적인 데이터와 함께 제시합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-0">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-0">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9a5bb1e25a2fa" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a><a href="https://u2525788.ct.sendgrid.net/ls/click?upn=u001.pKjnA8YxT-2BGjeO00WuBcokrX3Mjvx4pPxetTgqgGq3UYEuvDx8mYkJB-2FTHEguSYvN7EH97Tz28zvDbNgvFIDDzOr94ZyGt3HZ5kVsQDgkarJxdkRwGzJay8mdzXjasXgUmKuZhnMHXZeGT7vdvxOteoUbAufaR5NpXbXTjJLcoOXZBk95aX4aJRLodNzEddutGVW_L3TaM7BR0UAWeIeLVg7ivlWn6BAfzrcYaPrEEr1UBXGvliQ6FcEdBPAv33q4ZKmhYqZsjsnSzz09-2B-2B2BPp4cmQETpfqJDV0Gcr-2FbMjefpSocRTQcz-2Bdc9RVXLz3ZJ8LMZMSy2tzglsgU6HrSlIQkG9BqX33jnbBcycBk1NCg3EcC6adRKO3xw-2FijAg928oN727Z1TSIEhLnMBcPXA7qLjebl0rGYRXwEShTAHcijbphRB6UR4g-2B3sORObW1wPRftoFqC31xa7mpXzL7wG-2FGaMg-3D-3D" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-0">LLM 기반 검색 엔진이 답변을 직접 생성하면서 웹 트래픽의 근간인 SEO가 GEO로 재편되고 있다. 12분 분량의 가이드가 제시하듯, 스포츠 영상 분석 데이터나 하이라이트 메타데이터를 AI가 인용하기 쉬운 구조화 데이터(JSON-LD 등)로 변환하는 자동화 파이프라인 구축이 검색 노출 빈도를 결정한다. 이는 단순 웹 노출을 넘어 AI 에이전트 생태계 내 데이터 점유율 확대로 이어진다.</div><div class="insight-panel " id="cross-IT-0">미셸 푸코(1966)의 &#039;에피스테메&#039; 개념과 연결된다. 지식이 존재하고 분류되는 방식의 근본적 틀이 변화함에 따라, 과거의 검색 문법(키워드)은 해체되고 구조적 연관성이 진실의 척도가 된다. 정보의 가치는 이제 독립적 존재가 아니라 AI 모델의 추론 경로에 얼마나 효율적으로 편입되느냐에 따라 재정의된다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="요즘IT"
+          data-has-insight="true"
+          data-has-link="true"
+          data-long="false"
+          data-keywords="#백준 #BOJ #Claude Code #AI 보안 #서비스 종료">
+          <span class="item-number">#2</span>
+          <div class="item-meta-top">
+            <span class="item-source">요즘IT</span>
+            <span class="item-time">04/17 16:33</span>
+          </div>
+          <h3 class="item-title">16년 된 백준(BOJ)이 문을 닫습니다</h3>
+          <p class="item-summary">한국 개발자들의 학습 성지였던 백준 온라인 저지(BOJ)가 16년의 역사를 뒤로하고 4월 28일 서비스를 종료합니다. 한편 기술 시장에서는 Claude Code의 Routines 기능처럼 노트북을 닫아도 PR 리뷰와 알림 분류를 자동화하는 도구가 주목받고 있습니다. 하지만 AI 코딩 도구의 확산과 함께 보안 우려도 커지고 있는데, 실제로 AI로 제작된 환자 관리 앱이 보안 취약점 노출 30분 만에 전체 데이터 접근이 허용된 사례가 발생하며 접근 제어의 중요성이 강조되고 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-1">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-1">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9a5bb1e25a2fa" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a><a href="https://u2525788.ct.sendgrid.net/ls/click?upn=u001.pKjnA8YxT-2BGjeO00WuBcokrX3Mjvx4pPxetTgqgGq3UYEuvDx8mYkJB-2FTHEguSYvh6147c-2F6D1q2C-2Bx2vwBEc0jxJtoz0i1F83CfrdE-2BHMJjg2gUMCRze8sdDROJVyBtBi4qHkFr6-2BCzFlWhlJma6GsaosUdYps0GNqLKV-2B2EWp-2Fm1EKj7YRChTzm1i3nK40DpDt_L3TaM7BR0UAWeIeLVg7ivlWn6BAfzrcYaPrEEr1UBXGvliQ6FcEdBPAv33q4ZKmhDdqOf4nAV4daCvt0LJs-2FilBAd5z-2B-2BTitQQ-2FARJ8yNK17LwvCfUOoaEwWsL94npKPLV24hx-2BpkzmKwjw0oL9e5cHd9p1OptBjy28gbEExywjacvU-2BYL79WB8m1Reh-2Fb93lHrdQyBLOzdkQ44e4RjrHOeQgiowFKVohepEJXmG2U78tVnSvSfEwcA4HYCi-2F5T7FEPpvGLqr7XvLHmNb1Yynw-3D-3D" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-1">전통적인 알고리즘 학습 플랫폼의 종료는 개발 패러다임이 &#039;구현&#039;에서 &#039;오케스트레이션&#039;으로 이동함을 방증한다. Claude Code 같은 자동화 도구의 부상은 생산성을 높이지만, AI 생성 코드의 보안 취약점이 30분 만에 노출된 사례는 엣지AI나 임베디드 시스템 개발 시 정적 분석 및 보안 검증 자동화가 필수적임을 시사한다.</div><div class="insight-panel " id="cross-IT-1">조지프 슘페터(1942)의 &#039;창조적 파괴&#039; 과정이다. 16년간 유지된 학습 인프라의 소멸은 AI라는 새로운 생산 수단이 기존의 숙련 방식을 대체하며 발생하는 필연적 결과다. 다만, 기술적 유산이 사라지는 시점에서 AI가 생성한 결과물의 &#039;책임성&#039; 문제는 법적, 윤리적 공백으로 남게 된다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="요즘IT"
+          data-has-insight="true"
+          data-has-link="true"
+          data-long="false"
+          data-keywords="#안드레 카파시 #LLM #개인 위키 #지식 관리 #자동화">
+          <span class="item-number">#3</span>
+          <div class="item-meta-top">
+            <span class="item-source">요즘IT</span>
+            <span class="item-time">04/17 16:33</span>
+          </div>
+          <h3 class="item-title">안드레 카파시가 제안하는 LLM 기반 개인 위키와 지식 관리의 미래</h3>
+          <p class="item-summary">안드레 카파시(Andrej Karpathy)는 지식과 정보를 체계적으로 관리하기 위한 디지털 저장소인 개인 위키가 실패하는 주요 원인으로 과도한 유지 관리 비용을 지목했습니다. 사용자가 정보를 정리하고 구조화하는 &#039;북키핑&#039; 작업에 지쳐 결국 관리를 포기하게 된다는 분석입니다. 이에 대한 해결책으로 대규모 언어 모델(LLM)을 활용해 반복적인 정리 작업을 자동화하는 &#039;LLM 위키&#039; 개념이 제시되었습니다. 약 9분 분량의 이 콘텐츠는 LLM이 지식 관리의 효율성을 높이는 구체적인 방식과 이러한 기술적 변화가 인간의 사고 과정 및 지적 생산성에 미칠 영향에 대해 심도 있게 다룹니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-2">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-2">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9a5bb1e25a2fa" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a><a href="https://u2525788.ct.sendgrid.net/ls/click?upn=u001.pKjnA8YxT-2BGjeO00WuBcokrX3Mjvx4pPxetTgqgGq3UYEuvDx8mYkJB-2FTHEguSYv9GPIeVDzmQQjNjv7FKS2sW1ruC3liJChrZNohBGfcO4QUmVVKAM-2B7oqG3wUqwO2xWdx-2FOb9KsUwQNq9cxD3b3GR6Ve-2FUjI5qN9XZ3MXP527y9NS09OrE0ReO-2BS1qIjZ20Pqq_L3TaM7BR0UAWeIeLVg7ivlWn6BAfzrcYaPrEEr1UBXGvliQ6FcEdBPAv33q4ZKmhTPPXXe1TiHDXSk-2BoW8M-2FMFVG94LyAQ-2FJrx08XOI1F5Br46uAPcFwbfZY9fDkjDVuMjc6I8I59QZe2CFpl5J8ifcaOS6T8hTRXY1NWzpsESDpl4VIZrNCHfHOcYYjqy08q4B38Vv6MOWy1SrWtlIoDCg7ZB1kESZsW6GcW2SewZOuayfP7I7JZeTt13Rba6PPLC39QG2JnkQHF4WYivlGhw-3D-3D" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-2">안드레 카파시가 지적한 &#039;북키핑&#039; 비용은 기업의 지식 자산화에서도 가장 큰 병목이다. LLM을 활용한 비정형 데이터의 자동 구조화는 스포츠 경기 분석 로그나 기술 개발 문서의 관리 효율을 극대화할 수 있다. 9분 분량의 분석에서 제시하듯, 인간은 고차원적 의사결정에 집중하고 데이터의 분류와 연결은 LLM 에이전트가 담당하는 협업 모델이 표준이 될 것이다.</div><div class="insight-panel " id="cross-IT-2">바네바 부시(1945)가 &#039;As We May Think&#039;에서 제안한 &#039;메멕스(Memex)&#039;의 현대적 실현이다. 인간 기억의 확장 기제로서 기술을 바라본 부시의 비전은, LLM이라는 연상 기억 장치를 통해 비로소 유지 관리의 저주에서 벗어나 지적 생산성을 무한히 확장할 수 있는 토대를 마련하게 되었다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Section 702 #스파이법 #무영장 감시 #미국 의회">
+          <span class="item-number">#4</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">미국 스파이법 만료 앞두고 무영장 감시 방지책 두고 의원들 분열</h3>
+          <p class="item-summary">미국 해외정보감시법(FISA)의 &#039;섹션 702&#039; 만료를 앞두고, 수년간의 감시 스캔들과 남용 사례에 대응해 광범위한 개혁을 요구하는 목소리가 커지고 있습니다. 일부 의원들은 미국인에 대한 무영장 감시를 방지하기 위한 강력한 보호 조치를 주장하고 있으나, 4월에 해당 법안이 만료되더라도 정부의 감시 권한이 즉시 자동으로 소멸되지는 않아 입법가들 사이의 의견 대립이 이어지고 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-3">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-3">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-3">FISA 섹션 702의 향방은 글로벌 IT 기업의 데이터 프라이버시 정책과 직결된다. 4월 만료를 앞둔 입법 대립은 클라우드 기반 AI 서비스의 데이터 수집 및 정부 제공 범위에 대한 법적 불확실성을 증대시킨다. 이는 특히 해외 시장 진출을 고려하는 하드웨어 및 플랫폼 기업에 데이터 주권 및 보안 규제 준수 비용 상승 요인으로 작용할 수 있다.</div><div class="insight-panel " id="cross-IT-3">제러미 벤담(1791)의 &#039;파놉티콘&#039; 구조가 디지털 공간에서 법적으로 공인되느냐의 기로에 서 있다. 감시의 효율성이 국가 안보라는 명분으로 개인의 자유를 압도하는 현대적 딜레마는, 기술이 권력의 도구가 될 때 발생하는 비대칭성을 해결하기 위한 민주적 통제 장치의 필요성을 역설한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Google #AI 모드 #재고 확인 #이커머스">
+          <span class="item-number">#5</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">구글 AI 모드, 인근 매장의 제품 재고 확인 기능 추가</h3>
+          <p class="item-summary">구글의 AI 모드가 업데이트되어 사용자가 근처 매장의 제품 재고를 실시간으로 찾을 수 있도록 돕습니다. 기존에는 도시 단위의 호텔 가격 추적 기능만 제공했으나, 이번 업데이트를 통해 사용자가 관심 있는 특정 호텔의 가격을 직접 추적할 수 있는 기능도 함께 추가되었습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-4">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-4">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-4">구글의 실시간 재고 확인 기능은 온-오프라인 데이터를 통합하는 검색 엔진의 진화를 보여준다. 이는 단순 정보 제공을 넘어 구매 전환 단계까지 AI가 개입함을 의미하며, 로컬 비즈니스 데이터의 실시간 동기화가 이커머스 경쟁력의 핵심이 될 것임을 시사한다. 하드웨어 유통망 관리에서도 이러한 실시간 가시성 확보가 중요해질 것이다.</div><div class="insight-panel " id="cross-IT-4">마틴 하이데거(1954)는 &#039;기술에 대한 질문&#039;에서 현대 기술이 세상을 &#039;부품(Bestand)&#039;으로 몰아세운다고 비판했다. 모든 사물이 실시간 재고 데이터로 치환되어 언제든 소비 가능한 상태로 대기하는 현상은, 사물의 고유한 존재성보다 효율적 관리와 소비의 대상으로서의 가치가 우선시되는 기술적 존재론의 단면이다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Physical Intelligence #로봇 공학 #π0.7 #범용 로봇 뇌">
+          <span class="item-number">#6</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">로봇 스타트업 Physical Intelligence, 학습하지 않은 작업 수행하는 로봇 뇌 공개</h3>
+          <p class="item-summary">주목받는 로봇 스타트업 Physical Intelligence가 가르치지 않은 작업도 스스로 파악해 수행할 수 있는 새로운 로봇 뇌 모델 &#039;π0.7&#039;을 발표했습니다. 회사 측은 이 모델이 범용 로봇 뇌(general-purpose robot brain)라는 장기적인 목표를 향한 초기 단계이지만 매우 의미 있는 진전이라고 설명했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-5">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-5">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-5">π0.7 모델은 피지컬AI가 단순 반복을 넘어 제로샷(Zero-shot) 과업 수행 단계로 진입했음을 보여준다. 이는 스포츠 자동 촬영 로봇이 예상치 못한 경기 상황이나 새로운 종목의 움직임을 스스로 학습 없이 추적할 수 있는 가능성을 열어준다. 엣지AI 환경에서 이러한 범용 모델의 경량화와 실시간 추론 성능 확보가 하드웨어 경쟁력의 핵심 변수가 될 것이다.</div><div class="insight-panel " id="cross-IT-5">한스 모라벡(1988)의 &#039;모라벡의 역설&#039;이 해결되는 과정이다. 인간에게 쉬운 물리적 상호작용이 컴퓨터에게는 가장 어렵다는 역설은, 대규모 물리 데이터 학습을 통해 극복되고 있다. 이는 지능의 본질이 추상적 사고뿐만 아니라 신체적 경험과 환경과의 상호작용에 뿌리를 두고 있다는 체화된 인지(Embodied Cognition) 이론을 기술적으로 증명한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Slash #핀테크 #투자 유치 #유니콘">
+          <span class="item-number">#7</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">핀테크 스타트업 Slash, 14억 달러 가치로 1억 달러 투자 유치</h3>
+          <p class="item-summary">기업용 지출 관리 솔루션 Ramp의 경쟁사인 Slash가 14억 달러의 기업 가치를 인정받으며 1억 달러 규모의 투자를 유치했습니다. 10대 때 창업하여 현재 24세가 된 공동 창업자들은 자사 서비스가 연간 반복 매출(ARR) 3억 달러를 달성하며 가파른 성장세를 보이고 있다고 밝혔습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-6">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-6">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-6">ARR 3억 달러 달성과 14억 달러 밸류에이션은 B2B 핀테크 시장의 강력한 현금 흐름 창출 능력을 입증한다. 특히 24세의 젊은 창업자들이 기존 강자인 Ramp와 경쟁하며 성장한 사례는, 스타트업이 특정 버티컬 시장의 지출 관리 효율화를 극대화할 때 거대 플랫폼과의 경쟁에서 승산이 있음을 보여준다. 효율적인 자금 집행 관리는 모든 제조 및 하드웨어 스타트업의 생존과 직결되는 요소다.</div><div class="insight-panel " id="cross-IT-6">요제프 슘페터(1911)가 정의한 &#039;기업가적 혁신&#039;의 전형이다. 기존 시장의 균형을 깨뜨리는 새로운 결합을 시도하는 젊은 에너지가 자본과 결합할 때 발생하는 경제적 역동성을 보여준다. 이는 나이나 경력보다 시장의 비효율을 포착하는 통찰력이 자본주의 시스템에서 가장 강력한 레버리지임을 시사한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Netflix #AI 추천 #수직형 피드 #틱톡">
+          <span class="item-number">#8</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">넷플릭스, AI 기반 추천 및 틱톡 스타일 수직형 비디오 피드 도입 계획</h3>
+          <p class="item-summary">넷플릭스가 이번 달 앱 내에 틱톡과 유사한 수직형 비디오 피드를 출시할 예정입니다. 또한 콘텐츠 제작과 개인화된 추천 시스템 전반에 인공지능(AI)을 광범위하게 활용하여 사용자 경험을 개선하고 콘텐츠 소비를 촉진할 계획입니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-7">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-7">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-7">넷플릭스의 수직형 피드 도입은 숏폼 콘텐츠가 미디어 소비의 표준 UI가 되었음을 의미한다. AI 기반 추천 시스템과 결합된 수직형 피드는 스포츠 하이라이트와 같은 짧고 강렬한 영상 소비를 극대화하는 최적의 도구다. 이는 자동 촬영 및 하이라이트 생성 기술이 최종 사용자에게 도달하는 접점으로서 수직형 포맷 최적화가 필수적임을 시사한다.</div><div class="insight-panel " id="cross-IT-7">마셜 맥루한(1964)의 &#039;매체는 메시지다&#039;라는 명제가 재확인된다. 수평형 스크린에서 수직형 피드로의 전환은 단순히 화면의 방향을 바꾸는 것이 아니라, 콘텐츠를 소비하는 인간의 인지 방식과 몰입의 깊이를 근본적으로 재구성한다. 형식의 변화가 곧 콘텐츠의 본질과 가치를 결정짓는 시대다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#OpenAI #Codex #에이전트 #코딩 도구">
+          <span class="item-number">#9</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">OpenAI, 데스크톱 제어 기능 강화된 에이전트형 코딩 도구 Codex 공개</h3>
+          <p class="item-summary">OpenAI가 경쟁사인 Anthropic을 겨냥해 대폭 강화된 Codex를 선보였습니다. 이번 업데이트를 통해 Codex는 사용자의 데스크톱에 대한 더 강력한 제어 권한을 갖게 되었으며, 다양한 새로운 기능과 능력을 갖춘 에이전트형 코딩 도구로 거듭나 개발자 생산성을 높이는 데 주력하고 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-8">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-8">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-8">Codex의 데스크톱 제어 권한 강화는 AI가 단순 코드 생성을 넘어 개발 환경 전체를 관리하는 &#039;에이전트&#039;로 진화했음을 뜻한다. 이는 복잡한 하드웨어 시뮬레이션이나 NPU 최적화 워크플로우를 AI가 직접 수행할 수 있는 환경을 제공하여, 개발 주기를 획기적으로 단축할 수 있는 기반이 된다. Anthropic과의 경쟁은 에이전트의 실행 자율성 확보 싸움으로 번질 것이다.</div><div class="insight-panel " id="cross-IT-8">더글러스 엥겔바트(1962)의 &#039;지능 증강(Augmenting Human Intellect)&#039; 비전이 구체화된 형태다. 도구가 인간의 작업을 보조하는 수준을 넘어, 인간의 의도를 실행으로 옮기는 자율적 주체로 변모하고 있다. 이는 인간과 기계의 협업 모델이 &#039;명령과 수행&#039;에서 &#039;목표 공유와 자율 실행&#039;으로 진화하고 있음을 보여준다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#SaySo #숏폼 비디오 #뉴스 앱 #가짜 뉴스">
+          <span class="item-number">#10</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">가짜 뉴스 대응하는 새로운 숏폼 뉴스 비디오 앱 SaySo 출시</h3>
+          <p class="item-summary">잘못된 정보와 AI가 생성한 저품질 콘텐츠(AI slop)에 지친 사용자들을 위해 새로운 숏폼 비디오 앱 SaySo가 출시되었습니다. 이 앱은 검증된 크리에이터와 저널리스트가 전달하는 신뢰할 수 있는 뉴스 콘텐츠를 제공하여 뉴스에 대한 사용자의 신뢰를 회복하는 것을 목표로 합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-9">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-9">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-9">AI가 생성한 저품질 콘텐츠(AI Slop)의 범람은 역설적으로 &#039;검증된 인간 크리에이터&#039;의 가치를 높인다. SaySo의 등장은 신뢰 기반 미디어 플랫폼에 대한 시장의 갈증을 반영하며, 스포츠 중계 및 분석 분야에서도 AI 자동 생성 콘텐츠와 전문가의 심층 분석이 결합된 하이브리드 형태의 신뢰 모델이 중요해질 것임을 시사한다.</div><div class="insight-panel " id="cross-IT-9">위르겐 하버마스(1962)의 &#039;공론장의 구조변화&#039;에서 우려한 공론장의 재봉건화 현상에 대한 기술적 저항이다. 정보의 양이 질을 압도하여 소통의 합리성이 마비되는 상황에서, 신뢰할 수 있는 중재자의 등장은 파편화된 디지털 공론장을 복원하려는 시도로 해석될 수 있다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Anthropic #Claude Design #시각화 도구 #제품 관리">
+          <span class="item-number">#11</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">Anthropic, 비전문가용 시각화 도구 Claude Design 출시</h3>
+          <p class="item-summary">Anthropic이 디자인 배경이 없는 창업자나 제품 관리자들이 아이디어를 시각적으로 쉽게 공유할 수 있도록 돕는 신규 제품 &#039;Claude Design&#039;을 출시했습니다. 이 도구는 복잡한 디자인 기술 없이도 신속하게 비주얼 결과물을 생성할 수 있도록 설계되어, 전문 디자이너가 아니더라도 자신의 구상을 구체화할 수 있도록 지원합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-10">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-10">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-10">디자인 숙련도가 낮은 기획자나 마케터가 고수준의 프로토타입을 즉시 생성함으로써 제품 개발 초기 단계의 커뮤니케이션 비용을 절감한다. 피그마(Figma) 등 기존 전문 툴의 학습 곡선을 우회하여 아이디어의 시각화 속도를 높이는 효과가 있다. 이는 하드웨어와 소프트웨어가 결합된 복잡한 제품의 UI/UX 기획 단계에서 의사결정 효율을 높이는 도구가 된다.</div><div class="insight-panel " id="cross-IT-10">이반 일리치(1973)의 &#039;공생을 위한 도구&#039; 개념과 일맥상통한다. 특정 전문가 집단이 독점하던 기술이 보편적 도구로 전환될 때 개인의 자율성이 확대된다. 디자인 기술의 민주화는 창의적 구상이 기술적 장벽에 가로막히지 않고 즉각적으로 발현될 수 있는 환경을 조성한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Windows Defender #보안 취약점 #해킹 #사이버 보안">
+          <span class="item-number">#12</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">해커들, 패치되지 않은 Windows 보안 취약점 악용해 조직 공격</h3>
+          <p class="item-summary">보안 연구원이 Windows Defender의 보안 취약점 3종과 이를 악용하는 코드를 공개한 이후, 해커들이 실제 공격에 이를 활용하고 있습니다. 사이버 보안 기업에 따르면 패치되지 않은 취약점을 통해 조직 내부망에 침투하는 사례가 실시간으로 발생하고 있어 각별한 주의가 필요합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-11">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-11">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-11">Windows Defender라는 표준 보안 솔루션의 취약점이 공개됨에 따라 기업 내부망 전체가 위협에 노출되었다. 특히 패치 적용 전의 제로데이 공격은 엣지 컴퓨팅이나 사내 서버를 운영하는 조직에 치명적일 수 있다. 보안 연구원의 정보 공개가 공격자에게 무기를 제공하는 역설적 상황이 발생했으므로 즉각적인 엔드포인트 보안 업데이트가 요구된다.</div><div class="insight-panel " id="cross-IT-11">울리히 벡(1986)의 &#039;위험 사회&#039; 이론에서 언급된 것처럼, 현대 기술 시스템의 고도화는 예상치 못한 부수적 위험을 동반한다. 시스템을 보호하기 위해 설계된 도구가 오히려 공격의 통로가 되는 현상은 기술적 의존도가 높아질수록 사회적 취약성도 함께 증가한다는 사실을 시사한다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Cursor #스타트업 투자 #AI 코딩 #a16z">
+          <span class="item-number">#13</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">AI 코딩 스타트업 Cursor, 500억 달러 가치로 20억 달러 투자 유치 논의</h3>
+          <p class="item-summary">AI 코딩 에디터 스타트업 Cursor가 기업용 시장의 급성장에 힘입어 500억 달러 이상의 기업 가치로 20억 달러 이상의 투자 유치를 논의 중입니다. 이번 라운드는 기존 투자자인 a16z와 Thrive Capital이 주도할 것으로 예상되며, 이는 AI 개발 도구에 대한 시장의 높은 기대를 반영합니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-12">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-12">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-12">500억 달러라는 기업 가치는 AI 코딩 도구가 단순 보조 도구를 넘어 소프트웨어 개발 프로세스 전체를 장악할 가능성을 반영한다. a16z 등 대형 VC의 참여는 개발자 생산성 도구 시장의 승자 독식 구조를 예견한다. 이는 AI 모델 최적화 및 임베디드 소프트웨어 개발 효율을 극대화하려는 기업들에게 필수적인 인프라로 자리 잡을 것으로 보인다.</div><div class="insight-panel " id="cross-IT-12">하이데거(1954)는 &#039;기술에 대한 질문&#039;에서 기술을 &#039;탈은폐&#039;의 방식으로 정의했다. 코딩 에디터가 AI와 결합하여 인간의 의도를 즉각적인 논리 체계로 변환하는 것은, 언어라는 매개체를 통해 사유를 실체화하는 인간의 본질적 행위가 기술적 수단에 의해 극도로 효율화되는 과정과 맞닿아 있다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#OpenAI #인력 이탈 #기업용 AI #Sora">
+          <span class="item-number">#14</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">OpenAI, 사업 방향 전환하며 케빈 웨일 등 핵심 인력 이탈</h3>
+          <p class="item-summary">OpenAI의 케빈 웨일(Kevin Weil)과 빌 피블스(Bill Peebles)가 회사를 떠납니다. 이는 OpenAI가 동영상 생성 AI인 Sora 프로젝트를 중단하고 과학 팀을 해체하는 등, 소비자용 실험적 프로젝트에서 기업용 AI로 사업 중심을 급격히 전환하는 과정에서 발생한 인력 이탈로 분석됩니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-13">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-13">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-13">OpenAI가 Sora 프로젝트 중단과 과학 팀 해체를 결정한 것은 R&amp;D 중심에서 수익성 중심의 B2B 기업으로 체질을 개선하겠다는 강력한 신호다. 핵심 인력의 이탈은 조직 내 비전 충돌을 의미하지만, 동시에 기업용 AI 시장에서의 현금 흐름 확보에 집중하겠다는 전략적 선택이다. 이는 생성형 AI 산업이 실험 단계를 지나 본격적인 상업화 경쟁에 진입했음을 보여준다.</div><div class="insight-panel " id="cross-IT-13">마키아벨리(1513)는 &#039;군주론&#039;에서 목적 달성을 위한 냉혹한 전략적 전환의 필요성을 역설했다. OpenAI의 행보는 이상적인 연구 목표(AGI)와 현실적인 생존(수익성) 사이에서 후자를 선택한 결과다. 이는 조직의 생존을 위해 초기 정체성을 과감히 버리는 기업 진화의 전형적인 패턴이다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#토큰맥싱 #개발자 생산성 #AI 코드 생성 #소프트웨어 개발">
+          <span class="item-number">#15</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">AI 코드 대량 생성 &#039;토큰맥싱&#039;, 개발자 생산성 저하 우려</h3>
+          <p class="item-summary">AI를 활용해 대량의 코드를 생성하는 &#039;토큰맥싱(Tokenmaxxing)&#039;이 개발자 생산성을 오히려 저하시키고 있다는 분석이 나왔습니다. 코드의 양은 늘어났지만, 비용이 상승하고 생성된 코드를 다시 수정하는 재작성 작업에 더 많은 리소스가 투입되면서 실질적인 효율성은 기대에 미치지 못하고 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-14">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-14">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-14">AI를 통한 코드 생성 비용이 낮아지면서 발생하는 &#039;제번스의 역설(1865)&#039; 현상이다. 코드 생성량은 늘었으나 이를 검증하고 수정하는 디버깅 비용이 생성 비용을 상회하며 전체 TCO(총소유비용)가 상승하고 있다. 특히 복잡한 알고리즘이나 하드웨어 제어 코드를 다루는 분야에서는 단순 생성보다 정교한 코드 리뷰 역량이 더 중요해질 전망이다.</div><div class="insight-panel " id="cross-IT-14">조셉 테인터(1988)는 &#039;복잡한 사회의 붕괴&#039;에서 문제 해결을 위해 복잡성을 높이는 행위가 결국 한계 효용의 급격한 저하를 가져온다고 경고했다. AI가 쏟아내는 방대한 코드는 소프트웨어 시스템의 복잡도를 임계점까지 밀어붙여, 인간이 통제 가능한 범위를 벗어나게 할 위험이 있다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Uber #반품 수거 서비스 #슈퍼 앱 #물류">
+          <span class="item-number">#16</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">Uber, 집 앞 반품 수거 서비스 출시하며 슈퍼 앱 전략 강화</h3>
+          <p class="item-summary">Uber가 사용자의 집 앞까지 찾아가 반품 물품을 수거하는 서비스를 새롭게 출시했습니다. 이는 모든 서비스를 하나로 통합하는 &#039;슈퍼 앱&#039;으로 거듭나기 위한 전략의 일환입니다. 서비스 이용 시 별도의 배송 기사 비용이 발생하며, 일부 품목 및 지역에 따라 서비스 이용에 제한이 있을 수 있습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-15">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-15">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-15">Uber는 기존 모빌리티 네트워크를 활용해 라스트 마일 물류의 틈새 시장인 &#039;역물류(Reverse Logistics)&#039;를 공략하고 있다. 이는 단순 이동 수단을 넘어 생활 밀착형 플랫폼으로 진화하여 사용자 고착도(Lock-in)를 높이려는 전략이다. 추가적인 배송료 수익 모델을 통해 플랫폼의 단위당 수익성을 개선하려는 시도로 분석된다.</div><div class="insight-panel " id="cross-IT-15">페르낭 브로델(1979)의 &#039;물질문명과 자본주의&#039; 관점에서 볼 때, 유통망의 효율화는 시장의 경계를 확장하는 핵심 동력이다. Uber가 반품이라는 번거로운 일상적 행위를 상업적 서비스로 치환하는 과정은, 인간의 시간과 편의가 자본주의 시스템 내에서 어떻게 정교하게 상품화되는지를 보여준다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Chef Robotics #푸드테크 #로봇 자동화 #AI">
+          <span class="item-number">#17</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News</span>
+            <span class="item-time">04/18 07:00</span>
+          </div>
+          <h3 class="item-title">Chef Robotics, AI 로봇 팔 기반 식품 생산 자동화로 성장세 지속</h3>
+          <p class="item-summary">AI 기반 로봇 팔을 활용해 식품 생산 자동화를 구현하는 Chef Robotics가 로봇 요리 분야의 침체기를 극복하고 성장을 이어가고 있습니다. 회사는 현재의 성공을 바탕으로 더 넓은 고객층에게 서비스를 제공하기 위해 사업 범위를 확장할 계획이라고 밝혔습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-16">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-16">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9d76d79803b59" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-16">비정형 객체를 다루는 식품 생산 공정에 AI 가이드 로봇 팔을 도입하여 하드웨어의 물리적 한계를 소프트웨어로 극복했다. 이는 피지컬AI가 특정 수직 시장(Vertical Market)에서 실질적인 ROI를 증명하며 생존할 수 있음을 보여주는 사례다. 노동 집약적 산업의 자동화 수요를 정확히 타격하여 하드웨어 스타트업의 데스밸리를 통과한 점이 고무적이다.</div><div class="insight-panel " id="cross-IT-16">라 메트리(1747)의 &#039;인간 기계론&#039;은 인간의 육체적 기능을 기계적 메커니즘으로 해석했다. 반복적인 조리 노동이 정교한 알고리즘과 액추에이터로 대체되는 과정은 인간의 신체적 기능을 기계로 재구성하려는 근대적 기계론의 현대적 완성형이라 할 수 있다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News, TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Bluesky #DDoS 공격 #디도스 공격 #서비스 장애 #소셜 미디어">
+          <span class="item-number">#18</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News, TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">Bluesky, 지속적인 앱 장애 원인으로 DDoS 공격 확인</h3>
+          <p class="item-summary">소셜 미디어 플랫폼 Bluesky가 2026년 4월 15일 오전 3시(동부 표준시) 직전부터 발생한 지속적인 서비스 중단의 원인이 분산 서비스 거부(DDoS) 공격임을 공식 확인했습니다. 사용자들은 며칠간 이어진 서비스 장애로 인해 앱 접속 및 이용에 불편을 겪고 있으며, 사측은 이번 장애가 외부의 의도적인 공격에 의한 것임을 분명히 했습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-17">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-17">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-17">탈중앙화 소셜 미디어를 지향하는 Bluesky가 전통적인 DDoS 공격에 취약함을 드러냈다. 이는 사용자 급증에 따른 인프라 확장성과 보안 대응력이 비례하지 못했음을 의미한다. 중앙 집중식 서버 구조의 한계를 극복하려는 시도 속에서도 네트워크 가용성을 유지하기 위한 고도의 트래픽 관리 기술과 방어 체계 구축이 필수적임을 시사한다.</div><div class="insight-panel " id="cross-IT-17">토마스 홉스(1651)의 &#039;리바이어던&#039;에서 묘사된 &#039;만인의 만인에 대한 투쟁&#039; 상태가 디지털 공간에서 재현되고 있다. 공공의 광장 역할을 하는 플랫폼이 외부의 악의적 공격에 무너지는 현상은, 디지털 공유지(Commons)를 유지하기 위해 강력한 보안 규범과 보호 체계라는 현대적 계약이 필요함을 보여준다.</div>
+      </div>
+        </article>
+
+        <article class="item"
+          data-label="IT"
+          data-source="TechCrunch Daily News, TechCrunch Daily News"
+          data-has-insight="true"
+          data-has-link="false"
+          data-long="false"
+          data-keywords="#Loop #Valor #공급망 AI #시리즈 C">
+          <span class="item-number">#19</span>
+          <div class="item-meta-top">
+            <span class="item-source">TechCrunch Daily News, TechCrunch Daily News</span>
+            <span class="item-time">04/18 00:00</span>
+          </div>
+          <h3 class="item-title">공급망 예측 AI 스타트업 Loop, 9,500만 달러 시리즈 C 투자 유치</h3>
+          <p class="item-summary">샌프란시스코 기반 스타트업 Loop가 9,500만 달러 규모의 시리즈 C 투자 라운드를 유치했습니다. 이번 라운드는 xAI의 주요 투자자인 안토니오 그라시아스(Antonio Gracias)의 벤처 캐피털 Valor가 주도했습니다. Loop는 이 투자금을 활용해 공급망 중단을 사전에 예측하고 대응하는 AI 기술을 고도화할 예정이며, 이번 투자는 공급망 관리 AI 분야의 성장 가능성을 입증한 것으로 평가받습니다.</p>
+          
+      <div class="insights-container">
+        <div class="item-footer-row">
+          <div class="insights-tabs"><button class="insight-tab active" data-panel="domain-IT-18">💡 실용적 인사이트</button><button class="insight-tab " data-panel="cross-IT-18">🌐 확장 인사이트</button></div>
+          <div class="item-btns"><a href="https://mail.google.com/mail/u/0/#all/19d9bf5a9049e586" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a></div>
+        </div>
+        <div class="insight-panel active" id="domain-IT-18">공급망의 불확실성을 AI로 관리하려는 수요가 자본 시장에서 높게 평가받고 있다. 특히 xAI 투자자가 주도했다는 점은 데이터 기반의 예측 모델이 물류 및 제조 산업의 리스크 관리 비용을 획기적으로 낮출 수 있다는 확신을 반영한다. 이는 글로벌 공급망 재편 과정에서 실시간 데이터 분석 역량이 기업의 핵심 경쟁 우위가 될 것임을 예고한다.</div><div class="insight-panel " id="cross-IT-18">나심 탈레브(2007)의 &#039;블랙 스완&#039; 이론은 예측 불가능한 사건의 충격을 경고한다. Loop의 시도는 데이터 분석을 통해 블랙 스완의 영역을 예측 가능한 영역으로 편입시키려는 인간의 의지를 대변한다. 비결정론적 세계에서 확률적 모델을 통해 확실성을 확보하려는 라플라스의 악마적 발상과 맥을 같이 한다.</div>
+      </div>
+        </article>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-제외됨">
+        <div class="label-stats-bar">
+          <span class="label-stat-main">🚫 28건 제외</span>
+          <span class="label-stat">2개 사유</span>
+        </div>
+        <div class="items-list">
+          
+    <div class="excluded-group">
+      <div class="excluded-group-header">
+        <span class="excluded-reason">비뉴스 메일</span>
+        <span class="excluded-count">2건</span>
+      </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">(광고)👛 광주 먹방 여행, 4월을 추천하는 이유</span>
+          <span class="excluded-from">moneyletter@uppity.co.kr</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">(광고) [디캠프]평균 성장률 200%·검증된 7개 딥테크사: 실질적 딜 소싱 위한 디데이 d.day</span>
+          <span class="excluded-from">no-reply@startuprecipe.co.kr</span>
+          <span class="excluded-label-tag" style="color: #f59e0b">창업</span>
+        </div>
+      
+    </div>
+  
+    <div class="excluded-group">
+      <div class="excluded-group-header">
+        <span class="excluded-reason">LLM 처리 실패</span>
+        <span class="excluded-count">26건</span>
+      </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">[KDI EIEC] 「국가바이오혁신위원회」 출범, 바이오 정책 총괄 민관협력 플랫폼 본격 가동 (국무조정실)</span>
+          <span class="excluded-from">epic@kdi.re.kr</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">[최신 금융정보] 중동 리스크 속 생산적 금융 전환, 최대 98.7조 공급 확대 (제26-15호)</span>
+          <span class="excluded-from">sender@kif.re.kr</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">☕ Out of fuel</span>
+          <span class="excluded-from">crew@morningbrew.com</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🤪 AI-dot-com</span>
+          <span class="excluded-from">markets@axios.com</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">📉 Receding war risk</span>
+          <span class="excluded-from">macro@axios.com</span>
+          <span class="excluded-label-tag" style="color: #10b981">경제</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">[PhotoSeMA] 2026 서울사진축제 《컴백홈》 개막 안내</span>
+          <span class="excluded-from">sema@seoul.go.kr</span>
+          <span class="excluded-label-tag" style="color: #06b6d4">라이프</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🖊️ Axios Finish Line: Why we write</span>
+          <span class="excluded-from">mike@axios.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">미국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🕊️ Axios AM — Scoop: Anthropic&#039;s peace talks</span>
+          <span class="excluded-from">mike@axios.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">미국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🇮🇷 Axios PM: Trump expects deal</span>
+          <span class="excluded-from">mike@axios.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">미국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🐘 전쟁 끝나면, 물가 안정될까요? 에 대한 대답</span>
+          <span class="excluded-from">hello@mrdongnews.com</span>
+          <span class="excluded-label-tag" style="color: #ef4444">시사</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">💓말 있죠? 자라가 요즘 일 너무 잘 한다는 말. 관심 안 갖고 배겨?</span>
+          <span class="excluded-from">whatsup@newneek.co</span>
+          <span class="excluded-label-tag" style="color: #ef4444">시사</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">[광화문7:30] 한국 유조선 홍해 통과...호르무즈 봉쇄 후 처음</span>
+          <span class="excluded-from">newsletter@donga.com</span>
+          <span class="excluded-label-tag" style="color: #ef4444">시사</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Bullish narrative around India’s economy at odds with struggling rupee</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Manycore Tech surges 172 per cent on debut; Hang Seng Index slides on food security fears</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Exclusive: Hong Kong-flagged tanker passes through Strait of Hormuz in test of US blockade</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Breaking news: China’s e-commerce platforms hit with 3.6 billion yuan fine for food safety violations</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Cremation was frowned upon in ancient China, so why was it so widespread?</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">China slams Japan for sending warship through Taiwan Strait</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">US officials claim China is ‘hoarding’ oil. What does the data say?</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Breaking news: Iran, US say Strait of Hormuz is fully open to commercial vessels</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Daily Briefing: China’s e-commerce platforms hit with 3.6b yuan fine for food safety violations</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Chinese platforms fined 3.6b yuan over ‘ghost’ takeaways amid cutthroat rivalry</span>
+          <span class="excluded-from">news@e.scmp.com</span>
+          <span class="excluded-label-tag" style="color: #64748b">중국</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">Sequoia Pulls in $7B to Invest in Late-Stage AI Deals</span>
+          <span class="excluded-from">connie@strictlyvc.com</span>
+          <span class="excluded-label-tag" style="color: #f59e0b">창업</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">🧐 매출 15배 늘면서, 영업손실 2배 커진 뤼튼.. 그 이유를 살펴봤습니다</span>
+          <span class="excluded-from">newsletter@outstanding.kr</span>
+          <span class="excluded-label-tag" style="color: #f59e0b">창업</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">[DailyRecipe] 이렇게 달라진다…AI 에이전트 도입 선언한 중기부 - 2026.04.18.</span>
+          <span class="excluded-from">no-reply@startuprecipe.co.kr</span>
+          <span class="excluded-label-tag" style="color: #f59e0b">창업</span>
+        </div>
+      
+        <div class="excluded-item">
+          <span class="excluded-subject">&quot;HELP ME PLEASE&quot;</span>
+          <span class="excluded-from">noreply@redditmail.com</span>
+          <span class="excluded-label-tag" style="color: #f97316">해외</span>
+        </div>
+      
+    </div>
+  
+        </div>
+      </div>
+  </main>
+
+  <!-- 검색 모달 (검색만) -->
+  <div class="modal-backdrop" id="search-modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-labelledby="search-modal-title">
+      <div class="modal-header">
+        <h3 class="modal-title" id="search-modal-title">검색</h3>
+        <button class="modal-close" data-close="search-modal" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="제목 · 요약 · 키워드 · 출처" aria-label="검색">
+          <span class="search-count" id="search-count"></span>
+        </div>
+        <p class="modal-hint">ESC로 닫기 · Cmd/Ctrl+K로 다시 열기</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 필터 모달 -->
+  <div class="modal-backdrop" id="filter-modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-labelledby="filter-modal-title">
+      <div class="modal-header">
+        <h3 class="modal-title" id="filter-modal-title">필터</h3>
+        <button class="modal-close" data-close="filter-modal" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section modal-section-first">
+          <div class="modal-section-label">콘텐츠 종류</div>
+          <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all">전체</button>
+            <button class="filter-chip" data-filter="has-insight">💡 인사이트 있음</button>
+            <button class="filter-chip" data-filter="has-link">🔗 원문 링크 있음</button>
+            <button class="filter-chip" data-filter="long">📖 긴 요약 (400자+)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 통계 모달 -->
+  <div class="modal-backdrop" id="stats-modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-labelledby="stats-modal-title">
+      <div class="modal-header">
+        <h3 class="modal-title" id="stats-modal-title">실행 통계</h3>
+        <button class="modal-close" data-close="stats-modal" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        
+      <div class="stats-bento">
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">📄</div>
+          <div class="stats-bento-value">49</div>
+          <div class="stats-bento-label">아이템</div>
+        </div>
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">💡</div>
+          <div class="stats-bento-value">38<span class="stats-bento-suffix">/49</span></div>
+          <div class="stats-bento-label">인사이트</div>
+        </div>
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">⏱</div>
+          <div class="stats-bento-value">51m 22s</div>
+          <div class="stats-bento-label">소요시간</div>
+        </div>
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">🔤</div>
+          <div class="stats-bento-value">146K</div>
+          <div class="stats-bento-label">토큰</div>
+        </div>
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">📡</div>
+          <div class="stats-bento-value">21</div>
+          <div class="stats-bento-label">API 호출</div>
+        </div>
+        <div class="stats-bento-card">
+          <div class="stats-bento-icon">💰</div>
+          <div class="stats-bento-value">$0</div>
+          <div class="stats-bento-label">비용</div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="minimap" id="minimap" aria-hidden="true">
+    <div class="minimap-title">빠른 이동</div>
+    <div class="minimap-list" id="minimap-list"></div>
+  </aside>
+
+  <button class="scroll-top-btn" id="scroll-top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
+
+  <script>
+    
+    // ============================================
+    // 탭 전환
+    // ============================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const target = document.getElementById('tab-' + btn.dataset.tab);
+        if (target) target.classList.add('active');
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        applyAllFilters();
+        buildMinimap();
+        // 스크롤 위치 기억
+        sessionStorage.setItem('activeTab', btn.dataset.tab);
+      });
+    });
+
+    // ============================================
+    // 인사이트 탭 (카드 내부)
+    // ============================================
+    document.querySelectorAll('.insight-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetId = tab.dataset.panel;
+        const container = tab.closest('.insights-container');
+        if (!container) return;
+        container.querySelectorAll('.insight-tab').forEach(t => t.classList.remove('active'));
+        container.querySelectorAll('.insight-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const panel = document.getElementById(targetId);
+        if (panel) panel.classList.add('active');
+      });
+    });
+
+    // ============================================
+    // 필터 상태
+    // ============================================
+    const filterState = {
+      search: '',
+      chips: new Set(['all']),
+      grouping: 'label'
+    };
+
+    function applyAllFilters() {
+      const activeTab = document.querySelector('.tab-content.active');
+      if (!activeTab) return;
+
+      const items = activeTab.querySelectorAll('.item');
+      let visible = 0, total = 0;
+
+      items.forEach(item => {
+        total++;
+        let show = true;
+
+        // 검색어 (본문 + 키워드)
+        if (filterState.search) {
+          const text = (item.textContent || '').toLowerCase();
+          const keywords = (item.dataset.keywords || '').toLowerCase();
+          if (!text.includes(filterState.search) && !keywords.includes(filterState.search)) show = false;
+        }
+
+        // 필터 칩
+        if (show && !filterState.chips.has('all')) {
+          if (filterState.chips.has('has-insight') && item.dataset.hasInsight !== 'true') show = false;
+          if (filterState.chips.has('has-link') && item.dataset.hasLink !== 'true') show = false;
+          if (filterState.chips.has('long') && item.dataset.long !== 'true') show = false;
+        }
+
+        item.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+
+      // 카운트 업데이트
+      const searchCount = document.getElementById('search-count');
+      if (searchCount) {
+        searchCount.textContent = (filterState.search || !filterState.chips.has('all')) ? (visible + '/' + total) : '';
+      }
+
+      // 하이라이팅
+      unhighlightMatches(activeTab);
+      if (filterState.search) {
+        highlightMatches(activeTab, filterState.search);
+      }
+
+      // 결과 없음
+      let noResults = activeTab.querySelector('.no-search-results');
+      if (visible === 0 && (filterState.search || !filterState.chips.has('all'))) {
+        if (!noResults) {
+          noResults = document.createElement('div');
+          noResults.className = 'no-search-results';
+          noResults.textContent = '검색 결과가 없습니다.';
+          const list = activeTab.querySelector('.items-list');
+          if (list) list.appendChild(noResults);
+        }
+        if (noResults) noResults.style.display = 'block';
+      } else if (noResults) {
+        noResults.style.display = 'none';
+      }
+
+      buildMinimap();
+    }
+
+    // ============================================
+    // 검색 하이라이팅
+    // ============================================
+    function highlightMatches(container, query) {
+      const items = container.querySelectorAll('.item');
+      const selectors = '.item-title, .item-summary, .item-source, .insight-panel';
+      const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+
+      items.forEach(item => {
+        if (item.style.display === 'none') return;
+        item.querySelectorAll(selectors).forEach(el => {
+          // 이전 하이라이트 제거
+          const original = el.dataset.original || el.innerHTML;
+          if (!el.dataset.original) el.dataset.original = original;
+          el.innerHTML = original.replace(re, '<mark>$1</mark>');
+        });
+      });
+    }
+
+    function unhighlightMatches(container) {
+      container.querySelectorAll('[data-original]').forEach(el => {
+        el.innerHTML = el.dataset.original;
+        delete el.dataset.original;
+      });
+    }
+
+    // ============================================
+    // 검색 입력
+    // ============================================
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      let timer = null;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          filterState.search = searchInput.value.toLowerCase().trim();
+          applyAllFilters();
+        }, 160);
+      });
+    }
+
+    // ============================================
+    // 필터 칩 + 필터 활성화 표시 (dot)
+    // ============================================
+    function updateFilterDot() {
+      const btn = document.getElementById('filter-btn');
+      if (!btn) return;
+      const hasActive = !filterState.chips.has('all');
+      btn.classList.toggle('has-active', hasActive);
+    }
+
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const f = chip.dataset.filter;
+        if (f === 'all') {
+          filterState.chips = new Set(['all']);
+          document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'all'));
+        } else {
+          filterState.chips.delete('all');
+          if (filterState.chips.has(f)) {
+            filterState.chips.delete(f);
+            chip.classList.remove('active');
+            if (filterState.chips.size === 0) {
+              filterState.chips.add('all');
+              const allChip = document.querySelector('.filter-chip[data-filter="all"]');
+              if (allChip) allChip.classList.add('active');
+            }
+          } else {
+            filterState.chips.add(f);
+            chip.classList.add('active');
+            const allChip = document.querySelector('.filter-chip[data-filter="all"]');
+            if (allChip) allChip.classList.remove('active');
+          }
+        }
+        updateFilterDot();
+        applyAllFilters();
+      });
+    });
+
+    // ============================================
+    // 그룹핑 토글 (이벤트 위임 — 탭마다 존재)
+    // ============================================
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.grouping-toggle-btn');
+      if (!btn) return;
+      const group = btn.dataset.group;
+      filterState.grouping = group;
+      // 모든 grouping-toggle의 active 상태 동기화
+      document.querySelectorAll('.grouping-toggle-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.group === group);
+      });
+      applyGrouping();
+    });
+
+    function applyGrouping() {
+      // 모든 라벨 탭에 적용
+      document.querySelectorAll('.tab-content').forEach(tabContent => {
+        const list = tabContent.querySelector('.items-list');
+        if (!list) return;
+
+        const items = Array.from(list.querySelectorAll('.item'));
+        if (items.length === 0) return;
+
+        if (filterState.grouping === 'source') {
+          items.sort((a, b) => {
+            const sa = (a.dataset.source || '').toLowerCase();
+            const sb = (b.dataset.source || '').toLowerCase();
+            return sa.localeCompare(sb);
+          });
+          list.querySelectorAll('.source-group-header').forEach(h => h.remove());
+
+          let currentSource = null;
+          const fragment = document.createDocumentFragment();
+          items.forEach(item => {
+            const src = item.dataset.source || '(출처 없음)';
+            if (src !== currentSource) {
+              const header = document.createElement('div');
+              header.className = 'source-group-header';
+              header.textContent = '📰 ' + src;
+              fragment.appendChild(header);
+              currentSource = src;
+            }
+            fragment.appendChild(item);
+          });
+          list.innerHTML = '';
+          list.appendChild(fragment);
+        } else {
+          list.querySelectorAll('.source-group-header').forEach(h => h.remove());
+          items.sort((a, b) => {
+            const ia = parseInt(a.dataset.originalIndex || '0', 10);
+            const ib = parseInt(b.dataset.originalIndex || '0', 10);
+            return ia - ib;
+          });
+          items.forEach(item => list.appendChild(item));
+        }
+      });
+
+      // 미니맵도 재구성
+      buildMinimap();
+    }
+
+    // 원본 인덱스 저장 (정렬 복원용)
+    document.querySelectorAll('.items-list').forEach(list => {
+      list.querySelectorAll('.item').forEach((item, i) => {
+        item.dataset.originalIndex = String(i);
+      });
+    });
+
+    // ============================================
+    // 미니맵
+    // ============================================
+    let minimapObserver = null;
+    let minimapVisibleItems = [];
+
+    function buildMinimap() {
+      const minimap = document.getElementById('minimap');
+      const list = document.getElementById('minimap-list');
+      if (!minimap || !list) return;
+
+      const activeTab = document.querySelector('.tab-content.active');
+      if (!activeTab) {
+        minimap.style.display = 'none';
+        return;
+      }
+
+      // display:none이 아닌 아이템만
+      const allItems = activeTab.querySelectorAll('.item');
+      const items = Array.from(allItems).filter(el => el.style.display !== 'none');
+
+      // 5개 미만이면 숨김
+      if (items.length < 5) {
+        minimap.style.display = 'none';
+        return;
+      }
+
+      // 1120px 이상에서만 표시
+      if (window.innerWidth < 1120) {
+        minimap.style.display = 'none';
+        return;
+      }
+
+      minimap.style.display = 'block';
+      list.innerHTML = '';
+      minimapVisibleItems = items;
+
+      items.forEach((item, idx) => {
+        const titleEl = item.querySelector('.item-title');
+        if (!titleEl) return;
+        const title = titleEl.textContent.substring(0, 28);
+        const a = document.createElement('a');
+        a.className = 'minimap-item';
+        a.textContent = (idx + 1) + '. ' + title;
+        a.href = '#';
+        a.dataset.minimapIdx = String(idx);
+        const labelColor = getComputedStyle(item).getPropertyValue('--label-color').trim() || 'var(--primary)';
+        if (labelColor) a.style.setProperty('--label-color', labelColor);
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const offset = 120; // sticky header 보정
+          const top = item.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top, behavior: 'smooth' });
+          document.querySelectorAll('.minimap-item').forEach(m => m.classList.remove('active'));
+          a.classList.add('active');
+        });
+        list.appendChild(a);
+      });
+
+      // 관찰자 재설정
+      if (minimapObserver) minimapObserver.disconnect();
+      minimapObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const item = entry.target;
+            const idx = minimapVisibleItems.indexOf(item);
+            if (idx >= 0) {
+              document.querySelectorAll('.minimap-item').forEach((m, i) => {
+                m.classList.toggle('active', i === idx);
+              });
+              // 활성 아이템을 미니맵 뷰포트 내로 스크롤
+              const activeEl = list.querySelector('.minimap-item.active');
+              if (activeEl) {
+                activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              }
+            }
+          }
+        });
+      }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
+
+      items.forEach(item => minimapObserver.observe(item));
+    }
+
+    // 윈도우 리사이즈 시 미니맵 재구성
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(buildMinimap, 200);
+    });
+
+    // ============================================
+    // Scroll to top
+    // ============================================
+    const scrollTopBtn = document.getElementById('scroll-top-btn');
+    if (scrollTopBtn) {
+      window.addEventListener('scroll', () => {
+        scrollTopBtn.classList.toggle('visible', window.scrollY > 400);
+      });
+      scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // ============================================
+    // 모달 (검색/통계)
+    // ============================================
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      // 검색 모달이면 input 자동 포커스
+      if (id === 'search-modal') {
+        setTimeout(() => {
+          const input = document.getElementById('search-input');
+          if (input) input.focus();
+        }, 100);
+      }
+      // body 스크롤 잠금
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+        m.classList.remove('open');
+        m.setAttribute('aria-hidden', 'true');
+      });
+      document.body.style.overflow = '';
+    }
+
+    // 트리거 버튼
+    const searchBtn = document.getElementById('search-btn');
+    const filterBtn = document.getElementById('filter-btn');
+    const statsBtn = document.getElementById('stats-btn');
+    if (searchBtn) searchBtn.addEventListener('click', () => openModal('search-modal'));
+    if (filterBtn) filterBtn.addEventListener('click', () => openModal('filter-modal'));
+    if (statsBtn) statsBtn.addEventListener('click', () => openModal('stats-modal'));
+
+    // 닫기 버튼
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    // 백드롭 클릭 → 닫기
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          backdrop.classList.remove('open');
+          backdrop.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+      });
+    });
+
+    // ESC → 모달 닫기 또는 검색 초기화
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const openModalEl = document.querySelector('.modal-backdrop.open');
+        if (openModalEl) {
+          e.preventDefault();
+          closeModal(openModalEl.id);
+        }
+      }
+      // Cmd/Ctrl + K → 검색 모달 열기
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openModal('search-modal');
+      }
+    });
+
+    // ============================================
+    // 초기화
+    // ============================================
+    // 저장된 탭 복원
+    const savedTab = sessionStorage.getItem('activeTab');
+    if (savedTab) {
+      const btn = document.querySelector('.tab-btn[data-tab="' + savedTab + '"]');
+      if (btn) btn.click();
+    }
+
+    // 초기 미니맵 구성 (짧은 지연으로 렌더 완료 대기)
+    setTimeout(buildMinimap, 100);
+  
+  </script>
+</body>
+</html>
