@@ -2087,7 +2087,25 @@
       },
       "detected_at": "2026-04-17T04:43:49.535Z",
       "skill_generated": true
+    },
+    {
+      "id": "seoul_kidnews",
+      "sender": "kidnews@seoul.go.kr",
+      "name": "\"서울시청\" <kidnews@seoul.go.kr>",
+      "labels": [
+        "라이프"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_seoul_kidnews.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-04-25T03:55:03.018Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-04-17T05:13:45.487Z"
+  "last_scan": "2026-04-25T03:57:43.067Z"
 }
