@@ -1290,8 +1290,8 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": 5
+        "type": "single-topic",
+        "item_count_avg": 1
       },
       "detected_at": "2026-02-13T00:49:47.019Z",
       "skill_generated": true
@@ -2125,5 +2125,5 @@
       "skill_generated": true
     }
   ],
-  "last_scan": "2026-05-12T04:51:05.725Z"
+  "last_scan": "2026-05-14T04:54:07.343Z"
 }
