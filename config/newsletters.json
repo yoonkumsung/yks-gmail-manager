@@ -2123,7 +2123,25 @@
       },
       "detected_at": "2026-05-12T04:48:25.768Z",
       "skill_generated": true
+    },
+    {
+      "id": "stibee_alicemedia2017_gmail_com",
+      "sender": "alicemedia2017-gmail.com@send.stibee.com",
+      "name": "\"앨리스모먼트\" <alicemedia2017-gmail.com@send.stibee.com>",
+      "labels": [
+        "마케팅"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_stibee_alicemedia2017_gmail_com.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 6
+      },
+      "detected_at": "2026-05-15T05:13:43.505Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-05-14T04:54:07.343Z"
+  "last_scan": "2026-05-15T05:15:16.518Z"
 }
