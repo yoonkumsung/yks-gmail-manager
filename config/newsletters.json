@@ -2141,7 +2141,25 @@
       },
       "detected_at": "2026-05-15T05:13:43.505Z",
       "skill_generated": true
+    },
+    {
+      "id": "community",
+      "sender": "crew@community.morningbrew.com",
+      "name": "Morning Brew <crew@community.morningbrew.com>",
+      "labels": [
+        "IT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_community.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-05-21T05:15:20.190Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-05-15T05:15:16.518Z"
+  "last_scan": "2026-05-21T05:17:56.565Z"
 }
