@@ -221,6 +221,14 @@
       "enabled": false,
       "agent": null,
       "focus_topics": []
+    },
+    {
+      "name": "지원사업",
+      "gmail_label": "지원사업",
+      "sub_labels": [],
+      "enabled": false,
+      "agent": null,
+      "focus_topics": []
     }
   ]
 }

@@ -70,8 +70,8 @@ class ProgressManager {
   setStepStatus(labelName, step, status) {
     this.initLabel(labelName);
     this.progress.labels[labelName][step] = status;
-    // completed 상태일 때만 즉시 저장 (중간 상태는 캐싱)
-    if (status === 'completed') {
+    // in_progress, completed 모두 즉시 저장 (크래시 시 진행 상태 보존)
+    if (status === 'in_progress' || status === 'completed') {
       this.save();
     } else {
       this._markDirty();
@@ -1907,4 +1907,15 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { processAllLabels };
+module.exports = {
+  processAllLabels,
+  // 테스트용 내부 함수 export
+  _test: {
+    ProgressManager,
+    FailedBatchManager,
+    calculateOptimalBatchSize,
+    findMergeCandidates,
+    clusterItemsByKeyword,
+    validateOutputQuality,
+  }
+};

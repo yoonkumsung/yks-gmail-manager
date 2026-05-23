@@ -10,7 +10,11 @@
     "report": "node scripts/generate_html.js",
     "digest": "node scripts/orchestrator.js",
     "setup": "node scripts/setup/server.js",
-    "test": "node scripts/orchestrator.js --mode custom --date 2026-01-30 --labels IT"
+    "test": "node tests/test_runner.js",
+    "test:live": "node tests/test_runner.js --live",
+    "test:unit": "node tests/test_runner.js agent_runner html_to_text orchestrator",
+    "test:e2e": "node tests/test_runner.js e2e",
+    "test:digest": "node scripts/orchestrator.js --mode custom --date 2026-01-30 --labels IT"
   },
   "engines": {
     "node": ">=18.0.0"

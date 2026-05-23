@@ -593,16 +593,16 @@ async function enrichLinkAggregator(rawHtml, cleanText) {
   }
 
   const https = require('https');
+  // per-request TLS 비활성화 (전역 환경변수 오염 방지)
+  const tlsAgent = new https.Agent({ rejectUnauthorized: false });
 
   async function fetchOgDescription(url, timeoutMs = 8000) {
-    // 공공기관 사이트 TLS 인증서 문제 대응: fetch 중 임시로 검증 비활성화
-    const prevTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
       const resp = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
         signal: AbortSignal.timeout(timeoutMs),
         redirect: 'follow',
+        agent: url.startsWith('https') ? tlsAgent : undefined,
       });
       const html = await resp.text();
       const descMatch = html.match(/og:description[^>]*content\s*=\s*"([^"]*)"/);
@@ -611,10 +611,6 @@ async function enrichLinkAggregator(rawHtml, cleanText) {
         .replace(/&#39;/g, "'").replace(/&quot;/g, '"') : '';
     } catch {
       return '';
-    } finally {
-      // TLS 설정 복원
-      if (prevTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTls;
     }
   }
 

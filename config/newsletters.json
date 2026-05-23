@@ -1124,7 +1124,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_kif.md",
+      "skill_file": "skills/newsletters/SKILL_kif.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1142,7 +1142,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_kdi.md",
+      "skill_file": "skills/newsletters/SKILL_kdi.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1160,7 +1160,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_pulse_mk.md",
+      "skill_file": "skills/newsletters/SKILL_pulse_mk.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1178,7 +1178,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_coffeepot.md",
+      "skill_file": "skills/newsletters/SKILL_coffeepot.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1196,7 +1196,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_soonsal.md",
+      "skill_file": "skills/newsletters/SKILL_soonsal.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1214,7 +1214,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_kotra.md",
+      "skill_file": "skills/newsletters/SKILL_kotra.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1232,7 +1232,7 @@
         "경제"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_dig_mk.md",
+      "skill_file": "skills/newsletters/SKILL_dig_mk.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1250,7 +1250,7 @@
         "시사"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_deepdive.md",
+      "skill_file": "skills/newsletters/SKILL_deepdive.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1268,7 +1268,7 @@
         "지원사업"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_egbiz.md",
+      "skill_file": "skills/newsletters/SKILL_egbiz.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1286,7 +1286,7 @@
         "투자"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_dailybyte.md",
+      "skill_file": "skills/newsletters/SKILL_dailybyte.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1304,7 +1304,7 @@
         "투자"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_klement.md",
+      "skill_file": "skills/newsletters/SKILL_klement.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1322,7 +1322,7 @@
         "투자"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_booding.md",
+      "skill_file": "skills/newsletters/SKILL_booding.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1340,7 +1340,7 @@
         "투자"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_bbs.md",
+      "skill_file": "skills/newsletters/SKILL_bbs.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1358,7 +1358,7 @@
         "마케팅"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_catchzip.md",
+      "skill_file": "skills/newsletters/SKILL_catchzip.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1376,7 +1376,7 @@
         "마케팅"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_careet.md",
+      "skill_file": "skills/newsletters/SKILL_careet.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1394,7 +1394,7 @@
         "마케팅"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_alicemoment.md",
+      "skill_file": "skills/newsletters/SKILL_alicemoment.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1412,7 +1412,7 @@
         "IT"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_catchpaper.md",
+      "skill_file": "skills/newsletters/SKILL_catchpaper.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1430,7 +1430,7 @@
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_joomaltory.md",
+      "skill_file": "skills/newsletters/SKILL_joomaltory.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1448,7 +1448,7 @@
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_seoul_inews.md",
+      "skill_file": "skills/newsletters/SKILL_seoul_inews.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1466,7 +1466,7 @@
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_nanet.md",
+      "skill_file": "skills/newsletters/SKILL_nanet.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1484,7 +1484,7 @@
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_sema.md",
+      "skill_file": "skills/newsletters/SKILL_sema.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1502,7 +1502,7 @@
         "라이프"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_inspire_donga.md",
+      "skill_file": "skills/newsletters/SKILL_inspire_donga.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1520,7 +1520,7 @@
         "인문학"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_banbi.md",
+      "skill_file": "skills/newsletters/SKILL_banbi.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1538,7 +1538,7 @@
         "인문학"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_uupress.md",
+      "skill_file": "skills/newsletters/SKILL_uupress.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1556,7 +1556,7 @@
         "소셜포럼"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_ceoclub.md",
+      "skill_file": "skills/newsletters/SKILL_ceoclub.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1574,7 +1574,7 @@
         "기타"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_weeklyearth.md",
+      "skill_file": "skills/newsletters/SKILL_weeklyearth.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1592,7 +1592,7 @@
         "기타"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_staircrusher.md",
+      "skill_file": "skills/newsletters/SKILL_staircrusher.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
@@ -1646,7 +1646,7 @@
         "중국"
       ],
       "frequency": 1,
-      "skill_file": "skills\\newsletters\\SKILL_wendy_wu.md",
+      "skill_file": "skills/newsletters/SKILL_wendy_wu.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {

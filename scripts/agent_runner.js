@@ -586,10 +586,12 @@ class AgentRunner {
    */
   titleSimilarity(a, b) {
     if (!a || !b) return 0;
-    const setA = new Set(a.split(''));
-    const setB = new Set(b.split(''));
-    const intersection = [...setA].filter(x => setB.has(x)).length;
-    const union = new Set([...setA, ...setB]).size;
+    // 단어 단위 Jaccard (문자 단위는 긴 제목에서 과도한 유사도 산출)
+    const wordsA = new Set(a.split(/[\s,·]+/).filter(w => w.length > 0));
+    const wordsB = new Set(b.split(/[\s,·]+/).filter(w => w.length > 0));
+    if (wordsA.size === 0 && wordsB.size === 0) return 0;
+    const intersection = [...wordsA].filter(x => wordsB.has(x)).length;
+    const union = new Set([...wordsA, ...wordsB]).size;
     return union === 0 ? 0 : intersection / union;
   }
 
@@ -647,9 +649,13 @@ ${agentContent}`;
     const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-      const user = profile.user;
+      const user = profile?.user;
+      if (!user?.occupation) {
+        this.log('user_profile.json: user 또는 occupation 누락', 'warn');
+        return '프로필 정보 없음';
+      }
       const occ = user.occupation;
-      const interests = user.interests;
+      const interests = user.interests || {};
 
       let context = `- **직업**: ${occ.title}\n- **상세**: ${occ.description}`;
 
@@ -1176,7 +1182,9 @@ ${agentContent}`;
     repaired = repaired.replace(
       /"([^"]+)":\s*"(-[^"]*)"((?:\s*,\s*"-[^"]*")+)/g,
       (match, key, firstItem, rest) => {
-        const items = [firstItem, ...rest.match(/"-[^"]*"/g).map(s => s.slice(1, -1))];
+        const restMatches = rest.match(/"-[^"]*"/g);
+        if (!restMatches) return match;
+        const items = [firstItem, ...restMatches.map(s => s.slice(1, -1))];
         return `"${key}": [${items.map(i => `"${i}"`).join(', ')}]`;
       }
     );
