@@ -30,14 +30,14 @@ class AgentRunner {
     this.model = model;
     this.logDir = options.logDir || 'logs';
 
-    // API 프로바이더 설정
-    this.provider = options.provider || 'ollama';
+    // API 프로바이더 (Ollama Cloud 전용)
+    this.provider = 'ollama';
 
     // 청크 분할 설정 - 섹션 기반 적응형 청킹
     // Ollama Cloud: Cloudflare 100초 타임아웃 + 출력 토큰 16K 제한
     // 5K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
     // 각 청크에서 추출되는 아이템 수가 적어져 JSON 잘림 방지
-    this.chunkSize = options.chunkSize || (this.provider === 'ollama' ? 5000 : 30000);
+    this.chunkSize = options.chunkSize || 5000;
     this.minChunkSize = 2000;  // 최소 청크 크기
 
     // 프롬프트 헤더(에이전트 지시사항 + 스킬) 최대 크기
@@ -891,7 +891,7 @@ ${agentContent}`;
   }
 
   /**
-   * LLM API 호출 (단일) - Ollama Cloud API / OpenRouter 지원
+   * LLM API 호출 (단일) - Ollama Cloud API
    * @param {string} prompt - 프롬프트
    * @param {object} overrides - 설정 오버라이드
    */
@@ -909,11 +909,7 @@ ${agentContent}`;
     try {
       let content;
 
-      if (this.provider === 'ollama') {
-        content = await this.callOllama(prompt, taskConfig, controller, fetch);
-      } else {
-        content = await this.callOpenRouter(prompt, taskConfig, overrides, controller, fetch);
-      }
+      content = await this.callOllama(prompt, taskConfig, controller, fetch);
 
       clearTimeout(timeoutId);
 
@@ -990,59 +986,6 @@ ${agentContent}`;
     return content;
   }
 
-  /**
-   * OpenRouter API 호출 (레거시 지원)
-   */
-  async callOpenRouter(prompt, taskConfig, overrides, controller, fetch) {
-    const requestBody = {
-      model: this.model,
-      messages: [
-        { role: 'system', content: taskConfig.systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      temperature: taskConfig.temperature,
-      max_tokens: 100000,
-      reasoning: { effort: overrides.reasoningEffort || taskConfig.reasoningEffort }
-    };
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/yks-gmail-manager',
-        'X-Title': 'Gmail Manager'
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    this.log(`API 응답 수신 (상태 ${response.status})`, 'debug');
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const error = new Error(`OpenRouter API Error (${response.status}): ${errorText}`);
-      error.status = response.status;
-      throw error;
-    }
-
-    const data = await response.json();
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error('API 응답에 choices가 없습니다');
-    }
-
-    const content = data.choices[0].message?.content || '';
-
-    if (data.usage) {
-      const reasoning = data.usage.completion_tokens_details?.reasoning_tokens || 0;
-      const total = data.usage.completion_tokens || 0;
-      const input = data.usage.prompt_tokens || 0;
-      this.log(`  토큰: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
-    }
-
-    return content;
-  }
 
   // ============================================
   // 에러 처리 메서드

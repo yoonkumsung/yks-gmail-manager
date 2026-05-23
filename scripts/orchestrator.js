@@ -696,21 +696,21 @@ let globalFlashRunner = null;
 let globalProRunner = null;
 
 function getRunners(logDir) {
-  const apiKey = process.env.OLLAMA_API_KEY || process.env.OPENROUTER_API_KEY;
-  const provider = process.env.OLLAMA_API_KEY ? 'ollama' : 'openrouter';
+  const apiKey = process.env.OLLAMA_API_KEY;
+  if (!apiKey) throw new Error('OLLAMA_API_KEY 환경변수가 설정되지 않았습니다');
 
   if (!globalFlashRunner) {
     globalFlashRunner = new AgentRunner(
       apiKey,
       CONFIG.models.flash,
-      { logDir, provider }
+      { logDir }
     );
   }
   if (!globalProRunner) {
     globalProRunner = new AgentRunner(
       apiKey,
       CONFIG.models.pro,
-      { logDir, provider, minRequestInterval: 3000 }  // pro는 좀 더 여유있게
+      { logDir, minRequestInterval: 3000 }  // pro는 좀 더 여유있게
     );
   }
   return { flashRunner: globalFlashRunner, proRunner: globalProRunner };
@@ -742,7 +742,7 @@ function checkSetup() {
       message: '.env 파일이 없습니다.',
       solution: '.env 파일 생성 후 OLLAMA_API_KEY=xxx 추가'
     });
-  } else if (!process.env.OLLAMA_API_KEY && !process.env.OPENROUTER_API_KEY) {
+  } else if (!process.env.OLLAMA_API_KEY) {
     errors.push({
       type: '환경 변수',
       message: 'OLLAMA_API_KEY가 설정되지 않았습니다.',

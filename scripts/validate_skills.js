@@ -199,16 +199,15 @@ async function liveValidation(targetLabel) {
   const { GmailFetcher } = require('./fetch_gmail');
   const { htmlToText, cleanNewsletterText } = require('./html_to_text');
 
-  const apiKey = process.env.OLLAMA_API_KEY || process.env.OPENROUTER_API_KEY;
-  const provider = process.env.OLLAMA_API_KEY ? 'ollama' : 'openrouter';
+  const apiKey = process.env.OLLAMA_API_KEY;
 
   if (!apiKey) {
-    console.error('API 키가 설정되지 않았습니다 (OLLAMA_API_KEY 또는 OPENROUTER_API_KEY)');
+    console.error('OLLAMA_API_KEY가 설정되지 않았습니다');
     return [];
   }
 
-  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { provider, logDir: 'logs' });
-  const proRunner = new AgentRunner(apiKey, 'deepseek-v4-pro:cloud', { provider, logDir: 'logs', minRequestInterval: 3000 });
+  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { logDir: 'logs' });
+  const proRunner = new AgentRunner(apiKey, 'deepseek-v4-pro:cloud', { logDir: 'logs', minRequestInterval: 3000 });
 
   // newsletters.json 로드
   const { newsletters } = JSON.parse(
