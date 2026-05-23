@@ -430,8 +430,8 @@ class AgentRunner {
     }
 
     // 섹션 경계 패턴 (뉴스레터 공통)
-    const sectionPattern = /\n(?=(?:FUNDING|GLOBAL NEWS|MORE NEWS|Afternoon Must-Reads|Top (?:news|stories)|More top news|In other|Also[,:]))/gi;
-    const emojiPattern = /\n+(?=(?:[📌🔥💡⚡🎯✅❗▶🛒🚀📗💡🦄🌎📃💄☀️🍪📘🍎⌚🎤☕🖥️🎬👉]|#[가-힣a-zA-Z]))/g;
+    const sectionPattern = /\n(?=(?:FUNDING|GLOBAL NEWS|MORE NEWS|MARKETS|WORLD|NEWS|RECS|QUIZ|Afternoon Must-Reads|Top (?:news|stories)|More top news|In other|Also[,:]|깊게 보는|더하기\+|비욘드 트렌드|주말토리|에디터스 노트))/gi;
+    const emojiPattern = /\n+(?=(?:[📌🔥💡⚡🎯✅❗▶🛒🚀📗💡🦄🌎📃💄☀️🍪📘🍎⌚🎤☕🖥️🎬👉■●▸]|#[가-힣a-zA-Z]))/g;
 
     // 1단계: 섹션 경계로 먼저 나누기
     let sections = text.split(sectionPattern);
