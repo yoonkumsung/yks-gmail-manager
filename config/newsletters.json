@@ -887,7 +887,7 @@
       "sender": "joo@sensible.kr",
       "name": "\"센서블박스\" <joo@sensible.kr>",
       "labels": [
-        "창업"
+        "지원사업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_sensible.md",
@@ -1085,18 +1085,18 @@
       "sender": "sbapick@sba.seoul.kr",
       "name": "\"SBA사업알리미\" <sbapick@sba.seoul.kr>",
       "labels": [
-        "창업"
+        "지원사업"
       ],
       "frequency": 3,
       "skill_file": "skills/newsletters/SKILL_sba.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "list-only",
         "item_count_avg": 30
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
-      "skill_generated": true
+      "skill_generated": false
     },
     {
       "id": "catalogue",
@@ -1265,18 +1265,18 @@
       "sender": "notice@egbiz.or.kr",
       "name": "egbiz <notice@egbiz.or.kr>",
       "labels": [
-        "창업"
+        "지원사업"
       ],
       "frequency": 1,
       "skill_file": "skills\\newsletters\\SKILL_egbiz.md",
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "list-only",
         "item_count_avg": 5
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
-      "skill_generated": true
+      "skill_generated": false
     },
     {
       "id": "dailybyte",
