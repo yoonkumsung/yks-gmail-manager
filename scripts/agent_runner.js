@@ -1,12 +1,11 @@
 /**
- * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
- * 모델: 작업별 다중 모델 + 폴백 전략 (동적 메타데이터 조회)
+ * Agent Runner - Ollama LLM API 호출 및 에이전트 실행
+ * 모델: 단계별 다중 모델 사용
+ *   - 빠른 모델 (추출/분석): deepseek-v4-flash:cloud
+ *   - 추론 모델 (병합/인사이트/크로스인사이트): deepseek-v4-pro:cloud
  *
  * 주요 기능:
- * - OpenRouter API에서 모델 메타데이터 동적 조회 (reasoning 지원, maxTokens 등)
- * - 모델 변경 시 코드 수정 없이 자동 적응
- * - 작업 유형별 자동 모델 선택
- * - Primary 실패 시 Fallback 모델 자동 전환
+ * - Ollama API (OpenAI 호환) 지원
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
  * - 토큰 초과 에러 자동 복구
  * - Rate Limit 관리
@@ -26,317 +25,38 @@ async function getFetch() {
 }
 
 class AgentRunner {
-  /**
-   * @param {Object} llmConfig - settings.json의 llm 섹션 전체
-   * @param {Object} options - 추가 옵션
-   */
-  constructor(llmConfig = {}, options = {}) {
+  constructor(apiKey, model = 'deepseek-v4-flash:cloud', options = {}) {
+    this.apiKey = apiKey;
+    this.model = model;
     this.logDir = options.logDir || 'logs';
 
-    // 프로바이더 설정 (API URL, 키)
-    this.providers = {};
-    const providerConfigs = llmConfig.providers || {};
-    for (const [name, config] of Object.entries(providerConfigs)) {
-      this.providers[name] = {
-        baseUrl: config.baseUrl,
-        apiKey: process.env[config.envKey] || '',
-        metadataUrl: config.metadataUrl || null,
-        envKey: config.envKey,
-        tier: config.tier || 'free'
-      };
-    }
+    // API 프로바이더 설정
+    this.provider = options.provider || 'ollama';
 
-    // 하위 호환: llmConfig 없이 apiKey 문자열로 호출 시
-    if (typeof llmConfig === 'string') {
-      this.providers.openrouter = {
-        baseUrl: 'https://openrouter.ai/api/v1',
-        apiKey: llmConfig,
-        metadataUrl: 'https://openrouter.ai/api/v1/models',
-        envKey: 'OPENROUTER_API_KEY'
-      };
-      llmConfig = {};
-    }
+    // 청크 분할 설정 - 섹션 기반 적응형 청킹
+    // Ollama Cloud: Cloudflare 100초 타임아웃 + 출력 토큰 16K 제한
+    // 5K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
+    // 각 청크에서 추출되는 아이템 수가 적어져 JSON 잘림 방지
+    this.chunkSize = options.chunkSize || (this.provider === 'ollama' ? 5000 : 30000);
+    this.minChunkSize = 2000;  // 최소 청크 크기
 
-    // 모델 설정 (provider + model 쌍)
-    // settings.json 형식: { provider: "google", model: "gemini-3-flash-preview" }
-    // 내부 형식: { primary: "gemini-3-flash-preview", fallback: "...", primaryProvider: "google", fallbackProvider: "openrouter" }
-    const modelsConfig = llmConfig.models || {};
-    this.modelConfig = {};
-    for (const [category, config] of Object.entries(modelsConfig)) {
-      if (typeof config === 'string') {
-        // 단일 문자열 (vision 등) → 하위 호환
-        this.modelConfig[category] = config;
-      } else if (config.provider && config.model) {
-        // vision 등 단일 모델: { provider, model }
-        this.modelConfig[category] = config.model;
-        // 프로바이더 매핑 저장
-        if (!this._modelProviderMap) this._modelProviderMap = {};
-        this._modelProviderMap[config.model] = config.provider;
-      } else {
-        // primary/fallback 쌍
-        this.modelConfig[category] = {
-          primary: config.primary?.model || config.primary || null,
-          fallback: config.fallback?.model || config.fallback || null
-        };
-        if (!this._modelProviderMap) this._modelProviderMap = {};
-        if (config.primary?.provider) this._modelProviderMap[config.primary.model] = config.primary.provider;
-        if (config.fallback?.provider) this._modelProviderMap[config.fallback.model] = config.fallback.provider;
-      }
-    }
-    this._modelProviderMap = this._modelProviderMap || {};
-
-    // 티어 설정 (free/paid)
-    this.tier = llmConfig.tier || 'free';
-    this.freeLimits = llmConfig.free_limits || { daily_requests: 500, requests_per_minute: 10 };
-
-    // 일일 요청 카운터 (무료 티어용, 프로바이더별 분리)
-    this.dailyRequestCounts = {};  // { providerName: count }
-    this.dailyCountResetDate = new Date().toDateString();
-
-    // 청크 분할 설정
-    // DeepSeek V3.2 (164K 컨텍스트) 기준 40,000자 = 약 27K 토큰, 효과 품질 구간(64K) 내.
-    // 대부분의 뉴스레터(<10,000자)는 단일 청크로 처리되어 header 중복 과금 제거.
-    this.chunkSize = options.chunkSize || 40000;
+    // 프롬프트 헤더(에이전트 지시사항 + 스킬) 최대 크기
     this.maxHeaderSize = options.maxHeaderSize || 5000;
 
-    // 재시도 설정 (7회, 점진적 대기)
-    this.retryDelays = [2000, 4000, 6000, 10000, 30000, 60000, 90000];
+    // 재시도 설정 (7회, 524 타임아웃 대비 긴 대기)
+    this.retryDelays = [5000, 10000, 15000, 30000, 45000, 60000, 90000];
 
-    // Rate Limit 설정 (프로바이더별 분리)
-    this.providerRateLimits = {};  // { providerName: { requestCount, windowStart, lastRequestTime } }
-    for (const [name, config] of Object.entries(this.providers)) {
-      const isFree = config.tier === 'free';
-      const rpm = isFree ? (this.freeLimits.requests_per_minute || 10) : 30;
-      this.providerRateLimits[name] = {
-        requestCount: 0,
-        windowStart: Date.now(),
-        lastRequestTime: 0,
-        maxRequestsPerMinute: rpm,
-        minRequestInterval: Math.ceil(60000 / rpm)
-      };
-    }
-    // 하위 호환용 글로벌 값 (fallback)
+    // Rate Limit 설정 (Ollama Pro: 넉넉한 제한)
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
-    this.maxRequestsPerMinute = 30;
-    this.minRequestInterval = Math.ceil(60000 / 30);
+    this.maxRequestsPerMinute = options.maxRequestsPerMinute || 30;
+    this.minRequestInterval = options.minRequestInterval || 2000;   // 2초 간격
     this.lastRequestTime = 0;
-
-    // 모델 메타데이터 캐시
-    this.modelMetadataCache = {};
-
-    // 사용량 통계 (실행 동안 누적)
-    this.usageStats = {
-      totalCalls: 0,
-      totalPromptTokens: 0,
-      totalCompletionTokens: 0,
-      totalReasoningTokens: 0,
-      byModel: {}
-    };
 
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
-  }
-
-  /**
-   * 모델 ID로 해당 프로바이더 설정 반환
-   * API 키가 없으면 키가 있는 다른 프로바이더로 폴백
-   */
-  getProviderForModel(model) {
-    const providerName = this._modelProviderMap[model];
-    if (providerName && this.providers[providerName]) {
-      const provider = this.providers[providerName];
-      if (provider.apiKey) {
-        return { name: providerName, ...provider };
-      }
-      // 매핑된 프로바이더에 키가 없으면 경고 후 다른 프로바이더로 폴백
-      this.log(`[프로바이더] ${providerName}의 API 키 미설정 (${model}), 다른 프로바이더로 폴백`, 'warn');
-    }
-    // 키가 있는 첫 번째 프로바이더로 폴백
-    for (const [name, config] of Object.entries(this.providers)) {
-      if (config.apiKey) return { name, ...config };
-    }
-    this.log(`[프로바이더] 사용 가능한 API 키가 없습니다`, 'error');
-    return { name: 'unknown', baseUrl: '', apiKey: '', metadataUrl: null };
-  }
-
-  /**
-   * 무료 티어 일일 한도 체크 (프로바이더별)
-   * @param {string} providerName - 프로바이더명
-   * @returns {boolean} 요청 가능 여부
-   */
-  checkDailyLimit(providerName) {
-    // 프로바이더별 tier 확인 (paid 프로바이더는 일일 한도 없음)
-    const provider = this.providers[providerName];
-    const providerTier = provider?.tier || this.tier || 'free';
-    if (providerTier !== 'free') return true;
-
-    // 날짜 변경 시 모든 카운터 리셋
-    const today = new Date().toDateString();
-    if (this.dailyCountResetDate !== today) {
-      this.dailyRequestCounts = {};
-      this.dailyCountResetDate = today;
-    }
-
-    const count = this.dailyRequestCounts[providerName] || 0;
-    if (count >= this.freeLimits.daily_requests) {
-      this.log(`[무료 티어] ${providerName} 일일 요청 한도 도달 (${this.freeLimits.daily_requests}회)`, 'error');
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * 프로바이더별 일일 요청 카운터 증가
-   */
-  incrementDailyCount(providerName) {
-    this.dailyRequestCounts[providerName] = (this.dailyRequestCounts[providerName] || 0) + 1;
-  }
-
-  // ============================================
-  // 모델 메타데이터 (프로바이더별 동적 조회)
-  // ============================================
-
-  /**
-   * 사용할 모델들의 메타데이터를 프로바이더 API에서 조회하여 캐시
-   * - OpenRouter: /api/v1/models → supported_parameters, max_completion_tokens
-   * - Google AI Studio: 메타데이터 API 없음 → 안전한 기본값 사용
-   * - 시작 시 1회만 호출, 이후 캐시 사용
-   */
-  async initModelMetadata() {
-    // 사용할 모델 ID를 프로바이더별로 분류
-    const modelsByProvider = {};
-    for (const category of Object.values(this.modelConfig)) {
-      const models = [];
-      if (typeof category === 'string') {
-        models.push(category);
-      } else if (category && typeof category === 'object') {
-        if (category.primary) models.push(category.primary);
-        if (category.fallback) models.push(category.fallback);
-      }
-      for (const modelId of models) {
-        const providerName = this._modelProviderMap[modelId] || 'openrouter';
-        if (!modelsByProvider[providerName]) modelsByProvider[providerName] = new Set();
-        modelsByProvider[providerName].add(modelId);
-      }
-    }
-
-    const fetch = await getFetch();
-
-    // 프로바이더별 메타데이터 조회
-    for (const [providerName, modelIds] of Object.entries(modelsByProvider)) {
-      const provider = this.providers[providerName];
-
-      // Google AI Studio: 메타데이터 API 없음 → Gemini 기본값 설정
-      if (!provider?.metadataUrl) {
-        for (const modelId of modelIds) {
-          const isVision = modelId.includes('-vl') || modelId.includes('vision');
-          // Gemini 모델은 thinking 지원 (gemini-3-flash 등)
-          const supportsReasoning = modelId.includes('gemini') && !modelId.includes('lite');
-          this.modelMetadataCache[modelId] = {
-            supportsReasoning,
-            maxTokens: isVision ? 4000 : 16384,
-            timeoutMs: supportsReasoning ? 480000 : 240000,
-            contextLength: 1000000,  // Gemini 기본 1M
-          };
-          this.log(`[모델 메타데이터] ${modelId} (${providerName}): reasoning=${supportsReasoning}, maxTokens=8192 (기본값)`, 'info');
-        }
-        continue;
-      }
-
-      // OpenRouter 등: 메타데이터 API로 동적 조회
-      try {
-        const response = await fetch(provider.metadataUrl, {
-          headers: {
-            'Authorization': `Bearer ${provider.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          this.log(`[모델 메타데이터] ${providerName} API 조회 실패 (${response.status}), 기본값 사용`, 'warn');
-          continue;
-        }
-
-        const data = await response.json();
-        const models = data.data || [];
-
-        for (const modelId of modelIds) {
-          const meta = models.find(m => m.id === modelId);
-          if (meta) {
-            const supportedParams = meta.supported_parameters || [];
-            const supportsReasoning = supportedParams.includes('reasoning');
-            const maxCompletionTokens = meta.top_provider?.max_completion_tokens || null;
-            const contextLength = meta.context_length || 128000;
-            const isVision = modelId.includes('-vl') || modelId.includes('vision');
-
-            this.modelMetadataCache[modelId] = {
-              supportsReasoning,
-              maxTokens: isVision ? 4000 : (maxCompletionTokens || 16384),
-              timeoutMs: supportsReasoning ? 480000 : (isVision ? 120000 : 240000),
-              contextLength,
-            };
-
-            this.log(`[모델 메타데이터] ${modelId} (${providerName}): reasoning=${supportsReasoning}, maxTokens=${this.modelMetadataCache[modelId].maxTokens}, context=${contextLength}`, 'info');
-          } else {
-            this.log(`[모델 메타데이터] ${modelId}: ${providerName} API에서 찾을 수 없음, 기본값 사용`, 'warn');
-          }
-        }
-      } catch (error) {
-        this.log(`[모델 메타데이터] ${providerName} 조회 중 오류: ${error.message}, 기본값 사용`, 'warn');
-      }
-    }
-
-    // 티어 정보 로깅 (프로바이더별)
-    for (const [name, config] of Object.entries(this.providers)) {
-      const t = config.tier || 'free';
-      const rl = this.providerRateLimits[name];
-      this.log(`[티어] ${name}: ${t} (RPM: ${rl?.maxRequestsPerMinute || '?'}, 일일 한도: ${t === 'free' ? this.freeLimits.daily_requests + '회' : '무제한'})`, 'info');
-    }
-  }
-
-  // ============================================
-  // 모델 선택 메서드
-  // ============================================
-
-  /**
-   * 작업 유형에 따른 모델 쌍 (primary + fallback) 반환
-   */
-  getModelsForTask(taskType) {
-    const reasoningTasks = ['insight', 'crossInsight', 'singleTopic'];
-    const category = reasoningTasks.includes(taskType) ? 'reasoning' : 'extract';
-    return this.modelConfig[category] || this.modelConfig.extract;
-  }
-
-  /**
-   * 모델별 API 요청 설정 반환
-   * - initModelMetadata()로 조회된 캐시 우선 사용
-   * - 캐시 미스 시 안전한 기본값 반환 (reasoning 비활성화)
-   */
-  getModelSpecificConfig(model) {
-    // 캐시에 있으면 동적 조회 결과 사용
-    if (this.modelMetadataCache[model]) {
-      return this.modelMetadataCache[model];
-    }
-
-    // 캐시 미스: 비전 모델 감지
-    if (model.includes('nemotron') || model.includes('vision') || model.includes('-vl')) {
-      return {
-        supportsReasoning: false,
-        timeoutMs: 120000,
-        maxTokens: 4000
-      };
-    }
-
-    // 캐시 미스: 안전한 기본값 (reasoning 비활성화)
-    this.log(`[모델 설정] ${model}: 캐시 없음, 기본값 사용 (reasoning=false)`, 'warn');
-    return {
-      supportsReasoning: false,
-      timeoutMs: 180000,
-      maxTokens: 16000
-    };
   }
 
   // ============================================
@@ -345,40 +65,43 @@ class AgentRunner {
 
   /**
    * 작업 유형별 최적 설정 반환
-   * - reasoning 파라미터로 추론량 제어
-   * - 전 작업 reasoning low 통일 (추론 최소화 → 출력 토큰에 집중)
+   * - 추론 모델(R1T Chimera)의 reasoning 파라미터로 추론량 제어
+   * - 추출/병합: reasoning low (추론 최소화 → JSON 출력에 토큰 집중)
+   * - 인사이트: reasoning medium (적절한 추론 → 깊은 통찰)
    */
   getTaskConfig(taskType) {
     const configs = {
       extract: {
         systemPrompt: `당신은 한국어 뉴스레터 분석 전문가입니다.
 
-[핵심 임무] 뉴스레터 본문에서 모든 뉴스 아이템을 빠짐없이 추출합니다.
+[핵심 임무] 뉴스레터 본문에서 모든 뉴스 아이템을 단 하나도 빠짐없이 추출합니다.
 
-[비뉴스 메일 판단] 본문이 뉴스/정보가 아닌 경우 빈 items를 반환하세요:
-- 인사/감사 메일 (연하장, 새해 인사, 한 해 감사 등)
-- 서비스 공지 (점검, 약관 변경, 구독 갱신 등)
-- 순수 광고/프로모션 (할인, 이벤트, 템플릿 홍보 등)
-- 설문/피드백 요청
-이런 메일은 { "items": [] }를 출력하세요. 억지로 아이템을 만들지 마세요.
+[누락 방지 규칙]
+- 본문을 처음부터 끝까지 순서대로 읽으며 모든 뉴스 아이템을 추출
+- 헤드라인, 간추린 뉴스, 짧은 한 줄 뉴스도 모두 개별 아이템으로 추출
+- "=== 원문 기사 전문 ===" 영역이 있으면 원문 내용을 요약에 적극 반영
+- 광고/푸터/구독안내만 제외, 나머지는 중요도와 무관하게 전부 추출
+- 추출 완료 후 원문과 대조하여 누락 여부 자기검증
 
-[카테고리 분리 금지] 하나의 메일이 같은 주제를 여러 관점/카테고리로 나눠 소개하는 경우(예: "오픈률 순위 + 클릭률 순위 + 반응 순위", "연말 결산 파트1 + 파트2"), 카테고리별로 쪼개지 말고 전체를 1개 아이템으로 통합하세요.
-
-[입력 형식] 입력은 구조화된 마크다운입니다:
-- ## 헤딩 → 아이템 제목 후보
-- **볼드** → 핵심 키워드
-- [텍스트](URL) → 원문 링크
-- ---SECTION_BREAK--- → 섹션 구분
-이 구조를 활용하여 아이템 경계를 정확하게 파악하세요.
+[요약 품질 규칙]
+- 각 요약에 필수 포함: 핵심사실(WHO+WHAT) + 구체적 수치 + 배경맥락 + 시사점
+- 요약은 300~500자, 그 자체로 완결된 정보 제공 (외부 참조 금지)
+- 영문 콘텐츠는 자연스러운 한국어로 번역 (고유명사 원어 병기)
 
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
-- 에이전트 지시사항과 SKILL 규칙에 따라 처리`,
+
+[금지 행위 — 최우선 규칙]
+- 절대 금지: 본문에 없는 내용 생성 (할루시네이션). 본문에서 직접 확인할 수 없는 수치, 인물, 사실은 절대 추가하지 마시오. 이 규칙은 요약 길이보다 우선함.
+- 절대 금지: 다른 청크나 이전 지식에서 가져온 내용 혼합. 현재 입력 텍스트에 있는 내용만 추출.
+- 본문에 충분한 내용이 있는 아이템: 요약 300~500자 필수.
+- 본문에 제목/한 줄만 있는 아이템 (간추린 뉴스 등): 있는 내용만으로 요약. 100자 미만도 허용. 절대로 내용을 지어내서 늘리지 마시오.
+
+[금지 표현] "원문 참조", "원문에서 확인", "자세한 내용은 링크", "더 알아보기", "기사 참조", "본문 참고", "상세 내용은"`,
         temperature: 0.1,
         reasoningEffort: 'low',
-        disableReasoning: true,
-        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 요약은 원문 분량에 비례하여 작성하세요 (짧은 원문은 짧은 요약 OK, 긴 원문은 200자 이상).'
+        tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 하나라도 누락하면 안 됩니다. 최우선 규칙: 입력 텍스트에 없는 내용을 절대 지어내지 마시오. 본문이 충분한 아이템은 300자 이상, 제목만 있는 아이템은 있는 내용만 요약하시오.'
       },
       analyze: {
         systemPrompt: `당신은 뉴스레터 구조 분석 전문가입니다.
@@ -392,7 +115,6 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
-        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 뉴스레터 구조를 분석하고 아이템을 추출하여 JSON으로 출력하세요.'
       },
       merge: {
@@ -400,9 +122,14 @@ class AgentRunner {
 
 [핵심 임무] 동일한 사건/발표를 다루는 아이템만 병합합니다.
 
-[판단 기준]
-- 같은 사건/발표/수치 → 병합 (제목이 달라도 내용이 같으면 병합)
+[병합 규칙]
+- 같은 사건/발표/수치 → 병합: 가장 내용이 충실한(summary가 긴) 아이템을 기준으로 삼고, 다른 아이템에만 있는 추가 정보를 기준 아이템의 summary에 합침
+- 병합 시 모든 source를 콤마로 연결 (예: "A뉴스레터, B뉴스레터")
+- 병합 시 keywords도 합집합으로 통합
+
+[분리 규칙]
 - 같은 기업이지만 다른 뉴스 → 분리 유지
+- 같은 분야이지만 다른 사건 → 분리 유지
 - 애매하면 반드시 분리 유지 (잘못된 병합이 가장 나쁨)
 
 [출력 규칙]
@@ -411,7 +138,6 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
         reasoningEffort: 'low',
-        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 중복 아이템을 병합하고 JSON으로 출력하세요.'
       },
       summarize: {
@@ -424,19 +150,14 @@ class AgentRunner {
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.2,
         reasoningEffort: 'low',
-        disableReasoning: true,
         tailInstruction: '위 지시사항에 따라 뉴스 아이템을 주제별로 분류/요약하고 JSON으로 출력하세요.'
       },
       insight: {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
 [핵심 임무] 각 뉴스 아이템에 2가지 인사이트를 추가합니다:
-1. domain: 뉴스 자체의 산업/정책/경제적 파급 효과를 원문 데이터 기반으로 분석.
-2. cross_domain: 뉴스의 본질과 자연스럽게 연결되는 경우에만 인문/철학적 통찰을 인용.
-
-[사업 연결 기준] 뉴스가 사용자의 관심 분야(AI, 반도체, 스포츠 등)와 직접 관련될 때만 해당 분야 관점을 포함하세요. 관련 없는 뉴스는 뉴스 자체의 파급효과만 분석하세요. "사용자의 사업/제품/회사" 같은 직접 지칭 표현은 금지합니다.
-[중요] 단순 팩트 뉴스(일정 공지, 휴장 안내 등)는 insights를 null로 출력하세요.
-[중요] 원문에 없는 수치, 보고서, 논문, 실험을 절대 생성하지 마세요.
+1. domain: 사용자의 사업에 구체적 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함. (사용자 컨텍스트는 에이전트 지시사항 참고)
+2. cross_domain: 실명의 철학자, 구체적 역사적 사건, 실제 심리학 실험명을 인용한 본질적 통찰. 이름/연도/출처를 반드시 명시.
 
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
@@ -445,74 +166,23 @@ class AgentRunner {
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
-        reasoningEffort: 'low',
-        disableReasoning: true,
-        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 단순 팩트 뉴스는 insights를 null로. 모든 기존 필드를 반드시 유지하세요.'
+        reasoningEffort: 'medium',
+        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
       },
       crossInsight: {
         systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
 
-[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, 사용자 액션을 도출합니다.
-
-[중요] 자연스러운 연결이 없으면 빈 배열을 출력하세요. 억지 연결 금지.
-[중요] 원문에 없는 수치, 보고서를 생성하지 마세요.
+[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, CEO 액션을 도출합니다.
 
 [출력 규칙]
 - 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- mega_trends, cross_connections, action_items 3개 필드 포함 (빈 배열 허용)
+- mega_trends, cross_connections, ceo_actions 3개 필드 필수
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
 
 [금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
         temperature: 0.3,
-        reasoningEffort: 'low',
-        disableReasoning: true,
-        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, 사용자 액션을 생성하고 JSON으로 출력하세요. 자연스러운 연결이 없으면 빈 배열을 출력하세요.'
-      },
-      itemExtract: {
-        systemPrompt: `당신은 한국어 뉴스 요약 전문가입니다.
-
-[핵심 임무] 주어진 텍스트에서 하나의 뉴스 아이템을 정밀하게 요약합니다.
-이 텍스트는 하나의 뉴스 아이템에 해당하는 부분만 발췌한 것입니다.
-모든 주의력을 이 하나의 아이템에 집중하여 최고 품질의 요약을 생성하세요.
-
-[필수 요소]
-- WHO(주체) + WHAT(핵심 사실) + 구체적 근거(수치/데이터)
-- 원문의 수치는 반드시 포함
-- 요약 200~500자 (긴 콘텐츠는 400~800자)
-- 제목 20~50자
-- 키워드 3~5개
-
-[출력 규칙]
-- 유효한 JSON만 출력
-- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
-        temperature: 0.1,
-        reasoningEffort: 'low',
-        disableReasoning: true,
-        tailInstruction: '위 지시사항에 따라 이 뉴스 아이템을 정밀하게 요약하고 JSON으로 출력하세요. 요약은 반드시 200자 이상이어야 합니다.'
-      },
-      singleTopic: {
-        systemPrompt: `당신은 한국어 뉴스레터 분석 전문가입니다.
-
-[핵심 임무] 이 뉴스레터는 **하나의 주제를 심층 분석**하는 형식입니다.
-전체 내용을 하나의 아이템으로 추출하되, 일반 뉴스보다 상세한 요약을 작성하세요.
-
-[입력 형식] 입력은 구조화된 마크다운입니다.
-
-[요약 규칙 (400~800자)]
-- 구조: [핵심 주장 1~2문장] → [근거/데이터/사례] → [결론/시사점]
-- 인터뷰인 경우: 인터뷰이 이름/직함 + 핵심 발언 인용 + 주요 논점
-- 분석 기사인 경우: 분석 대상 + 핵심 데이터 + 결론
-- 원문의 수치/인용구는 반드시 포함
-- 키워드 5~7개 (단일 주제이므로 더 세분화)
-
-[출력 규칙]
-- 유효한 JSON만 출력
-- items 배열에 1개의 아이템만 포함
-- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
-        temperature: 0.1,
-        reasoningEffort: 'low',
-        disableReasoning: true,
-        tailInstruction: '위 지시사항에 따라 전체 뉴스레터를 하나의 아이템으로 요약하고 JSON으로 출력하세요. 요약은 400~800자여야 합니다.'
+        reasoningEffort: 'medium',
+        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, CEO 액션을 생성하고 JSON으로 출력하세요.'
       }
     };
     return configs[taskType] || configs.extract;
@@ -595,7 +265,7 @@ class AgentRunner {
         const prompt = this.buildFullPrompt(header, currentInput);
 
         // API 호출 (시간 예산 전달)
-        const response = await this.callLLMWithRetry(prompt, options.maxTimeMs || 0);
+        const response = await this.callSolar3WithRetry(prompt, options.maxTimeMs || 0);
 
         // 응답 검증
         const validated = this.validateResponse(response, options.schema);
@@ -647,15 +317,8 @@ class AgentRunner {
 
       const tempFile = path.join(tempDir, `_chunk_${i + 1}_of_${chunks.length}_${Date.now()}.json`);
 
-      // 청크 위치 힌트 추가 (분할 처리 시 문맥 보존)
-      let chunkData = chunks[i];
-      if (chunks.length > 1) {
-        const hint = `[참고: 이 텍스트는 전체 뉴스레터의 ${i + 1}/${chunks.length} 번째 부분입니다. 텍스트 경계에서 잘린 아이템이 있을 수 있으니, 불완전한 아이템은 건너뛰세요.]\n\n`;
-        chunkData = hint + chunkData;
-      }
-
       try {
-        const result = await this.runSinglePrompt(header, chunkData, {
+        const result = await this.runSinglePrompt(header, chunks[i], {
           ...options,
           output: null // 여기서는 저장하지 않음
         });
@@ -669,9 +332,28 @@ class AgentRunner {
         }
 
       } catch (error) {
-        this.log(`  청크 ${i + 1} 실패: ${error.message}`, 'warn');
-        failCount++;
-        // 실패해도 다른 청크 계속 처리
+        // 524 타임아웃 시 청크를 더 작게 쪼개서 재시도
+        if (error.status === 524 && chunks[i].length > this.minChunkSize * 2) {
+          this.log(`  청크 ${i + 1} 타임아웃, 하위 분할 재시도...`, 'warn');
+          const subChunks = this.splitTextIntoChunks(chunks[i], Math.floor(chunks[i].length / 2));
+          for (let j = 0; j < subChunks.length; j++) {
+            try {
+              const subResult = await this.runSinglePrompt(header, subChunks[j], { ...options, output: null });
+              if (subResult) {
+                const subFile = path.join(tempDir, `_chunk_${i + 1}_sub${j + 1}_${Date.now()}.json`);
+                fs.writeFileSync(subFile, JSON.stringify(subResult, null, 2), 'utf8');
+                tempFiles.push(subFile);
+                successCount++;
+              }
+            } catch (subError) {
+              this.log(`  청크 ${i + 1} 하위 ${j + 1} 실패: ${subError.message}`, 'warn');
+              failCount++;
+            }
+          }
+        } else {
+          this.log(`  청크 ${i + 1} 실패: ${error.message}`, 'warn');
+          failCount++;
+        }
       }
     }
 
@@ -734,47 +416,37 @@ class AgentRunner {
   // ============================================
 
   /**
-   * 텍스트를 청크로 분할 (구조 기반 스마트 청킹)
+   * 텍스트를 청크로 분할 (뉴스레터 섹션 경계 우선)
    *
    * 분할 우선순위:
-   * 1. ---SECTION_BREAK--- 마커 (뉴스레터 섹션 경계)
-   * 2. ## / ### 마크다운 헤딩 (아이템 경계)
-   * 3. 문단 경계 (fallback)
+   * 1. 뉴스레터 섹션 마커 (FUNDING, GLOBAL NEWS, Afternoon Must-Reads 등)
+   * 2. 이모지 헤더 (🎯, 🛒, 📗 등으로 시작하는 줄)
+   * 3. 해시태그 헤더 (#신상, #패션 등)
+   * 4. 빈 줄 + --- 구분자 (폴백)
    */
   splitTextIntoChunks(text, maxCharsPerChunk) {
     if (!text || text.length <= maxCharsPerChunk) {
       return [text];
     }
 
-    // 1. SECTION_BREAK 마커로 분할 시도
-    const sectionParts = text.split(/\n*---SECTION_BREAK---\n*/);
-    if (sectionParts.length > 1) {
-      const grouped = this._groupSectionsIntoChunks(sectionParts, maxCharsPerChunk);
-      if (grouped.length > 0) {
-        this.log(`구조 기반 청킹: SECTION_BREAK ${sectionParts.length}개 섹션 → ${grouped.length}개 청크`, 'info');
-        return grouped;
-      }
+    // 섹션 경계 패턴 (뉴스레터 공통)
+    const sectionPattern = /\n(?=(?:FUNDING|GLOBAL NEWS|MORE NEWS|Afternoon Must-Reads|Top (?:news|stories)|More top news|In other|Also[,:]))/gi;
+    const emojiPattern = /\n+(?=(?:[📌🔥💡⚡🎯✅❗▶🛒🚀📗💡🦄🌎📃💄☀️🍪📘🍎⌚🎤☕🖥️🎬👉]|#[가-힣a-zA-Z]))/g;
+
+    // 1단계: 섹션 경계로 먼저 나누기
+    let sections = text.split(sectionPattern);
+
+    // 섹션이 1개(=경계 없음)면 이모지/해시태그로 나누기
+    if (sections.length <= 1) {
+      sections = text.split(emojiPattern);
     }
 
-    // 2. 마크다운 헤딩으로 분할 시도
-    const headingSections = text.split(/(?=\n##+ )/);
-    if (headingSections.length > 1) {
-      const grouped = this._groupSectionsIntoChunks(headingSections, maxCharsPerChunk);
-      if (grouped.length > 0) {
-        this.log(`구조 기반 청킹: 헤딩 ${headingSections.length}개 섹션 → ${grouped.length}개 청크`, 'info');
-        return grouped;
-      }
+    // 섹션이 여전히 1개면 기존 문단 분할로 폴백
+    if (sections.length <= 1) {
+      sections = text.split(/\n\n+|(?=^---+$)/m);
     }
 
-    // 3. 문단 경계 fallback
-    this.log(`문단 기반 청킹 (구조 마커 없음)`, 'info');
-    return this._splitByParagraphs(text, maxCharsPerChunk);
-  }
-
-  /**
-   * 섹션들을 maxCharsPerChunk 이내로 그룹핑
-   */
-  _groupSectionsIntoChunks(sections, maxCharsPerChunk) {
+    // 2단계: 섹션들을 maxCharsPerChunk 이내로 병합
     const chunks = [];
     let currentChunk = '';
 
@@ -791,11 +463,11 @@ class AgentRunner {
           chunks.push(currentChunk);
         }
 
-        // 단일 섹션이 초과하면 문단 기반으로 재분할
+        // 단일 섹션이 청크 크기 초과하면 강제 분할
         if (trimmed.length > maxCharsPerChunk) {
-          const subChunks = this._splitByParagraphs(trimmed, maxCharsPerChunk);
+          const subChunks = this.forceSplitText(trimmed, maxCharsPerChunk);
           chunks.push(...subChunks.slice(0, -1));
-          currentChunk = subChunks[subChunks.length - 1] || '';
+          currentChunk = subChunks[subChunks.length - 1];
         } else {
           currentChunk = trimmed;
         }
@@ -808,44 +480,8 @@ class AgentRunner {
       chunks.push(currentChunk);
     }
 
-    return chunks.length > 0 ? chunks : [];
-  }
-
-  /**
-   * 문단 경계 기반 분할 (최종 fallback)
-   */
-  _splitByParagraphs(text, maxCharsPerChunk) {
-    const paragraphs = text.split(/\n\n+/);
-    const chunks = [];
-    let currentChunk = '';
-
-    for (const para of paragraphs) {
-      const trimmedPara = para.trim();
-      if (!trimmedPara) continue;
-
-      const potentialChunk = currentChunk
-        ? currentChunk + '\n\n' + trimmedPara
-        : trimmedPara;
-
-      if (potentialChunk.length > maxCharsPerChunk) {
-        if (currentChunk) {
-          chunks.push(currentChunk);
-        }
-
-        if (trimmedPara.length > maxCharsPerChunk) {
-          const subChunks = this.forceSplitText(trimmedPara, maxCharsPerChunk);
-          chunks.push(...subChunks.slice(0, -1));
-          currentChunk = subChunks[subChunks.length - 1];
-        } else {
-          currentChunk = trimmedPara;
-        }
-      } else {
-        currentChunk = potentialChunk;
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk);
+    if (chunks.length > 1) {
+      this.log(`섹션 기반 분할: ${sections.length}개 섹션 → ${chunks.length}개 청크`, 'debug');
     }
 
     return chunks.length > 0 ? chunks : [text];
@@ -924,17 +560,40 @@ class AgentRunner {
       }
     }
 
-    // 중복 제거 (title 기준)
+    // 불완전한 아이템 제거 (요약이 100자 미만이거나 잘린 것)
+    const validItems = items.filter(item => {
+      if (!item || !item.title) return false;
+      const summary = item.summary || '';
+      // 요약이 너무 짧거나 문장이 미완성으로 끝나면 제거
+      if (summary.length < 50) return false;
+      return true;
+    });
+
+    // 중복 제거 (title 유사도 기준)
     const seen = new Set();
-    const uniqueItems = items.filter(item => {
-      if (!item || !item.title) return true;
-      const key = item.title.toLowerCase().trim();
-      if (seen.has(key)) return false;
+    const uniqueItems = validItems.filter(item => {
+      const key = item.title.toLowerCase().trim().replace(/[^가-힣a-z0-9]/g, '');
+      // 60% 이상 겹치는 제목 제거 (청크 경계 중복 방지)
+      for (const existing of seen) {
+        if (this.titleSimilarity(key, existing) > 0.6) return false;
+      }
       seen.add(key);
       return true;
     });
 
     return { items: uniqueItems };
+  }
+
+  /**
+   * 제목 유사도 (Jaccard)
+   */
+  titleSimilarity(a, b) {
+    if (!a || !b) return 0;
+    const setA = new Set(a.split(''));
+    const setB = new Set(b.split(''));
+    const intersection = [...setA].filter(x => setB.has(x)).length;
+    const union = new Set([...setA, ...setB]).size;
+    return union === 0 ? 0 : intersection / union;
   }
 
   // ============================================
@@ -946,18 +605,7 @@ class AgentRunner {
    */
   async buildHeader(agentPath, options) {
     // Agent 문서 읽기
-    if (!fs.existsSync(agentPath)) {
-      throw new Error(`에이전트 파일 없음: ${agentPath}`);
-    }
     let agentContent = fs.readFileSync(agentPath, 'utf8');
-
-    // 라벨 에이전트인 경우 _공통규칙.md 자동 합성
-    const labelsDir = path.join(path.dirname(agentPath));
-    const commonRulesPath = path.join(labelsDir, '_공통규칙.md');
-    if (agentPath.includes(path.join('agents', 'labels')) && fs.existsSync(commonRulesPath)) {
-      const commonRules = fs.readFileSync(commonRulesPath, 'utf8');
-      agentContent += '\n\n' + commonRules;
-    }
 
     // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환)
     if (agentContent.includes('{{USER_CONTEXT}}')) {
@@ -997,14 +645,8 @@ ${agentContent}`;
 
   /**
    * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환
-   * 무료 티어에서는 개인정보 보호를 위해 프로필을 로드하지 않음
    */
   loadUserContext() {
-    // 무료 티어: 개인정보 미사용
-    if (this.tier === 'free') {
-      return '- 사용자 프로필 미사용 (무료 티어)';
-    }
-
     const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
@@ -1012,8 +654,7 @@ ${agentContent}`;
       const occ = user.occupation;
       const interests = user.interests;
 
-      // 직업은 핵심 키워드만 (포부/비전 문구 제외), 관심 분야는 키워드 전달
-      let context = `- **직업**: ${occ.title}`;
+      let context = `- **직업**: ${occ.title}\n- **상세**: ${occ.description}`;
 
       if (interests.technical?.length > 0) {
         context += `\n- **기술 관심**: ${interests.technical.join(', ')}`;
@@ -1121,100 +762,18 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * API 호출 (재시도 + 모델 폴백 포함)
-   * 1) Primary 모델로 재시도 → 2) 실패 시 Fallback 모델로 재시도
+   * Solar3 API 호출 (재시도 포함, 시간 예산 + 불완전 JSON 복구)
    * @param {string} prompt - 프롬프트
    * @param {number} maxTimeMs - 시간 예산 (ms). 0이면 무제한
    */
-  async callLLMWithRetry(prompt, maxTimeMs = 0) {
-    const models = this.getModelsForTask(this.currentTaskType);
-    const startTime = Date.now();
-
-    // Primary 모델 시도 (타임아웃 시 최대 3회: reasoning 2회 + no-reasoning 1회)
-    try {
-      this.log(`[Primary] ${models.primary}`, 'info');
-      return await this._retryWithModel(prompt, maxTimeMs, models.primary, startTime, { maxTimeoutRetries: 2 });
-    } catch (primaryError) {
-      const primaryMsg = primaryError.message || '';
-      const isTimeoutError = primaryMsg.includes('타임아웃') || primaryMsg.includes('timeout');
-
-      // 타임아웃이면 reasoning 비활성화 후 1회 더 시도
-      if (isTimeoutError) {
-        this.log(`[Primary 재시도] reasoning 비활성화 후 마지막 시도`, 'warn');
-        try {
-          return await this._retryWithModel(prompt, maxTimeMs > 0 ? maxTimeMs - (Date.now() - startTime) : 0, models.primary, Date.now(), { disableReasoning: true, maxTimeoutRetries: 1 });
-        } catch (noReasoningError) {
-          // no-reasoning도 실패 → Fallback으로 진행
-          primaryError = noReasoningError;
-        }
-      }
-
-      // Fallback 모델이 없으면 그대로 throw
-      if (!models.fallback) throw primaryError;
-
-      // 일일 한도 초과: 다른 프로바이더의 Fallback으로 즉시 전환
-      if (primaryError.isDailyLimitExceeded) {
-        const primaryProvider = this._modelProviderMap[models.primary];
-        const fallbackProvider = this._modelProviderMap[models.fallback];
-        if (primaryProvider === fallbackProvider) {
-          this.log(`[Fallback 건너뜀] 같은 프로바이더(${primaryProvider}) 일일 한도 초과`, 'warn');
-          throw primaryError;
-        }
-        this.log(`[Fallback] ${primaryProvider} 일일 한도 초과 → ${fallbackProvider}로 전환`, 'info');
-      }
-
-      // 401/403 인증 에러: 같은 프로바이더의 Fallback은 건너뜀 (다른 프로바이더면 시도)
-      const primaryStatus = primaryError.status;
-      if (primaryStatus === 401 || primaryStatus === 403) {
-        const primaryProvider = this._modelProviderMap[models.primary];
-        const fallbackProvider = this._modelProviderMap[models.fallback];
-        if (primaryProvider === fallbackProvider) {
-          this.log(`[Fallback 건너뜀] 같은 프로바이더(${primaryProvider}) 인증 에러(${primaryStatus})`, 'warn');
-          throw primaryError;
-        }
-        this.log(`[Fallback] 다른 프로바이더(${primaryProvider}→${fallbackProvider})로 전환 시도`, 'info');
-      }
-
-      // 시간 예산 잔여 확인
-      const elapsed = Date.now() - startTime;
-      const remaining = maxTimeMs > 0 ? maxTimeMs - elapsed : 0;
-      if (maxTimeMs > 0 && remaining < 30000) {
-        this.log(`시간 부족 (${Math.round(remaining/1000)}초), 폴백 건너뜀`, 'warn');
-        throw primaryError;
-      }
-
-      // Fallback 모델 시도
-      this.log(`[Fallback] Primary 실패 (${primaryError.message}), ${models.fallback}으로 전환`, 'warn');
-      try {
-        return await this._retryWithModel(prompt, remaining || 0, models.fallback, Date.now());
-      } catch (fallbackError) {
-        // 폴백도 실패하면 원본 에러 메시지에 폴백 실패 정보 추가
-        throw new Error(`Primary(${models.primary}): ${primaryError.message} → Fallback(${models.fallback}): ${fallbackError.message}`);
-      }
-    }
-  }
-
-  /**
-   * 특정 모델로 재시도 루프 실행
-   */
-  async _retryWithModel(prompt, maxTimeMs, model, startTime, options = {}) {
+  async callSolar3WithRetry(prompt, maxTimeMs = 0) {
     let lastError;
-    let retryOverrides = { model };
+    let retryOverrides = {};
     let bestIncompleteResponse = null;
+    const startTime = Date.now();
     const requiredFields = this.getRequiredFieldsForTask(this.currentTaskType);
-    const maxTimeoutRetries = options.maxTimeoutRetries || 7;
-    let timeoutCount = 0;
 
-    // reasoning 비활성화 옵션
-    if (options.disableReasoning) {
-      retryOverrides.disableReasoning = true;
-    }
-
-    // 폴백 시 재시도 횟수 축소 (3회)
-    const isPrimary = model === this.getModelsForTask(this.currentTaskType).primary;
-    const delays = isPrimary ? this.retryDelays : this.retryDelays.slice(0, 3);
-
-    for (let i = 0; i < delays.length; i++) {
+    for (let i = 0; i < this.retryDelays.length; i++) {
       // 시간 예산 체크
       if (maxTimeMs > 0 && Date.now() - startTime >= maxTimeMs) {
         this.log(`시간 예산 초과 (${Math.round(maxTimeMs/1000)}초), 복구 시도...`, 'warn');
@@ -1224,33 +783,36 @@ ${agentContent}`;
       }
 
       try {
-        const providerForRL = this._modelProviderMap[model];
-        await this.checkRateLimit(providerForRL);
+        // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
+        await this.checkRateLimit();
 
-        const response = await this.callLLM(prompt, retryOverrides);
+        const response = await this.callSolar3(prompt, retryOverrides);
 
         // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
+          // bestIncompleteResponse 갱신 (가장 긴 응답 저장)
           if (!bestIncompleteResponse || response.length > bestIncompleteResponse.length) {
             bestIncompleteResponse = response;
           }
 
+          // 복구 시도: repairJson → parse → 필수 필드 체크
           const recovered = this.tryRecoverIncompleteJson(response, requiredFields);
           if (recovered) {
             this.log(`불완전 JSON 복구 성공`, 'info');
             return JSON.stringify(recovered);
           }
 
-          if (i < delays.length - 1) {
-            const delay = delays[i];
-            this.log(`불완전 JSON 응답, ${delay/1000}초 후 재시도 (${i + 1}/${delays.length})`, 'warn');
+          if (i < this.retryDelays.length - 1) {
+            const delay = this.retryDelays[i];
+            this.log(`불완전 JSON 응답, 복구 실패, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
             await this.sleep(delay);
             continue;
           }
 
+          // 마지막 재시도: bestIncompleteResponse에서 최후 복구 시도
           const lastRecover = this.tryRecoverIncompleteJson(bestIncompleteResponse, requiredFields);
           if (lastRecover) {
-            this.log(`최종 불완전 JSON 복구 성공`, 'info');
+            this.log(`최종 불완전 JSON 복구 성공 (bestIncompleteResponse)`, 'info');
             return JSON.stringify(lastRecover);
           }
           throw new Error('불완전한 JSON 응답 (토큰 끊김)');
@@ -1261,36 +823,21 @@ ${agentContent}`;
       } catch (error) {
         lastError = error;
 
-        // 일일 한도 초과는 재시도 무의미 → 즉시 throw하여 Fallback 전환
-        if (error.isDailyLimitExceeded) {
-          this.log(`[${model}] 일일 한도 초과, Fallback 전환`, 'warn');
-          throw error;
-        }
-
         const isRetryable = this.isRetryableError(error);
-        const hasMoreRetries = i < delays.length - 1;
-
-        // 타임아웃 횟수 추적 → 초과 시 즉시 throw하여 상위에서 처리
-        const isTimeout = (error.message || '').includes('타임아웃') || (error.message || '').includes('timeout');
-        if (isTimeout) {
-          timeoutCount++;
-          if (timeoutCount >= maxTimeoutRetries) {
-            this.log(`타임아웃 ${timeoutCount}회 도달, 현재 모델 시도 중단`, 'warn');
-            throw error;
-          }
-        }
+        const hasMoreRetries = i < this.retryDelays.length - 1;
 
         if (isRetryable && hasMoreRetries) {
-          const delay = delays[i];
+          const delay = this.retryDelays[i];
 
+          // 빈 응답(추론 토큰만 소진)인 경우 reasoningEffort를 낮춰서 재시도
           if (error.isEmptyResponse) {
-            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${delays.length})`, 'warn');
+            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
             await this.sleep(delay);
-            retryOverrides = { model, reasoningEffort: 'low', ...(options.disableReasoning && { disableReasoning: true }) };
+            retryOverrides = { reasoningEffort: 'low' };
             continue;
           }
 
-          this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${delays.length}): ${error.message}`, 'warn');
+          this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length}): ${error.message}`, 'warn');
           await this.sleep(delay);
           continue;
         }
@@ -1338,206 +885,40 @@ ${agentContent}`;
       merge: ['items'],
       insight: ['items'],
       summarize: ['label', 'themes'],
-      crossInsight: ['mega_trends', 'cross_connections', 'action_items']
+      crossInsight: ['mega_trends', 'cross_connections', 'ceo_actions']
     };
     return fieldMap[taskType] || [];
   }
 
   /**
-   * Vision 모델로 이미지에서 텍스트 추출
-   * @param {string[]} imageUrls - 이미지 URL 배열
-   * @param {string} visionModel - 사용할 vision 모델명
-   * @returns {string} 추출된 텍스트
-   */
-  async callVisionModel(imageUrls, visionModel) {
-    const fetch = await getFetch();
-    const modelConfig = this.getModelSpecificConfig(visionModel);
-
-    this.log(`Vision API 호출: ${visionModel} (이미지 ${imageUrls.length}개)`, 'info');
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), modelConfig.timeoutMs);
-
-    try {
-      // 멀티모달 content 배열 구성
-      const content = [
-        { type: 'text', text: '이 이미지들은 뉴스레터 이메일의 본문입니다. 이미지에 포함된 모든 텍스트를 그대로 추출해주세요. 텍스트만 출력하고, 설명이나 해석은 하지 마세요.' }
-      ];
-
-      for (const url of imageUrls.slice(0, 5)) { // 최대 5개 이미지
-        content.push({ type: 'image_url', image_url: { url } });
-      }
-
-      const requestBody = {
-        model: visionModel,
-        messages: [
-          { role: 'user', content }
-        ],
-        temperature: 0.1,
-        max_tokens: modelConfig.maxTokens
-      };
-
-      // 프로바이더별 API URL 및 헤더 구성
-      const provider = this.getProviderForModel(visionModel);
-      await this.checkRateLimit(provider.name);
-      const headers = {
-        'Authorization': `Bearer ${provider.apiKey}`,
-        'Content-Type': 'application/json'
-      };
-      if (provider.name === 'openrouter') {
-        headers['HTTP-Referer'] = 'https://github.com/yks-gmail-manager';
-        headers['X-Title'] = 'Gmail Manager';
-      }
-
-      const response = await fetch(`${provider.baseUrl}/chat/completions`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers,
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        clearTimeout(timeoutId);
-        throw new Error(`Vision API 오류 ${response.status}: ${errorText.substring(0, 200)}`);
-      }
-
-      const data = await response.json();
-      clearTimeout(timeoutId);
-
-      const extractedText = data.choices?.[0]?.message?.content || '';
-      this.log(`Vision 텍스트 추출 완료: ${extractedText.length}자`, 'info');
-      return extractedText;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      this.log(`Vision API 실패: ${error.message}`, 'error');
-      throw error;
-    }
-  }
-
-  /**
-   * API 호출 (단일)
+   * LLM API 호출 (단일) - Ollama Cloud API / OpenRouter 지원
    * @param {string} prompt - 프롬프트
-   * @param {object} overrides - 설정 오버라이드 (예: { model, reasoningEffort })
+   * @param {object} overrides - 설정 오버라이드
    */
-  async callLLM(prompt, overrides = {}) {
+  async callSolar3(prompt, overrides = {}) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
-    const model = overrides.model || this.getModelsForTask(this.currentTaskType).primary;
-    const modelConfig = this.getModelSpecificConfig(model);
-    const reasoningEffort = overrides.reasoningEffort || taskConfig.reasoningEffort;
     const fetch = await getFetch();
 
     // 프롬프트 크기 로깅
-    const reasoningDisabledForLog = overrides.disableReasoning || taskConfig.disableReasoning;
-    const reasoningStatus = !modelConfig.supportsReasoning ? 'N/A' : reasoningDisabledForLog ? 'disabled' : reasoningEffort;
-    this.log(`API 호출: ${model} (${prompt.length}자, ${this.currentTaskType}, reasoning: ${reasoningStatus})`, 'debug');
+    this.log(`API 호출 시작 (프롬프트 ${prompt.length}자, 모델: ${this.model}, 작업: ${this.currentTaskType})`, 'debug');
 
-    // 모델별 타임아웃 설정
+    // 타임아웃 설정 (5분 - 긴 처리 대비)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), modelConfig.timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), 300000);
 
     try {
-      // 요청 본문 구성 (모델별 분기)
-      const requestBody = {
-        model: model,
-        messages: [
-          { role: 'system', content: taskConfig.systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: taskConfig.temperature,
-        max_tokens: modelConfig.maxTokens
-      };
+      let content;
 
-      // 프로바이더별 API URL 및 헤더 구성
-      const provider = this.getProviderForModel(model);
-
-      // reasoning 파라미터 추가 (Google AI Studio는 미지원 → 제외, 태스크 설정에서 비활성화 가능)
-      const reasoningDisabled = overrides.disableReasoning || taskConfig.disableReasoning;
-      if (modelConfig.supportsReasoning && !reasoningDisabled && provider.name !== 'google') {
-        requestBody.reasoning = { effort: reasoningEffort };
-        // 모델별 추론 토큰 상한 (GLM 등 추론 폭발 방지)
-        if (modelConfig.reasoningMaxTokens) {
-          requestBody.reasoning.max_tokens = modelConfig.reasoningMaxTokens;
-        }
-      }
-      const headers = {
-        'Authorization': `Bearer ${provider.apiKey}`,
-        'Content-Type': 'application/json'
-      };
-      // OpenRouter 전용 헤더
-      if (provider.name === 'openrouter') {
-        headers['HTTP-Referer'] = 'https://github.com/yks-gmail-manager';
-        headers['X-Title'] = 'Gmail Manager';
+      if (this.provider === 'ollama') {
+        content = await this.callOllama(prompt, taskConfig, controller, fetch);
+      } else {
+        content = await this.callOpenRouter(prompt, taskConfig, overrides, controller, fetch);
       }
 
-      // 무료 티어 일일 한도 체크 (프로바이더별)
-      if (!this.checkDailyLimit(provider.name)) {
-        clearTimeout(timeoutId);
-        const error = new Error(`무료 티어 일일 요청 한도 초과 [${provider.name}] (${this.freeLimits.daily_requests}회)`);
-        error.isDailyLimitExceeded = true;
-        error.providerName = provider.name;
-        throw error;
-      }
-      this.incrementDailyCount(provider.name);
-
-      const response = await fetch(`${provider.baseUrl}/chat/completions`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers,
-        body: JSON.stringify(requestBody)
-      });
-
-      // 타임아웃을 여기서 해제하지 않음! body 수신 완료까지 유지
-      this.log(`API 응답 헤더 수신: ${model} (${provider.name}, 상태 ${response.status})`, 'debug');
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        clearTimeout(timeoutId);
-        // 에러 메시지 길이 제한 + 잠재적 키 노출 마스킹
-        const sanitized = (errorText || '').substring(0, 500)
-          .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
-          .replace(/AIza[a-zA-Z0-9_-]{30,}/g, 'AIza***')
-          .replace(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***');
-        const error = new Error(`API Error (${response.status}) [${model}]: ${sanitized}`);
-        error.status = response.status;
-        throw error;
-      }
-
-      // body 수신도 타임아웃 범위 내에서 완료되어야 함
-      const data = await response.json();
       clearTimeout(timeoutId);
 
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error(`API 응답에 choices가 없습니다 [${model}]`);
-      }
-
-      const content = data.choices[0].message?.content || '';
-
-      // 디버그: 토큰 사용량 출력 + 사용량 누적 추적
-      if (data.usage) {
-        const reasoning = data.usage.completion_tokens_details?.reasoning_tokens || 0;
-        const total = data.usage.completion_tokens || 0;
-        const input = data.usage.prompt_tokens || 0;
-        this.log(`  토큰 [${model}]: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
-
-        // 사용량 통계 누적
-        this.usageStats.totalCalls++;
-        this.usageStats.totalPromptTokens += input;
-        this.usageStats.totalCompletionTokens += total;
-        this.usageStats.totalReasoningTokens += reasoning;
-
-        if (!this.usageStats.byModel[model]) {
-          this.usageStats.byModel[model] = { calls: 0, prompt: 0, completion: 0, reasoning: 0 };
-        }
-        this.usageStats.byModel[model].calls++;
-        this.usageStats.byModel[model].prompt += input;
-        this.usageStats.byModel[model].completion += total;
-        this.usageStats.byModel[model].reasoning += reasoning;
-      }
-
       if (!content) {
-        const reasoning = data.usage?.completion_tokens_details?.reasoning_tokens || 0;
-        const error = new Error(`빈 응답 [${model}] (추론 토큰: ${reasoning}개 사용됨)`);
+        const error = new Error('빈 응답');
         error.isEmptyResponse = true;
         throw error;
       }
@@ -1548,11 +929,119 @@ ${agentContent}`;
       clearTimeout(timeoutId);
 
       if (error.name === 'AbortError') {
-        const timeoutSec = Math.round(modelConfig.timeoutMs / 1000);
-        throw new Error(`API 타임아웃 [${model}] (${timeoutSec}초 초과)`);
+        throw new Error('API 호출 타임아웃 (5분 초과)');
       }
       throw error;
     }
+  }
+
+  /**
+   * Ollama Cloud API 호출 (api.ollama.com 네이티브 엔드포인트)
+   */
+  async callOllama(prompt, taskConfig, controller, fetch) {
+    const apiUrl = 'https://api.ollama.com/api/chat';
+
+    const requestBody = {
+      model: this.model,
+      messages: [
+        { role: 'system', content: taskConfig.systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      stream: false,
+      options: {
+        temperature: taskConfig.temperature,
+        num_predict: 16384   // 출력 토큰 충분히 확보 (잘림 방지)
+      }
+    };
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    this.log(`API 응답 수신 (상태 ${response.status})`, 'debug');
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const error = new Error(`Ollama API Error (${response.status}): ${errorText}`);
+      error.status = response.status;
+      throw error;
+    }
+
+    const data = await response.json();
+    const content = data.message?.content || '';
+
+    // 토큰 부족으로 응답이 잘린 경우 감지
+    if (data.done_reason === 'length') {
+      this.log(`⚠️ 출력 토큰 부족으로 응답 잘림 (done_reason: length)`, 'warn');
+      // 잘린 JSON을 repair 시도 (callSolar3WithRetry에서 처리)
+    }
+
+    // 디버그: 토큰 사용량 출력
+    if (data.prompt_eval_count || data.eval_count) {
+      this.log(`  토큰: 입력 ${data.prompt_eval_count || 0}, 출력 ${data.eval_count || 0}, 소요 ${Math.round((data.total_duration || 0) / 1e9)}초`, 'debug');
+    }
+
+    return content;
+  }
+
+  /**
+   * OpenRouter API 호출 (레거시 지원)
+   */
+  async callOpenRouter(prompt, taskConfig, overrides, controller, fetch) {
+    const requestBody = {
+      model: this.model,
+      messages: [
+        { role: 'system', content: taskConfig.systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      temperature: taskConfig.temperature,
+      max_tokens: 100000,
+      reasoning: { effort: overrides.reasoningEffort || taskConfig.reasoningEffort }
+    };
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/yks-gmail-manager',
+        'X-Title': 'Gmail Manager'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    this.log(`API 응답 수신 (상태 ${response.status})`, 'debug');
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const error = new Error(`OpenRouter API Error (${response.status}): ${errorText}`);
+      error.status = response.status;
+      throw error;
+    }
+
+    const data = await response.json();
+
+    if (!data.choices || data.choices.length === 0) {
+      throw new Error('API 응답에 choices가 없습니다');
+    }
+
+    const content = data.choices[0].message?.content || '';
+
+    if (data.usage) {
+      const reasoning = data.usage.completion_tokens_details?.reasoning_tokens || 0;
+      const total = data.usage.completion_tokens || 0;
+      const input = data.usage.prompt_tokens || 0;
+      this.log(`  토큰: 입력 ${input}, 추론 ${reasoning}, 출력 ${total - reasoning}`, 'debug');
+    }
+
+    return content;
   }
 
   // ============================================
@@ -1583,17 +1072,13 @@ ${agentContent}`;
     const msg = error.message || '';
 
     return (
-      [429, 408, 500, 502, 503, 504].includes(status) ||
+      [429, 408, 500, 502, 503, 504, 524].includes(status) ||
       error.name === 'AbortError' ||
       msg.includes('timeout') ||
-      msg.includes('타임아웃') ||
       msg.includes('ECONNRESET') ||
       msg.includes('ETIMEDOUT') ||
       msg.includes('불완전') ||
-      msg.includes('빈 응답') ||
-      msg.includes('Invalid response body') ||
-      msg.includes('network') ||
-      msg.includes('ECONNREFUSED')
+      msg.includes('빈 응답')
     );
   }
 
@@ -1602,64 +1087,36 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * Rate Limit 체크 및 대기 (프로바이더별)
-   * @param {string} providerName - 프로바이더명 (없으면 글로벌 적용)
+   * Rate Limit 체크 및 대기
    */
-  async checkRateLimit(providerName) {
-    const rl = providerName && this.providerRateLimits[providerName]
-      ? this.providerRateLimits[providerName]
-      : null;
-
-    if (!rl) {
-      // 하위 호환: 글로벌 rate limit
-      const now = Date.now();
-      if (now - this.requestWindowStart >= 60000) {
-        this.requestCount = 0;
-        this.requestWindowStart = now;
-      }
-      if (this.requestCount >= this.maxRequestsPerMinute) {
-        const waitTime = 60000 - (now - this.requestWindowStart) + 1000;
-        this.log(`분당 요청 한도 도달, ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
-        await this.sleep(waitTime);
-        this.requestCount = 0;
-        this.requestWindowStart = Date.now();
-      }
-      const timeSinceLastRequest = now - this.lastRequestTime;
-      if (timeSinceLastRequest < this.minRequestInterval) {
-        await this.sleep(this.minRequestInterval - timeSinceLastRequest);
-      }
-      this.requestCount++;
-      this.lastRequestTime = Date.now();
-      return;
-    }
-
+  async checkRateLimit() {
     const now = Date.now();
 
     // 1분 경과 시 카운터 리셋
-    if (now - rl.windowStart >= 60000) {
-      rl.requestCount = 0;
-      rl.windowStart = now;
+    if (now - this.requestWindowStart >= 60000) {
+      this.requestCount = 0;
+      this.requestWindowStart = now;
     }
 
     // 분당 한도 도달 시 대기
-    if (rl.requestCount >= rl.maxRequestsPerMinute) {
-      const waitTime = 60000 - (now - rl.windowStart) + 1000;
-      this.log(`[${providerName}] 분당 요청 한도 도달 (${rl.maxRequestsPerMinute}), ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
+    if (this.requestCount >= this.maxRequestsPerMinute) {
+      const waitTime = 60000 - (now - this.requestWindowStart) + 1000;
+      this.log(`분당 요청 한도 도달, ${Math.ceil(waitTime/1000)}초 대기...`, 'warn');
       await this.sleep(waitTime);
-      rl.requestCount = 0;
-      rl.windowStart = Date.now();
+      this.requestCount = 0;
+      this.requestWindowStart = Date.now();
     }
 
     // 최소 요청 간격 유지
-    const timeSinceLastRequest = now - rl.lastRequestTime;
-    if (timeSinceLastRequest < rl.minRequestInterval) {
-      const waitMs = rl.minRequestInterval - timeSinceLastRequest;
-      this.log(`[${providerName}] 요청 간격 유지: ${Math.ceil(waitMs/1000)}초 대기`, 'debug');
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const waitMs = this.minRequestInterval - timeSinceLastRequest;
+      this.log(`요청 간격 유지: ${Math.ceil(waitMs/1000)}초 대기`, 'debug');
       await this.sleep(waitMs);
     }
 
-    rl.requestCount++;
-    rl.lastRequestTime = Date.now();
+    this.requestCount++;
+    this.lastRequestTime = Date.now();
   }
 
   // ============================================
@@ -1784,12 +1241,9 @@ ${agentContent}`;
       }
     );
 
-    // 5. 문자열 값 내 제어 문자 이스케이프 (이미 이스케이프된 것은 제외)
+    // 5. 문자열 값 내 제어 문자 이스케이프
     repaired = repaired.replace(/"[^"]*"/g, (match) => {
-      return match
-        .replace(/(?<!\\)\n/g, '\\n')
-        .replace(/(?<!\\)\r/g, '\\r')
-        .replace(/(?<!\\)\t/g, '\\t');
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     });
 
     // 6. 불완전한 JSON 닫기 시도 (문자열 내부 무시)
@@ -1911,69 +1365,6 @@ ${agentContent}`;
 
   getToday() {
     return new Date().toISOString().split('T')[0];
-  }
-
-  // ============================================
-  // 사용량 통계 / 비용 계산
-  // ============================================
-
-  /**
-   * 누적 사용량 통계 반환
-   */
-  getUsageStats() {
-    return {
-      totalCalls: this.usageStats.totalCalls,
-      totalPromptTokens: this.usageStats.totalPromptTokens,
-      totalCompletionTokens: this.usageStats.totalCompletionTokens,
-      totalReasoningTokens: this.usageStats.totalReasoningTokens,
-      byModel: { ...this.usageStats.byModel }
-    };
-  }
-
-  /**
-   * 모델별 가격표 (USD per 1M tokens)
-   * 기준: OpenRouter 표준 가격 (2026-04 기준)
-   */
-  static MODEL_PRICING = {
-    'deepseek/deepseek-v3.2': { input: 0.26, output: 0.38 },
-    'gemini-3-flash-preview': { input: 0, output: 0 },              // 무료 티어
-    'nvidia/nemotron-nano-12b-v2-vl:free': { input: 0, output: 0 },
-    'nvidia/nemotron-3-super-120b-a12b:free': { input: 0, output: 0 },
-  };
-
-  /**
-   * 누적 사용량 기반 비용 계산 (USD)
-   * - reasoning 토큰은 output 가격으로 계산 (DeepSeek 청구 방식)
-   */
-  calculateCost() {
-    let totalCost = 0;
-    const breakdown = {};
-
-    for (const [model, stats] of Object.entries(this.usageStats.byModel)) {
-      // 정확한 키 매칭 또는 prefix 매칭
-      let pricing = AgentRunner.MODEL_PRICING[model];
-      if (!pricing) {
-        // prefix 매칭 (deepseek-v3.2-20251201 같은 변형 처리)
-        const matchKey = Object.keys(AgentRunner.MODEL_PRICING).find(k => model.startsWith(k));
-        pricing = matchKey ? AgentRunner.MODEL_PRICING[matchKey] : { input: 0, output: 0 };
-      }
-
-      const inputCost = (stats.prompt / 1e6) * pricing.input;
-      // completion = reasoning + output, 둘 다 output 가격
-      const outputCost = (stats.completion / 1e6) * pricing.output;
-      const modelCost = inputCost + outputCost;
-
-      breakdown[model] = {
-        calls: stats.calls,
-        prompt: stats.prompt,
-        completion: stats.completion,
-        reasoning: stats.reasoning,
-        cost_usd: modelCost
-      };
-      totalCost += modelCost;
-    }
-
-    return { total_usd: totalCost, by_model: breakdown };
   }
 }
 

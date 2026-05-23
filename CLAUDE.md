@@ -1,15 +1,74 @@
-# Gmail Manager - Project Rules
+# yks-gmail-manager
 
-## 작업 원칙
+## 프로젝트 목적
 
-- 간단한 수정(1줄, 리스크 없음)은 "후순위"로 미루지 말고 즉시 처리한다
-- deprecation 경고, 버전 업데이트 등 명확한 수정은 발견 즉시 적용한다
+사용자가 구독하는 모든 뉴스레터의 정보를 **단 하나도 누락하지 않고**, 중복은 하나로 합쳐서, 쉽게 읽을 수 있는 다이제스트로 만드는 시스템.
 
-## Gitignore 파일의 시크릿 배포 규칙
+## 핵심 원칙
 
-`config/user_profile.json`은 `.gitignore`에 포함된 시크릿 파일이다.
-이 파일을 수정한 후 사용자가 커밋/푸시를 요청하면, 반드시 다음을 함께 수행할 것:
+1. **정보 누락 제로**: 모든 뉴스레터의 모든 뉴스 아이템을 빠짐없이 추출. 누락은 가장 큰 실패.
+2. **중복 제거**: 같은 사건을 다루는 아이템은 가장 충실한 것 기준으로 병합. 다른 사건은 절대 병합하지 않음.
+3. **완결된 요약**: 요약만 읽어도 원문을 안 봐도 될 정도로 핵심사실+수치+배경+시사점 포함. "원문 참조" 같은 회피 표현 금지.
+4. **원문 보강**: 뉴스레터가 티저만 제공하고 링크로 전체 기사를 안내하는 경우, 링크를 따라가서 전문을 가져와 요약에 반영.
 
-1. git 커밋 대상이 아님을 인지 (gitignore 대상)
-2. `gh secret set USER_PROFILE < config/user_profile.json` 명령으로 GitHub Secrets에 반영
-3. 사용자에게 시크릿 업데이트 완료를 보고
+## 아키텍처
+
+```
+Gmail → HTML→텍스트 → 원문링크 크롤링 → Flash 추출 → Pro 병합 → Flash 인사이트 → Pro 크로스인사이트 → HTML/MD 리포트
+```
+
+## 모델 전략 (Ollama Pro $20/월)
+
+- **Flash** (`deepseek-v4-flash:cloud`): 추출, 분석, 인사이트, 라벨요약. GPU 소모 적음.
+- **Pro** (`deepseek-v4-pro:cloud`): 병합, 크로스인사이트 Reduce만. Level 4 GPU 소모 높으므로 최소화.
+- Cloudflare 100초 타임아웃 제약 → 청크 크기 5000자 제한.
+
+## 라벨 구조 (15개 활성)
+
+IT, 경제, 시사, 창업, 투자, 해외, 마케팅, 라이프, 인문학, 스포츠, 소셜포럼, 기타, NYT, 미국, 중국
+
+## SKILL 시스템
+
+- `skills/newsletters/SKILL_*.md`: 뉴스레터별 구조 분석 및 추출 규칙
+- `config/newsletters.json`: 60개 뉴스레터 카탈로그 (발신자→SKILL 매핑)
+- SKILL 파일의 발신자 정보는 반드시 newsletters.json과 일치해야 함
+- 검증: `node scripts/validate_skills.js` (정적), `--live` (실제 추출 테스트)
+
+## 품질 기준
+
+- **할루시네이션 제로**: 입력 텍스트에 없는 수치, 인물, 사실을 절대 생성하지 않음
+- **요약 300~500자**: 300자 미만은 불합격. 핵심사실+수치+배경+시사점 필수
+- **누락 제로**: 뉴스레터 본문의 모든 뉴스 아이템을 빠짐없이 추출
+- **금지 표현**: "원문 참조", "자세한 내용은 링크" 등 회피 표현 불가
+- **번역 품질**: 영문 → 한국어 직역 금지, 자연스러운 의역
+
+## 알려진 이슈
+
+- Ollama Cloud Cloudflare 524 타임아웃: 서버 부하에 따라 발생, 재시도로 대응
+- PDF 뉴스레터 (센서블박스): 텍스트 추출 불가 → 비활성화
+- 청크 경계 잘림: 불완전 아이템(50자 미만) 자동 제거
+
+## 코드 수정 시 주의사항
+
+- `agent_runner.js` 수정 시: 금지 표현 목록 유지, 할루시네이션 방지 규칙 유지, 청크 크기 12K 유지
+- `orchestrator.js` 수정 시: flashRunner/proRunner 분리 유지, Pro 호출 최소화
+- SKILL 파일 수정 시: 발신자 이메일이 newsletters.json과 반드시 일치, 실제 메일 본문을 읽고 작성
+- 새 라벨 추가 시: labels.json + agents/labels/*.md + newsletters.json 모두 업데이트
+- 타임아웃: Ollama Cloud = Cloudflare 100초 제한 (재시도 대기 5~90초), Gmail API = 재시도 2~30초
+
+## 실행
+
+```bash
+npm run digest          # 전체 파이프라인 실행
+npm run auth            # Gmail OAuth 인증
+node scripts/validate_skills.js --live  # SKILL 전수 검증
+```
+
+## OAuth 설정
+
+현재 Google OAuth가 **테스트 모드**로 설정되어 있어 refresh_token이 7일 후 만료됨.
+프로덕션 전환 방법:
+1. [Google Cloud Console](https://console.cloud.google.com/) 접속
+2. API 및 서비스 → OAuth 동의 화면
+3. "앱 게시" 클릭 → 프로덕션 모드로 전환
+4. 전환 후 `npm run auth`로 재인증 → refresh_token이 만료되지 않음

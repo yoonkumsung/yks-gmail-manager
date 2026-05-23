@@ -1,6 +1,6 @@
-# SKILL_coffeepot
+# SKILL_catchpaper
 
-COFFEEPOT <good@coffeepot.me> 뉴스레터의 구조 분석 및 추출 규칙입니다.
+Catch Paper <catchpaper@mail.beehiiv.com> 뉴스레터의 구조 분석 및 추출 규칙입니다.
 
 ---
 
@@ -8,8 +8,8 @@ COFFEEPOT <good@coffeepot.me> 뉴스레터의 구조 분석 및 추출 규칙입
 
 | 항목 | 값 |
 |------|-----|
-| 이름 | COFFEEPOT <good@coffeepot.me> |
-| 발신자 | good@coffeepot.me |
+| 이름 | Catch Paper <catchpaper@mail.beehiiv.com> |
+| 발신자 | catchpaper@mail.beehiiv.com |
 | 유형 | multi-item |
 | 언어 | ko |
 | 평균 아이템 수 | 5개 |
@@ -20,13 +20,18 @@ COFFEEPOT <good@coffeepot.me> 뉴스레터의 구조 분석 및 추출 규칙입
 ## 구조 분석
 
 ### 뉴스레터 특징
-- 본문 길이: 약 8433자
+- 본문 길이: 약 9889자
 - 유형: 다수 아이템 포함
 
 ### 섹션 마커
-- 1. 새로운 터닝포인트 맞이한 영상 생성, 2. AI 모드가 중심이 되는 구글 검색
-- 1. AI 영상도 현실처럼 만들게 되면
-- 2. 제품보다 중요한 구글의 AI 광고
+- 📑SenseTime: “멀티모달 모델의 다음 진화 방향은 뭘까?”
+- 26.05. 3주차 | SenseTime, Alibaba, NVIDIA, Google, ByteDance
+- 📈 최신 AI 트렌드 3줄 요약
+- 🌟 멀티모달 이해·생성 통합 — “따로 만드는 건 낭비”라는 공감대 확산
+- 🔥 에이전트 자율 학습과 코드 기반 OS화가 동시에 급물살
+- 🚀 정답 없는 문제까지 RL이 진출 — 리서치·올림피아드 전방위 확장
+- 🔮 “이해와 생성, 왜 나눴어?”
+- 🏛️ 소속: SenseTime
 
 ### 아이템 경계
 - 빈 줄, 구분선(---), 번호, 이모지 등으로 기사 구분

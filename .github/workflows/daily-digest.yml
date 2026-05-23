@@ -1,10 +1,9 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 10시 KST (01:00 UTC)
-  # GitHub Actions cron은 1~2시간 지연 가능 (KST 11~12시경 실제 실행)
+  # 매일 오전 10시 KST 목표 (GitHub Actions 지연 감안하여 08:30 KST = 23:30 UTC 설정)
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '30 23 * * *'
 
   # 수동 실행 버튼
   workflow_dispatch:
@@ -45,21 +44,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Check secrets
         id: check-secrets
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
         run: |
           MISSING=""
 
-          # LLM API 키: 최소 하나는 필요
-          if [ -z "$OPENROUTER_API_KEY" ] && [ -z "$GOOGLE_AI_API_KEY" ]; then
-            MISSING="${MISSING}LLM API 키(OPENROUTER_API_KEY 또는 GOOGLE_AI_API_KEY 중 하나), "
+          if [ -z "$OLLAMA_API_KEY" ]; then
+            MISSING="${MISSING}OLLAMA_API_KEY, "
           fi
 
           if [ -z "$GMAIL_CREDENTIALS" ]; then
@@ -80,8 +77,7 @@ jobs:
             echo "설정 방법:"
             echo "1. Repository → Settings → Secrets and variables → Actions"
             echo "2. 다음 Secrets 추가:"
-            echo "   - GOOGLE_AI_API_KEY: Google AI Studio API 키 (권장)"
-            echo "   - OPENROUTER_API_KEY: OpenRouter API 키 (폴백용)"
+            echo "   - OLLAMA_API_KEY: Ollama Pro API 키"
             echo "   - GMAIL_CREDENTIALS: client_secret.json 내용"
             echo "   - GMAIL_TOKEN: token.json 내용"
             echo ""
@@ -133,18 +129,17 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
-          MESSAGE=$(printf "[YKS Newsletter Report] 생성을 시작합니다.\n\n📅 %s\n📋 모드: %s" "$TARGET_DATE" "$MODE_KR")
+          MESSAGE=$(printf "안녕하세요, %s 뉴스레터 정리를 시작합니다.\n모드: %s\n완료되면 다시 알려드리겠습니다." "$TARGET_DATE" "$MODE_KR")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE" \
-            -d parse_mode=HTML
+            -d text="$MESSAGE"
 
       - name: Setup Node.js
         if: steps.check-secrets.outputs.skip != 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '18'
 
       - name: Install dependencies
         if: steps.check-secrets.outputs.skip != 'true'
@@ -153,8 +148,7 @@ jobs:
       - name: Gmail 메일 정리 실행
         if: steps.check-secrets.outputs.skip != 'true'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
           GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
           GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
           USER_PROFILE: ${{ secrets.USER_PROFILE }}
@@ -163,8 +157,7 @@ jobs:
           INPUT_LABELS: ${{ github.event.inputs.labels }}
         run: |
           # .env 파일 생성
-          echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
-          echo "GOOGLE_AI_API_KEY=$GOOGLE_AI_API_KEY" >> .env
+          echo "OLLAMA_API_KEY=$OLLAMA_API_KEY" > .env
 
           # Gmail credentials 저장 (config/credentials/ 경로로 통일)
           mkdir -p config/credentials
@@ -181,48 +174,22 @@ jobs:
             # 자동 실행
             node scripts/orchestrator.js --mode schedule
           else
-            # 수동 실행 입력 검증 (쉘 인젝션 방지)
+            # 수동 실행 (env로 전달받아 쉘 인젝션 방지)
+            ARGS="--mode $INPUT_MODE"
 
-            # mode 화이트리스트
-            case "$INPUT_MODE" in
-              today|last-24h|custom|schedule) ;;
-              *)
-                echo "ERROR: 잘못된 mode 값: $INPUT_MODE"
-                exit 1
-                ;;
-            esac
-
-            # custom_date 형식 검증 (YYYY-MM-DD)
             if [ -n "$INPUT_CUSTOM_DATE" ]; then
-              if ! echo "$INPUT_CUSTOM_DATE" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
-                echo "ERROR: 잘못된 날짜 형식 (YYYY-MM-DD 필요): $INPUT_CUSTOM_DATE"
-                exit 1
-              fi
+              ARGS="$ARGS --date $INPUT_CUSTOM_DATE"
             fi
 
-            # labels 형식 검증 (한글/영문/숫자/쉼표/언더스코어/하이픈만 허용)
             if [ -n "$INPUT_LABELS" ]; then
-              if ! echo "$INPUT_LABELS" | grep -qE '^[a-zA-Z0-9_,/가-힣-]+$'; then
-                echo "ERROR: 잘못된 labels 형식 (영문/숫자/한글/쉼표만 허용): $INPUT_LABELS"
-                exit 1
-              fi
+              ARGS="$ARGS --labels $INPUT_LABELS"
             fi
 
-            # 검증된 인자로 실행 (쉘 분리 안전)
-            ARGS=(--mode "$INPUT_MODE")
-            if [ -n "$INPUT_CUSTOM_DATE" ]; then
-              ARGS+=(--date "$INPUT_CUSTOM_DATE")
-            fi
-            if [ -n "$INPUT_LABELS" ]; then
-              ARGS+=(--labels "$INPUT_LABELS")
-            fi
-
-            node scripts/orchestrator.js "${ARGS[@]}"
+            node scripts/orchestrator.js $ARGS
           fi
 
       - name: SKILL 파일 및 설정 커밋
         if: success() && steps.check-secrets.outputs.skip != 'true'
-        continue-on-error: true
         run: |
           # Git 설정
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -242,19 +209,14 @@ jobs:
             # 커밋 (변경사항이 있을 때만)
             git diff --staged --quiet || git commit -m "chore: 새 뉴스레터 SKILL 자동 생성"
 
-            # remote 변경사항 반영 후 푸시 (conflict 시 abort 후 재시도)
-            if ! git pull --rebase; then
-              echo "Rebase conflict 발생, abort 후 merge 방식으로 재시도"
-              git rebase --abort
-              git pull --no-rebase --strategy-option theirs || true
-            fi
-            git push || echo "SKILL 푸시 실패 (메일 정리 자체는 정상 완료)"
+            # 푸시
+            git push
             echo "SKILL 파일 커밋 완료"
           else
             echo "새로운 SKILL 파일 없음, 건너뜀"
           fi
 
-      - name: 결과물 업로드 (Artifacts - 백업용)
+      - name: 결과물 업로드 (Artifacts)
         if: success() && steps.check-secrets.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -264,133 +226,7 @@ jobs:
             output/final/**/*.html
           retention-days: 30
 
-      - name: HTML을 GitHub Pages에 배포 + 인덱스 생성
-        if: success() && steps.check-secrets.outputs.skip != 'true'
-        id: pages-deploy
-        env:
-          INPUT_MODE: ${{ github.event.inputs.mode }}
-          INPUT_DATE: ${{ github.event.inputs.custom_date }}
-        run: |
-          # 대상 날짜 결정
-          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
-            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
-            TARGET_DATE="$INPUT_DATE"
-          else
-            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
-            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
-          fi
-
-          RUN_DIR="output/final/${RUN_ID}"
-          if [ ! -d "$RUN_DIR" ]; then
-            echo "결과물 폴더 없음, GitHub Pages 배포 건너뜀"
-            echo "deployed=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          HTML_FILE=$(find "$RUN_DIR" -name "*_Newsletter_report.html" 2>/dev/null | head -1)
-          if [ -z "$HTML_FILE" ]; then
-            echo "통합 HTML 파일 없음, GitHub Pages 배포 건너뜀"
-            echo "deployed=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # gh-pages 브랜치를 worktree로 체크아웃
-          git fetch origin gh-pages
-          git worktree add _ghpages gh-pages
-
-          # reports 디렉토리 보장
-          mkdir -p _ghpages/reports
-          [ -f _ghpages/.nojekyll ] || touch _ghpages/.nojekyll
-
-          # HTML 복사 (파일명: YYYY-MM-DD.html)
-          TARGET_HTML="_ghpages/reports/${TARGET_DATE}.html"
-          cp "$HTML_FILE" "$TARGET_HTML"
-
-          # 인덱스 페이지 재생성 (base-dir을 gh-pages worktree로 지정)
-          node scripts/generate_index_page.js --base-dir _ghpages
-
-          # gh-pages 브랜치에 커밋/푸시 (worktree 내부에서 실행)
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          cd _ghpages
-          git add -A
-          if git diff --staged --quiet; then
-            echo "gh-pages: 변경사항 없음"
-          else
-            git commit -m "report: ${TARGET_DATE} 뉴스레터 리포트 추가" || true
-            # remote 변경사항 반영 후 푸시
-            if ! git pull --rebase origin gh-pages; then
-              git rebase --abort
-              git pull --no-rebase --strategy-option theirs origin gh-pages || true
-            fi
-            git push origin gh-pages || echo "gh-pages 푸시 실패 (무시)"
-          fi
-          cd ..
-
-          # worktree 정리
-          git worktree remove _ghpages --force || true
-
-          # GitHub Pages URL 출력
-          REPO_OWNER="${GITHUB_REPOSITORY_OWNER}"
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
-          PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/reports/${TARGET_DATE}.html"
-          echo "GitHub Pages URL: $PAGES_URL"
-          echo "pages_url=$PAGES_URL" >> $GITHUB_OUTPUT
-          echo "target_date=$TARGET_DATE" >> $GITHUB_OUTPUT
-          echo "deployed=true" >> $GITHUB_OUTPUT
-
-      - name: MD를 Google Drive에 업로드
-        if: success() && steps.check-secrets.outputs.skip != 'true'
-        id: drive-upload
-        continue-on-error: true
-        env:
-          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
-          GMAIL_CREDENTIALS: ${{ secrets.GMAIL_CREDENTIALS }}
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-          INPUT_MODE: ${{ github.event.inputs.mode }}
-          INPUT_DATE: ${{ github.event.inputs.custom_date }}
-        run: |
-          if [ -z "$GDRIVE_FOLDER_ID" ]; then
-            echo "GDRIVE_FOLDER_ID 미설정, 업로드 건너뜀"
-            echo "uploaded=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if [ -z "$GMAIL_TOKEN" ] || [ -z "$GMAIL_CREDENTIALS" ]; then
-            echo "Gmail OAuth 시크릿 미설정, 업로드 건너뜀"
-            echo "uploaded=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # 대상 날짜 결정
-          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
-            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
-            TARGET_DATE="$INPUT_DATE"
-          else
-            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
-            TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
-          fi
-
-          RUN_DIR="output/final/${RUN_ID}"
-          MD_FILE=$(find "$RUN_DIR" -name "*_Newsletter_report.md" 2>/dev/null | head -1)
-          if [ -z "$MD_FILE" ]; then
-            echo "통합 MD 파일 없음, 업로드 건너뜀"
-            echo "uploaded=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # 파일명 형식: YYMMDD_Newsletter_report.md
-          YYMMDD=$(echo "$TARGET_DATE" | sed 's/20\(..\)-\(..\)-\(..\)/\1\2\3/')
-          TARGET_NAME="${YYMMDD}_Newsletter_report.md"
-          YEAR=$(echo "$TARGET_DATE" | cut -d'-' -f1)
-
-          echo "Drive 업로드: $TARGET_NAME → ${YEAR}/"
-          if node scripts/upload_to_drive.js "$MD_FILE" "$TARGET_NAME" "$YEAR"; then
-            echo "uploaded=true" >> $GITHUB_OUTPUT
-          else
-            echo "uploaded=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Telegram 알림 (링크 전송)
+      - name: Telegram 알림 및 파일 전송
         if: success() && steps.check-secrets.outputs.skip != 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -398,12 +234,10 @@ jobs:
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
           START_EPOCH: ${{ steps.start-notify.outputs.start_epoch }}
-          PAGES_URL: ${{ steps.pages-deploy.outputs.pages_url }}
-          PAGES_DEPLOYED: ${{ steps.pages-deploy.outputs.deployed }}
-          DRIVE_UPLOADED: ${{ steps.drive-upload.outputs.uploaded }}
         run: |
+          # TELEGRAM_TOKEN이 없으면 건너뛰기
           if [ -z "$TELEGRAM_TOKEN" ]; then
-            echo "TELEGRAM_TOKEN 미설정, 알림 건너뜀"
+            echo "TELEGRAM_TOKEN이 설정되지 않아 알림을 건너뜁니다."
             exit 0
           fi
 
@@ -413,7 +247,7 @@ jobs:
           ELAPSED_MIN=$(( ELAPSED / 60 ))
           ELAPSED_SEC=$(( ELAPSED % 60 ))
 
-          # 대상 날짜 결정
+          # 현재 실행의 RunID 계산 (YYYYMMDD)
           if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
             RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
             TARGET_DATE="$INPUT_DATE"
@@ -422,38 +256,46 @@ jobs:
             TARGET_DATE=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
           fi
 
+          # 결과물 폴더 확인
           RUN_DIR="output/final/${RUN_ID}"
 
           if [ ! -d "$RUN_DIR" ]; then
-            MESSAGE=$(printf "[YKS Newsletter Report] 생성 완료\n\n📅 %s\n📊 처리할 뉴스레터가 없었습니다.\n⏱ %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
+            MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n오늘은 처리할 뉴스레터가 없었습니다.\n소요 시간: %d분 %d초" "$TARGET_DATE" "$ELAPSED_MIN" "$ELAPSED_SEC")
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
               -d text="$MESSAGE"
             exit 0
           fi
 
-          LABEL_COUNT=$(find "$RUN_DIR" -name "*_Newsletter_report_*.md" 2>/dev/null | wc -l | tr -d ' ')
+          # 결과 집계
+          LABEL_COUNT=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | wc -l | tr -d ' ')
+          LABEL_NAMES=$(find "$RUN_DIR" -name "*_메일정리.md" 2>/dev/null | grep -v "통합" | xargs -I {} basename {} | sed 's/^[0-9]*_//' | sed 's/_메일정리.md$//' | tr '\n' ', ' | sed 's/,$//')
 
-          # 메시지 구성: 완료 정보 + 리포트 링크 + Drive 상태
-          MESSAGE="[YKS Newsletter Report] 생성 완료"$'\n\n'
-          MESSAGE+="📅 ${TARGET_DATE}"$'\n'
-          MESSAGE+="📊 ${LABEL_COUNT}개 라벨 처리 완료"$'\n'
-          MESSAGE+="⏱ ${ELAPSED_MIN}분 ${ELAPSED_SEC}초"$'\n\n'
+          # 통합 파일 찾기
+          HTML_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.html" 2>/dev/null | head -1)
+          MD_FILE=$(find "$RUN_DIR" -name "*통합*메일정리.md" 2>/dev/null | head -1)
 
-          if [ "$PAGES_DEPLOYED" = "true" ] && [ -n "$PAGES_URL" ]; then
-            MESSAGE+="🔗 리포트: ${PAGES_URL}"$'\n'
-          else
-            MESSAGE+="⚠️ GitHub Pages 배포 실패"$'\n'
-          fi
-
-          if [ "$DRIVE_UPLOADED" = "true" ]; then
-            MESSAGE+="☁️ Obsidian Vault 동기화 완료"
-          fi
+          # 완료 메시지 먼저 전송
+          MESSAGE=$(printf "%s 뉴스레터 정리가 완료되었습니다.\n%s 등 %s개 라벨을 처리했습니다.\n소요 시간: %d분 %d초\n\n아래에 리포트를 보내드립니다." "$TARGET_DATE" "$LABEL_NAMES" "$LABEL_COUNT" "$ELAPSED_MIN" "$ELAPSED_SEC")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}" \
-            --data-urlencode "disable_web_page_preview=false"
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="$MESSAGE"
+
+          # 파일 전송
+          if [ -n "$HTML_FILE" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F document=@"${HTML_FILE}" \
+              -F caption="HTML 리포트"
+          fi
+
+          if [ -n "$MD_FILE" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F document=@"${MD_FILE}" \
+              -F caption="Markdown 리포트"
+          fi
 
       - name: 에러/타임아웃 알림
         if: failure() || cancelled()
@@ -488,9 +330,8 @@ jobs:
             STATUS="에러"
           fi
 
-          MESSAGE=$(printf "[YKS Newsletter Report] 생성 실패\n\n📅 %s\n❌ 상태: %s\n⏱ %s\n\n🔗 <a href=\"%s\">로그 확인</a>" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
+          MESSAGE=$(printf "뉴스레터 정리 중 문제가 발생했습니다.\n날짜: %s\n상태: %s\n소요: %s\n\n상세 로그를 확인해주세요.\n%s" "$TARGET_DATE" "$STATUS" "$ELAPSED_STR" "$LOG_URL")
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d text="$MESSAGE" \
-            -d parse_mode=HTML
+            -d text="$MESSAGE"

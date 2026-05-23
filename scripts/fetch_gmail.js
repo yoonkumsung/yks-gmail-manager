@@ -11,8 +11,8 @@ class GmailFetcher {
   constructor(credentialsDir) {
     this.credentialsDir = credentialsDir || path.join(__dirname, '..', 'config', 'credentials');
     this.gmail = null;
-    // 재시도 설정
-    this.retryDelays = [1000, 2000, 4000, 8000, 16000];
+    // 재시도 설정 (Gmail API 429/500 대비 넉넉하게)
+    this.retryDelays = [2000, 5000, 10000, 20000, 30000];
   }
 
   /**

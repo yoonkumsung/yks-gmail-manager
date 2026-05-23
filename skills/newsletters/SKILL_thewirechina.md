@@ -10,7 +10,7 @@ The Wire <noreply@thewirechina.com> 뉴스레터의 구조 분석 및 추출 규
 |------|-----|
 | 이름 | The Wire <noreply@thewirechina.com> |
 | 발신자 | noreply@thewirechina.com |
-| 유형 | single-topic |
+| 유형 | multi-item |
 | 언어 | en |
 | 평균 아이템 수 | 5개 |
 | 생성일 | 2026-02-09 |

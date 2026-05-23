@@ -2,71 +2,11 @@
   "schema_version": "2.0",
   "labels": [
     {
-      "name": "소셜포럼",
-      "gmail_label": "소셜/포럼",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/소셜포럼.md",
-      "focus_topics": [
-        "커뮤니티",
-        "네트워킹",
-        "이벤트"
-      ]
-    },
-    {
-      "name": "투자",
-      "gmail_label": "투자",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/투자.md",
-      "focus_topics": [
-        "주식",
-        "펀드",
-        "채권",
-        "부동산",
-        "가상자산"
-      ]
-    },
-    {
-      "name": "기타",
-      "gmail_label": "기타",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/기타.md",
-      "focus_topics": []
-    },
-    {
-      "name": "인문학",
-      "gmail_label": "인문학",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/인문학.md",
-      "focus_topics": [
-        "철학",
-        "역사",
-        "문학",
-        "예술",
-        "교양"
-      ]
-    },
-    {
-      "name": "라이프",
-      "gmail_label": "라이프",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/라이프.md",
-      "focus_topics": [
-        "건강",
-        "여행",
-        "음식",
-        "문화",
-        "라이프스타일"
-      ]
-    },
-    {
       "name": "IT",
       "gmail_label": "IT",
-      "sub_labels": [],
+      "sub_labels": [
+        "IT/AI"
+      ],
       "enabled": true,
       "agent": "agents/labels/IT.md",
       "focus_topics": [
@@ -82,7 +22,9 @@
     {
       "name": "경제",
       "gmail_label": "경제",
-      "sub_labels": [],
+      "sub_labels": [
+        "경제/기관 홍보"
+      ],
       "enabled": true,
       "agent": "agents/labels/경제.md",
       "focus_topics": [
@@ -110,20 +52,6 @@
       ]
     },
     {
-      "name": "마케팅",
-      "gmail_label": "마케팅",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/마케팅.md",
-      "focus_topics": [
-        "마케팅",
-        "광고",
-        "브랜딩",
-        "SNS",
-        "콘텐츠"
-      ]
-    },
-    {
       "name": "창업",
       "gmail_label": "창업",
       "sub_labels": [],
@@ -138,17 +66,17 @@
       ]
     },
     {
-      "name": "스포츠",
-      "gmail_label": "스포츠",
+      "name": "투자",
+      "gmail_label": "투자",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/스포츠.md",
+      "agent": "agents/labels/투자.md",
       "focus_topics": [
-        "축구",
-        "야구",
-        "농구",
-        "골프",
-        "스포츠"
+        "주식",
+        "펀드",
+        "채권",
+        "부동산",
+        "가상자산"
       ]
     },
     {
@@ -166,12 +94,97 @@
       ]
     },
     {
-      "name": "쇼핑결제",
-      "gmail_label": "쇼핑/결제",
+      "name": "마케팅",
+      "gmail_label": "마케팅",
       "sub_labels": [],
-      "enabled": false,
-      "agent": null,
+      "enabled": true,
+      "agent": "agents/labels/마케팅.md",
+      "focus_topics": [
+        "마케팅",
+        "광고",
+        "브랜딩",
+        "SNS",
+        "콘텐츠"
+      ]
+    },
+    {
+      "name": "라이프",
+      "gmail_label": "라이프",
+      "sub_labels": [
+        "라이프/기관 홍보"
+      ],
+      "enabled": true,
+      "agent": "agents/labels/라이프.md",
+      "focus_topics": [
+        "건강",
+        "여행",
+        "음식",
+        "문화",
+        "라이프스타일"
+      ]
+    },
+    {
+      "name": "인문학",
+      "gmail_label": "인문학",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/인문학.md",
+      "focus_topics": [
+        "철학",
+        "역사",
+        "문학",
+        "예술",
+        "교양"
+      ]
+    },
+    {
+      "name": "스포츠",
+      "gmail_label": "스포츠",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/스포츠.md",
+      "focus_topics": [
+        "축구",
+        "야구",
+        "농구",
+        "골프",
+        "스포츠"
+      ]
+    },
+    {
+      "name": "소셜포럼",
+      "gmail_label": "소셜/포럼",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/소셜포럼.md",
+      "focus_topics": [
+        "커뮤니티",
+        "네트워킹",
+        "이벤트"
+      ]
+    },
+    {
+      "name": "기타",
+      "gmail_label": "기타",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/기타.md",
       "focus_topics": []
+    },
+    {
+      "name": "NYT",
+      "gmail_label": "New York Times",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/NYT.md",
+      "focus_topics": [
+        "미국정치",
+        "경제",
+        "기술",
+        "국제",
+        "월가",
+        "딜"
+      ]
     },
     {
       "name": "미국",
@@ -180,11 +193,11 @@
       "enabled": true,
       "agent": "agents/labels/미국.md",
       "focus_topics": [
-        "정치",
+        "미국정치",
         "경제",
-        "기술",
-        "국방",
-        "문화"
+        "외교",
+        "빅테크",
+        "정책"
       ]
     },
     {
@@ -194,12 +207,20 @@
       "enabled": true,
       "agent": "agents/labels/중국.md",
       "focus_topics": [
-        "정치",
-        "경제",
+        "중국경제",
+        "미중관계",
         "기술",
-        "외교",
-        "사회"
+        "부동산",
+        "홍콩"
       ]
+    },
+    {
+      "name": "쇼핑결제",
+      "gmail_label": "쇼핑/결제",
+      "sub_labels": [],
+      "enabled": false,
+      "agent": null,
+      "focus_topics": []
     }
   ]
 }
