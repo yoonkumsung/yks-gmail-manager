@@ -560,12 +560,9 @@ class AgentRunner {
       }
     }
 
-    // 불완전한 아이템 제거 (요약이 100자 미만이거나 잘린 것)
+    // 불완전한 아이템 제거 (제목 없는 것만 제거)
     const validItems = items.filter(item => {
-      if (!item || !item.title) return false;
-      const summary = item.summary || '';
-      // 요약이 너무 짧거나 문장이 미완성으로 끝나면 제거
-      if (summary.length < 50) return false;
+      if (!item || !item.title || item.title.length < 3) return false;
       return true;
     });
 
