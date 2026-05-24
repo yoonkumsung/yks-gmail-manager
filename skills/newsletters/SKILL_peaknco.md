@@ -20,34 +20,44 @@
 ## 구조 분석
 
 ### 뉴스레터 특징
-- hashtag-based sections for categorization
-- article titles and authors separated by '|' character
-- no explicit URLs; titles serve as links
-- multiple categories: ICT, Data, Security, Column, Global, Interesting
-- items separated by blank lines
+- ICT 뉴스 클리핑 형태: 제목과 매체/기자만 나열
+- 카테고리별 해시태그로 구분 (#ICT, #Data, #Security, #Column, #Global, #Interesting 등)
+- 본문 없음 — 제목만으로 요약 생성
+- 각 기사: `제목 | 매체(기자)` 또는 `제목 | 매체명` 형태
 
 ### 아이템 경계
-- each article line ends with a newline, followed by a blank line before the next article
-- sections start with a line containing '#Category' tags
+- **각 줄이 하나의 아이템**: `제목 | 매체(기자)` 패턴
+- 카테고리 해시태그(#ICT 등)는 아이템이 아닌 섹션 구분자
+- 빈 줄로 아이템 간 구분
 
 ### 제목 위치
-- title appears before the '|' separator in each article line, often preceded by category hashtags
+- `|` 앞부분이 제목
 
 ### 본문 위치
-- body content is not present in this clipping; only title and author are provided
+- 본문 없음. 제목 자체가 요약임 (짧은 요약 허용)
 
 ### 링크 위치
-- title line includes a clickable link to the article; no explicit URL is shown
+- URL 없음 → 빈 문자열
 
 ---
 
 ## 추출 규칙
 
-1. Identify sections by hashtags (#ICT, #Data, #Security, #Column, #Global, #Interesting)
-2. Extract each article line as title and author
-3. Summarize based on title and infer content
-4. Use title as link; if no URL, set empty string
-5. Exclude header/footer and subscription info
+**핵심: `|` 구분자가 있는 모든 줄이 하나의 뉴스 아이템이다.**
+
+1. `제목 | 매체(기자)` 패턴의 모든 줄을 아이템으로 추출
+2. 제목 = `|` 앞부분, 출처 = `|` 뒷부분
+3. 요약 = 제목 그대로 사용 (본문이 없으므로 짧은 요약 허용)
+4. #카테고리 해시태그 줄은 섹션 구분자이지 아이템이 아님
+5. link = 빈 문자열
+
+### 추출 예시
+```
+입력: AI 보안 위협 고조…정부, '양자 방패' 의무화 | 디지털투데이(황치규)
+→ title: "AI 보안 위협 고조…정부, '양자 방패' 의무화"
+→ summary: "AI 보안 위협이 고조됨에 따라 정부가 양자 방패를 의무화했다."
+→ keywords: ["AI 보안", "양자 방패", "정부 정책"]
+```
 
 ---
 
