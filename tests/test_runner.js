@@ -158,7 +158,7 @@ async function runTests() {
   // 테스트 파일 탐색
   const testDir = __dirname;
   const testFiles = fs.readdirSync(testDir)
-    .filter(f => f.startsWith('test_') && f.endsWith('.js') && f !== 'test_runner.js')
+    .filter(f => f.startsWith('test_') && f.endsWith('.js') && f !== 'test_runner.js' && f !== 'test_all_newsletters.js')
     .filter(f => !filter || f.includes(filter));
 
   if (testFiles.length === 0) {

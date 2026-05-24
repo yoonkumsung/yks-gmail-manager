@@ -62,4 +62,5 @@
 
 ## 특이사항
 
-no explicit URLs; rely on title as link; multiple categories separated by hashtags; items not numbered
+- no explicit URLs; rely on title as link; multiple categories separated by hashtags; items not numbered
+- 본 뉴스레터는 제목과 출처만 제공하므로 요약이 짧을 수 있음 (100자 미만 허용)
