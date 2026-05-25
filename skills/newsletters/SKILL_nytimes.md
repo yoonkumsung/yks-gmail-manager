@@ -70,6 +70,7 @@ The New York Times <nytdirect@nytimes.com> 뉴스레터의 구조 분석 및 추
 6. 제목 20~50자 (한국어 번역)
 7. 키워드 3~5개
 8. nytimes.com 원문 URL 추출
+9. **단일 기사 에디션** (The Great Read, What A.I. Philanthropists 등): 전체를 1개 아이템으로 추출. 0개 추출 절대 금지 — 본문이 있으면 반드시 최소 1개 아이템을 만든다.
 
 ### ⚠️ 번역 필수
 - 모든 출력 한국어. 직역 금지, 자연스러운 의역.
