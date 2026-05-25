@@ -1784,17 +1784,17 @@ function calculateTimeRange(mode, customDate) {
       };
 
     case 'custom':
-      // 특정 날짜 (schedule과 동일한 로직: 전날 10:01 ~ 당일 10:00)
-      // 예: 2월 4일 입력 → 2월 3일 10:01 ~ 2월 4일 10:00
+      // 특정 날짜의 모든 메일 수집 (전날 0:00 ~ 당일 23:59 KST)
+      // schedule 모드보다 넓은 범위로 누락 방지
       if (!customDate || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)) {
         throw new Error(`잘못된 날짜 형식: '${customDate}' (YYYY-MM-DD 형식 필요, 예: --date 2026-02-10)`);
       }
       const [year, month, day] = customDate.split('-').map(Number);
-      const prevDay = new Date(year, month - 1, day - 1);  // JS Date는 자동으로 월 경계 처리
+      const prevDay = new Date(year, month - 1, day - 1);
       const prevDateStr = `${prevDay.getFullYear()}-${String(prevDay.getMonth() + 1).padStart(2, '0')}-${String(prevDay.getDate()).padStart(2, '0')}`;
       return {
-        start: new Date(prevDateStr + 'T10:01:00+09:00'),
-        end: new Date(customDate + 'T10:00:00+09:00')
+        start: new Date(prevDateStr + 'T00:00:00+09:00'),
+        end: new Date(customDate + 'T23:59:59+09:00')
       };
 
     default:
