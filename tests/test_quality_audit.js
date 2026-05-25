@@ -161,11 +161,11 @@ async function main() {
     let accuracyHits = 0;
     const allOriginalText = originalMails.map(m => m.text).join('\n');
 
-    // 영문 뉴스레터 감지: 본문의 처음 200자가 대부분 ASCII이면 영문
+    // 영문 뉴스레터 감지: 원문 메일 중 하나라도 영문 비중 40% 이상이면 번역 처리
     const isTranslated = originalMails.some(m => {
-      const sample = (m.text || '').substring(0, 200).replace(/\s+/g, '');
-      const asciiCount = (sample.match(/[a-zA-Z0-9.,!?'":\-;()\[\]{}@#$%&*\/]/g) || []).length;
-      return asciiCount > sample.length * 0.6;
+      const sample = (m.text || '').substring(0, 500).replace(/\s+/g, '');
+      const asciiCount = (sample.match(/[a-zA-Z]/g) || []).length;
+      return asciiCount > sample.length * 0.4;
     });
 
     for (const item of reportItems.slice(0, 50)) {
