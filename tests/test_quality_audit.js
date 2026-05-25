@@ -51,8 +51,8 @@ async function main() {
   let totalWeight = { coverage: 0, accuracy: 0, quality: 0, banned: 0, completeness: 0 };
   const labelResults = [];
 
-  // 23일자 날짜 범위
-  const dateStart = '2026/05/21';
+  // 파이프라인이 처리한 동일 날짜 범위 사용 (custom 모드: 전일 10시~당일 10시)
+  const dateStart = '2026/05/22';
   const dateEnd = '2026/05/24';
 
   for (const file of reportFiles) {
