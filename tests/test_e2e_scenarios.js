@@ -495,7 +495,7 @@ I hope this helps!`,  // 앞뒤 설명 포함
     await it('extract 프롬프트에 누락 방지 규칙 포함', () => {
       const config = runner.getTaskConfig('extract');
       assert.includes(config.systemPrompt, '빠짐없이');
-      assert.includes(config.systemPrompt, '자기검증');
+      assert.includes(config.systemPrompt, '금지');
     });
 
     await it('모든 프롬프트에 JSON 출력 지시 포함', () => {
