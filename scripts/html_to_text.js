@@ -312,7 +312,10 @@ function htmlToStructuredMarkdown(html) {
   // 13. 엔티티 디코딩
   text = decodeHtmlEntities(text);
 
-  // 14. 공백 정리 (마크다운 구조 유지)
+  // 14. 보이지 않는 유니코드 문자 제거 (이메일 preheader 오염 방지)
+  text = text.replace(/[\u034F\u200B\u200C\u200D\u200E\u200F\uFEFF\u00AD\u2060\u2061\u2062\u2063\u2064]/g, '');
+
+  // 15. 공백 정리 (마크다운 구조 유지)
   text = text.replace(/[ \t]+/g, ' ');
   text = text.replace(/\n{4,}/g, '\n\n\n'); // 최대 3연속 줄바꿈 (섹션 구분용)
   text = text.split('\n').map(line => line.trim()).join('\n');
