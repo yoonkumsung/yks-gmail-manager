@@ -1561,34 +1561,63 @@ function generateMarkdown(merged, date) {
   md += `\n\n`;
   md += `---\n\n`;
 
-  merged.items.forEach((item, i) => {
-    md += `## ${i + 1}. ${item.title}\n\n`;
-    md += `${item.summary}\n\n`;
+  // 목록형 뉴스레터 감지: 아이템 30개 이상 + 평균 요약 100자 미만
+  const avgSummaryLen = merged.items.length > 0
+    ? merged.items.reduce((s, i) => s + (i.summary?.length || 0), 0) / merged.items.length
+    : 999;
+  const isListType = merged.items.length >= 30 && avgSummaryLen < 100;
 
-    if (item.keywords && item.keywords.length > 0) {
-      md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
-    }
+  if (isListType) {
+    // === 목록형 뉴스레터: 클러스터링 + 토글 ===
+    const clusters = clusterItemsByKeyword(merged.items, 0.15);
 
-    // 링크 추가
-    if (item.link) {
-      md += `**링크**: [원문 보기](${item.link})\n\n`;
-    }
+    md += `이번 호 주요 동향:\n\n`;
+    clusters.forEach(cluster => {
+      md += `**${cluster.representative_title}** 외 ${cluster.items_count - 1}건\n\n`;
+    });
 
-    // 인사이트 추가
-    if (item.insights) {
-      if (item.insights.domain?.content) {
-        md += `### 실용적 인사이트\n\n`;
-        md += `${item.insights.domain.content}\n\n`;
+    md += `\n<details>\n<summary>📂 전체 목록 펼치기 (${merged.items.length}건)</summary>\n\n`;
+
+    merged.items.forEach((item, i) => {
+      md += `${i + 1}. **${item.title}**`;
+      if (item.summary && item.summary !== item.title) {
+        md += ` ${item.summary}`;
+      }
+      if (item.link) {
+        md += ` [원문 보기](${item.link})`;
+      }
+      md += `\n`;
+    });
+
+    md += `\n</details>\n\n---\n\n`;
+  } else {
+    // === 일반 뉴스레터: 기존 방식 ===
+    merged.items.forEach((item, i) => {
+      md += `## ${i + 1}. ${item.title}\n\n`;
+      md += `${item.summary}\n\n`;
+
+      if (item.keywords && item.keywords.length > 0) {
+        md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
       }
 
-      if (item.insights.cross_domain?.content) {
-        md += `### 확장 인사이트\n\n`;
-        md += `${item.insights.cross_domain.content}\n\n`;
+      if (item.link) {
+        md += `[원문 보기](${item.link})\n\n`;
       }
-    }
 
-    md += `---\n\n`;
-  });
+      if (item.insights) {
+        if (item.insights.domain?.content) {
+          md += `### 실용적 인사이트\n\n`;
+          md += `${item.insights.domain.content}\n\n`;
+        }
+        if (item.insights.cross_domain?.content) {
+          md += `### 확장 인사이트\n\n`;
+          md += `${item.insights.cross_domain.content}\n\n`;
+        }
+      }
+
+      md += `---\n\n`;
+    });
+  }
 
   return md;
 }
