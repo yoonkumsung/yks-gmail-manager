@@ -1,6 +1,6 @@
 /**
  * orchestrator.js 단위 테스트
- * 테스트 대상: 유사도 계산, 클러스터링, 배치 크기, 진행 관리, 품질 검증
+ * 테스트 대상: 유사도 계산, 클러스터링, 진행 관리
  */
 
 const fs = require('fs');
@@ -11,61 +11,12 @@ const {
   _test: {
     ProgressManager,
     FailedBatchManager,
-    calculateOptimalBatchSize,
     findMergeCandidates,
     clusterItemsByKeyword,
-    validateOutputQuality,
   }
 } = require('../scripts/orchestrator');
 
 module.exports = async function () {
-
-  // ============================================
-  // calculateOptimalBatchSize
-  // ============================================
-
-  await describe('calculateOptimalBatchSize', async () => {
-    await it('빈 입력 → 기본 배치 크기', () => {
-      const size = calculateOptimalBatchSize(null);
-      assert.gt(size, 0);
-    });
-
-    await it('빈 배열 → 기본 배치 크기', () => {
-      const size = calculateOptimalBatchSize([]);
-      assert.gt(size, 0);
-    });
-
-    await it('복잡한 아이템 → 작은 배치', () => {
-      const items = Array(10).fill({
-        title: '매우 긴 제목으로 이루어진 뉴스 아이템입니다 50자 이상이 되어야 합니다',
-        summary: 'A'.repeat(500),
-        keywords: ['AI', 'ML', 'DL', 'NLP', 'CV', 'GPU'],
-      });
-      const size = calculateOptimalBatchSize(items);
-      assert.lte(size, 6, '복잡한 아이템은 배치 크기 6 이하');
-    });
-
-    await it('단순한 아이템 → 큰 배치', () => {
-      const items = Array(10).fill({
-        title: '짧은 제목',
-        summary: '짧은 요약',
-        keywords: ['뉴스'],
-      });
-      const size = calculateOptimalBatchSize(items);
-      assert.gte(size, 8, '단순 아이템은 배치 크기 8 이상');
-    });
-
-    await it('중간 복잡도 → 중간 배치', () => {
-      const items = Array(10).fill({
-        title: '적당한 길이의 뉴스 제목입니다',
-        summary: 'A'.repeat(300),
-        keywords: ['AI', 'ML', 'DL'],
-      });
-      const size = calculateOptimalBatchSize(items);
-      assert.gte(size, 4);
-      assert.lte(size, 10);
-    });
-  });
 
   // ============================================
   // findMergeCandidates
@@ -204,89 +155,6 @@ module.exports = async function () {
   });
 
   // ============================================
-  // validateOutputQuality
-  // ============================================
-
-  await describe('validateOutputQuality', async () => {
-    // console.warn 무음화
-    let originalWarn, originalLog;
-    beforeEach(() => {
-      originalWarn = console.warn;
-      originalLog = console.log;
-      console.warn = () => {};
-      console.log = () => {};
-    });
-    afterEach(() => {
-      console.warn = originalWarn;
-      console.log = originalLog;
-    });
-
-    await it('정상 아이템 → 이슈 없음', () => {
-      const items = [{
-        title: '삼성전자 실적 발표',
-        summary: 'A'.repeat(350),
-        keywords: ['삼성전자', '실적'],
-      }];
-      const issues = validateOutputQuality(items, 'IT');
-      assert.lengthOf(issues, 0);
-    });
-
-    await it('짧은 요약 → 이슈 발생', () => {
-      const items = [{
-        title: '뉴스',
-        summary: '짧은 요약',
-        keywords: ['뉴스'],
-      }];
-      const issues = validateOutputQuality(items, 'IT');
-      assert.gt(issues.length, 0);
-      assert.ok(issues.some(i => i.includes('짧음')));
-    });
-
-    await it('키워드 없음 → 이슈', () => {
-      const items = [{
-        title: '뉴스',
-        summary: 'A'.repeat(400),
-        keywords: [],
-      }];
-      const issues = validateOutputQuality(items, 'IT');
-      assert.ok(issues.some(i => i.includes('키워드 없음')));
-    });
-
-    await it('금지 표현 사용 → 이슈', () => {
-      const items = [{
-        title: '뉴스',
-        summary: 'A'.repeat(400),
-        keywords: ['뉴스'],
-        insights: {
-          domain: { content: '이것은 패러다임 전환입니다' },
-          cross_domain: { content: '정상 인사이트' },
-        }
-      }];
-      const issues = validateOutputQuality(items, 'IT');
-      assert.ok(issues.some(i => i.includes('패러다임 전환')));
-    });
-
-    await it('모든 금지 표현 검출', () => {
-      const banned = ['패러다임 전환', '혁신적', '새로운 지평', '가속화할 것', '핵심이 될 것', '시사점을 제공', '중요성을 보여준다'];
-      for (const phrase of banned) {
-        const items = [{
-          title: '뉴스',
-          summary: 'A'.repeat(400),
-          keywords: ['뉴스'],
-          insights: { domain: { content: `내용 ${phrase} 내용` }, cross_domain: { content: '' } }
-        }];
-        const issues = validateOutputQuality(items, 'IT');
-        assert.ok(issues.some(i => i.includes(phrase)), `"${phrase}" 검출 필요`);
-      }
-    });
-
-    await it('빈 배열 → 이슈 없음', () => {
-      const issues = validateOutputQuality([], 'IT');
-      assert.lengthOf(issues, 0);
-    });
-  });
-
-  // ============================================
   // ProgressManager
   // ============================================
 
@@ -385,10 +253,10 @@ module.exports = async function () {
 
     await it('실패 해결 후 제거', () => {
       const fbm = new FailedBatchManager(tempPath);
-      fbm.recordFailure('시사', 'insight', 1, 'timeout');
+      fbm.recordFailure('시사', 'merge', 1, 'timeout');
       assert.ok(fbm.hasFailures());
-      fbm.markResolved('시사', 'insight', 1);
-      const remaining = fbm.getFailedBatches('시사', 'insight');
+      fbm.markResolved('시사', 'merge', 1);
+      const remaining = fbm.getFailedBatches('시사', 'merge');
       assert.lengthOf(remaining, 0);
     });
 

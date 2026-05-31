@@ -298,9 +298,7 @@ function parseReportItems(md) {
     const startIdx = match.index + match[0].length;
     const nextMatch = md.indexOf('\n## ', startIdx);
     const section = md.substring(startIdx, nextMatch > 0 ? nextMatch : md.length);
-    // 요약 = 인사이트 전까지
-    const insightIdx = section.indexOf('### ');
-    const summary = insightIdx > 0 ? section.substring(0, insightIdx).trim() : section.trim();
+    const summary = section.trim();
     items.push({ title, summary });
   }
   return items;

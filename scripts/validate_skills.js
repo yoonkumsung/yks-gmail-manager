@@ -206,8 +206,7 @@ async function liveValidation(targetLabel) {
     return [];
   }
 
-  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { logDir: 'logs' });
-  const proRunner = new AgentRunner(apiKey, 'deepseek-v4-pro:cloud', { logDir: 'logs', minRequestInterval: 3000 });
+  const runner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { logDir: 'logs' });
 
   // newsletters.json 로드
   const { newsletters } = JSON.parse(
@@ -332,7 +331,7 @@ async function liveValidation(targetLabel) {
         const skills = skillFile ? [skillFile] : [];
         const agentPath = path.join(PROJECT_ROOT, 'agents', 'labels', `${label.name}.md`);
 
-        const extractResult = await flashRunner.runAgent(agentPath, {
+        const extractResult = await runner.runAgent(agentPath, {
           inputs: tmpInput,
           taskType: 'extract',
           skills
@@ -341,9 +340,9 @@ async function liveValidation(targetLabel) {
         const itemCount = extractResult?.items?.length || 0;
         console.log(`    → 추출: ${itemCount}개 아이템`);
 
-        // Pro 모델로 품질 평가
-        proRunner.currentTaskType = 'extract';
-        const evalResult = await proRunner.callSolar3WithRetry(
+        // 자체 품질 평가 (같은 모델로 self-judge)
+        runner.currentTaskType = 'extract';
+        const evalResult = await runner.callSolar3WithRetry(
           `당신은 뉴스레터 추출 품질 평가 전문가입니다.
 
 아래는 원문 뉴스레터의 처음 3000자와 LLM이 추출한 결과입니다.

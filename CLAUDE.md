@@ -4,6 +4,8 @@
 
 사용자가 구독하는 모든 뉴스레터의 정보를 **단 하나도 누락하지 않고**, 중복은 하나로 합쳐서, 쉽게 읽을 수 있는 다이제스트로 만드는 시스템.
 
+인사이트/요약/분석 같은 부가 가공은 시스템에서 제거됨. 가공이 필요하면 생성된 MD 파일을 별도 LLM(Claude, ChatGPT 등)에 직접 넣어 처리하는 방식으로 분리.
+
 ## 핵심 원칙
 
 1. **정보 누락 제로**: 모든 뉴스레터의 모든 뉴스 아이템을 빠짐없이 추출. 누락은 가장 큰 실패.
@@ -14,30 +16,32 @@
 ## 아키텍처
 
 ```
-Gmail → HTML→텍스트 → 원문링크 크롤링 → Flash 추출 → Pro 병합 → Flash 인사이트 → Pro 크로스인사이트 → HTML/MD 리포트
+Gmail → HTML→텍스트 → 원문링크 크롤링 → Flash 추출 → Pro 병합 → HTML/MD 리포트
 ```
 
-## 모델 전략 (Ollama Pro $20/월)
+## 모델 전략 (Ollama Cloud Pro $20/월)
 
-- **Flash** (`deepseek-v4-flash:cloud`): 추출, 분석, 인사이트, 라벨요약. GPU 소모 적음.
-- **Pro** (`deepseek-v4-pro:cloud`): 병합, 크로스인사이트 Reduce만. Level 4 GPU 소모 높으므로 최소화.
-- Cloudflare 100초 타임아웃 제약 → 청크 크기 5000자 제한.
+- **단일 모델** (`deepseek-v4-flash:cloud`): 추출, 분석, 병합 전 단계에 사용.
+- Pro(Level 4 GPU heavy) 사용을 중단하여 Ollama 할당량 부담 ↓ + 속도 ↑.
+- Cloudflare 100초 타임아웃 제약 → 청크 크기 8000자 제한 (입력 컨텍스트는 1M까지 가능하나 출력 16K 토큰과 100초 타임아웃이 실제 병목).
 
 ## 라벨 구조 (15개 활성)
 
 IT, 경제, 시사, 창업, 투자, 해외, 마케팅, 라이프, 인문학, 스포츠, 소셜포럼, 기타, NYT, 미국, 중국
 
+(`쇼핑결제`, `지원사업`은 `config/labels.json`에서 `enabled: false`)
+
 ## SKILL 시스템
 
 - `skills/newsletters/SKILL_*.md`: 뉴스레터별 구조 분석 및 추출 규칙
-- `config/newsletters.json`: 60개 뉴스레터 카탈로그 (발신자→SKILL 매핑)
+- `config/newsletters.json`: 뉴스레터 카탈로그 (발신자→SKILL 매핑)
 - SKILL 파일의 발신자 정보는 반드시 newsletters.json과 일치해야 함
 - 검증: `node scripts/validate_skills.js` (정적), `--live` (실제 추출 테스트)
 
 ## 품질 기준
 
 - **할루시네이션 제로**: 입력 텍스트에 없는 수치, 인물, 사실을 절대 생성하지 않음
-- **요약 300~500자**: 300자 미만은 불합격. 핵심사실+수치+배경+시사점 필수
+- **요약**: 원문 분량 비례 (긴 원문 300~500자, 짧은 원문은 50~200자도 허용). 핵심사실+수치+배경 포함
 - **누락 제로**: 뉴스레터 본문의 모든 뉴스 아이템을 빠짐없이 추출
 - **금지 표현**: "원문 참조", "자세한 내용은 링크" 등 회피 표현 불가
 - **번역 품질**: 영문 → 한국어 직역 금지, 자연스러운 의역
@@ -50,10 +54,10 @@ IT, 경제, 시사, 창업, 투자, 해외, 마케팅, 라이프, 인문학, 스
 
 ## 코드 수정 시 주의사항
 
-- `agent_runner.js` 수정 시: 금지 표현 목록 유지, 할루시네이션 방지 규칙 유지, 청크 크기 12K 유지
-- `orchestrator.js` 수정 시: flashRunner/proRunner 분리 유지, Pro 호출 최소화
+- `agent_runner.js` 수정 시: 금지 표현 목록 유지, 할루시네이션 방지 규칙 유지, 청크 크기 8K (출력 토큰 16K의 ~25% 사용률)
+- `orchestrator.js` 수정 시: 단일 `runner`(Flash) 사용. Pro 재도입 시 `getRunner` 분기 필요
 - SKILL 파일 수정 시: 발신자 이메일이 newsletters.json과 반드시 일치, 실제 메일 본문을 읽고 작성
-- 새 라벨 추가 시: labels.json + agents/labels/*.md + newsletters.json 모두 업데이트
+- 새 라벨 추가 시: labels.json + agents/labels/*.md + (필요 시) newsletters.json 업데이트
 - 타임아웃: Ollama Cloud = Cloudflare 100초 제한 (재시도 대기 5~90초), Gmail API = 재시도 2~30초
 
 ## 실행

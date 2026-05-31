@@ -1,6 +1,7 @@
 /**
  * Agent 자동 생성기
- * 사용자 프로필 기반으로 개인화된 Agent 문서 생성
+ * 라벨별로 표준 추출 에이전트 문서 생성
+ * (사용자 컨텍스트는 런타임에 agent_runner의 {{USER_CONTEXT}} 치환으로 주입)
  */
 
 const fs = require('fs');
@@ -12,90 +13,20 @@ class AgentGenerator {
   }
 
   /**
-   * 라벨과 프로필 기반으로 Agent 생성
+   * 라벨에 대한 Agent 문서 생성
    */
-  async generate(label, profile) {
+  async generate(label) {
     const labelName = label.name || label;
-    const userProfile = profile?.user || profile;
-
-    // 관련 관심사 추출
-    const relatedInterests = this.getRelatedInterests(labelName, userProfile);
-    const unrelatedInterests = this.getUnrelatedInterests(labelName, userProfile);
-
-    // Agent 문서 생성
-    const agentContent = this.buildAgentDocument(labelName, userProfile, relatedInterests, unrelatedInterests);
-
-    return agentContent;
+    return this.buildAgentDocument(labelName);
   }
 
   /**
-   * 라벨과 관련된 관심사 추출
+   * Agent 문서 빌드 (표준 템플릿)
+   * - {{USER_CONTEXT}}: 런타임에 agent_runner.js의 loadUserContext()가 user_profile.json으로부터 채움
+   * - {{FOCUS_TOPICS}}: 런타임에 labels.json의 focus_topics로 채움
+   * - 요약 길이 등 상세 규칙은 _공통규칙.md에서 가져옴
    */
-  getRelatedInterests(labelName, profile) {
-    const interests = profile?.interests || {};
-    const related = [];
-
-    // 라벨별 관련 관심사 매핑
-    const labelInterestMap = {
-      'IT': ['technical'],
-      '경제': ['business'],
-      '투자': ['business'],
-      '창업': ['business', 'technical'],
-      '마케팅': ['business'],
-      '시사': ['social'],
-      '해외': ['social', 'business'],
-      '인문학': ['intellectual'],
-      '라이프': ['creative'],
-      '스포츠': ['creative'],
-      '문화': ['intellectual', 'creative']
-    };
-
-    const interestTypes = labelInterestMap[labelName] || ['technical', 'business'];
-
-    for (const type of interestTypes) {
-      if (interests[type] && Array.isArray(interests[type])) {
-        related.push(...interests[type]);
-      }
-    }
-
-    return [...new Set(related)];
-  }
-
-  /**
-   * 라벨과 관련 없는 관심사 추출 (교차 도메인 인사이트용)
-   */
-  getUnrelatedInterests(labelName, profile) {
-    const interests = profile?.interests || {};
-    const unrelated = [];
-
-    // 라벨별 비관련 관심사 매핑
-    const labelUnrelatedMap = {
-      'IT': ['intellectual', 'creative'],
-      '경제': ['intellectual', 'creative'],
-      '투자': ['intellectual', 'technical'],
-      '창업': ['intellectual'],
-      '마케팅': ['intellectual', 'technical'],
-      '시사': ['technical', 'creative'],
-      '인문학': ['technical', 'business'],
-      '라이프': ['technical', 'business'],
-      '스포츠': ['intellectual', 'business']
-    };
-
-    const interestTypes = labelUnrelatedMap[labelName] || ['intellectual'];
-
-    for (const type of interestTypes) {
-      if (interests[type] && Array.isArray(interests[type])) {
-        unrelated.push(...interests[type]);
-      }
-    }
-
-    return [...new Set(unrelated)];
-  }
-
-  /**
-   * Agent 문서 빌드 (표준 템플릿 형식)
-   */
-  buildAgentDocument(labelName, profile, relatedInterests, unrelatedInterests) {
+  buildAgentDocument(labelName) {
     const labelDescriptions = {
       'IT': '기술, AI, 스타트업, 소프트웨어 관련',
       '경제': '경제, 금융, 시장 동향 관련',
@@ -109,6 +40,9 @@ class AgentGenerator {
       '스포츠': '스포츠, 피트니스 관련',
       '문화': '문화, 예술, 엔터테인먼트 관련',
       '소셜포럼': '커뮤니티, 토론, 의견 관련',
+      'NYT': 'New York Times 영어 뉴스',
+      '미국': '미국 정치/경제/외교/빅테크',
+      '중국': '중국 경제/미중관계/기술/홍콩',
       '기타': '기타 분류되지 않은 콘텐츠'
     };
 
@@ -141,14 +75,17 @@ ${labelDesc} 뉴스레터에서 핵심 정보를 추출합니다.
 ## 처리 규칙
 
 1. **우선순위**: {{FOCUS_TOPICS}}
-2. **빠짐없이 추출**: 광고/푸터/구독안내만 제외하고 원문의 모든 뉴스 아이템을 추출. 중요도와 무관하게 전부 추출. 하나라도 누락 금지.
-3. **요약**: 300~500자. 필수 구성: 핵심사실(WHO+WHAT) → 구체적 수치/데이터 → 배경맥락 → 시사점. 4가지 요소가 모두 포함되어야 함.
-4. **긴 콘텐츠**: 핵심 내용 + 전개 구조(도입-전개-결론) 포함. 핵심 인용문과 수치 반드시 포함.
-5. **제목**: 20~50자, 주어+동사+핵심정보+수치
+2. **빠짐없이 추출**: 광고/푸터/구독안내만 제외하고 원문의 모든 뉴스 아이템을 추출. 하나라도 누락 금지.
+3. **요약 길이**: 원문 분량에 비례 (긴 원문 300~500자, 짧은 원문은 50~200자도 허용).
+   - 필수 구성: 핵심사실(WHO+WHAT) → 구체적 수치/데이터 → 배경맥락
+   - 원문에 수치/시사점이 있으면 반드시 포함, 없으면 정성 분석으로 대체 (가짜 수치 생성 금지)
+4. **긴 콘텐츠 (단일 주제 심층)**: 400~800자, 도입-전개-결론 구조 + 핵심 인용/수치
+5. **제목**: 20~50자, 주어+동사+핵심정보
 6. **키워드**: 3~5개, 명사형 (고유명사 우선)
-7. **금지**: 이모지, 미완성 문장, 원문 복붙, 자의적 추론
-8. **링크**: 각 아이템의 원문 링크(URL)를 반드시 추출. 없으면 빈 문자열
-9. **자기검증**: 추출 완료 후 원문과 대조하여 누락된 아이템이 없는지 확인
+7. **금지**: 이모지, 미완성 문장, 원문 복붙, 자의적 추론, "원문 참조" 등 회피 표현
+8. **링크**: 각 아이템의 원문 URL을 반드시 추출 (없으면 빈 문자열)
+9. **번역**: 영문 → 자연스러운 한국어 의역 (직역 금지). 고유명사는 원어 유지 가능
+10. **자기검증**: 추출 완료 후 원문과 대조하여 누락 아이템이 없는지 확인
 
 ## 출력
 
@@ -157,7 +94,7 @@ ${labelDesc} 뉴스레터에서 핵심 정보를 추출합니다.
   "items": [
     {
       "title": "간결하고 구체적인 제목 (20~50자)",
-      "summary": "핵심 내용 요약 (300~500자)",
+      "summary": "원문 분량 비례 요약 (50~500자, 단일 콘텐츠는 400~800자)",
       "keywords": ["키워드1", "키워드2", "키워드3"],
       "link": "원문 URL (없으면 빈 문자열)",
       "source": "뉴스레터 이름"

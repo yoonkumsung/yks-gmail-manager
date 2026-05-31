@@ -164,7 +164,7 @@ jobs:
           echo "$GMAIL_CREDENTIALS" > config/credentials/client_secret.json
           echo "$GMAIL_TOKEN" > config/credentials/token.json
 
-          # 사용자 프로필 저장 (인사이트 개인화용)
+          # 사용자 프로필 저장 (라벨 에이전트 USER_CONTEXT 주입용, 선택)
           if [ -n "$USER_PROFILE" ]; then
             echo "$USER_PROFILE" > config/user_profile.json
           fi

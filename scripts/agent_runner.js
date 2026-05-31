@@ -1,8 +1,6 @@
 /**
  * Agent Runner - Ollama LLM API 호출 및 에이전트 실행
- * 모델: 단계별 다중 모델 사용
- *   - 빠른 모델 (추출/분석): deepseek-v4-flash:cloud
- *   - 추론 모델 (병합/인사이트/크로스인사이트): deepseek-v4-pro:cloud
+ * 모델: deepseek-v4-flash:cloud 단일 (추출/분석/병합 전 단계)
  *
  * 주요 기능:
  * - Ollama API (OpenAI 호환) 지원
@@ -35,10 +33,10 @@ class AgentRunner {
 
     // 청크 분할 설정 - 섹션 기반 적응형 청킹
     // Ollama Cloud: Cloudflare 100초 타임아웃 + 출력 토큰 16K 제한
-    // 5K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
-    // 각 청크에서 추출되는 아이템 수가 적어져 JSON 잘림 방지
-    this.chunkSize = options.chunkSize || 5000;
-    this.minChunkSize = 2000;  // 최소 청크 크기
+    // 8K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
+    // 청크당 출력 토큰 사용률 ~25% (16K 한도 내 안전 마진), 100초 타임아웃 여유 ~50초
+    this.chunkSize = options.chunkSize || 8000;
+    this.minChunkSize = 2000;  // 최소 청크 크기 (524 폴백 시 하위 분할 하한)
 
     // 프롬프트 헤더(에이전트 지시사항 + 스킬) 최대 크기
     this.maxHeaderSize = options.maxHeaderSize || 5000;
@@ -53,6 +51,10 @@ class AgentRunner {
     this.minRequestInterval = options.minRequestInterval || 2000;   // 2초 간격
     this.lastRequestTime = 0;
 
+    // 프로필/라벨 캐시 (loadUserContext, loadFocusTopics가 매 호출마다 디스크 IO하지 않도록)
+    this._userContextCache = null;
+    this._labelsJsonCache = null;
+
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
@@ -64,10 +66,7 @@ class AgentRunner {
   // ============================================
 
   /**
-   * 작업 유형별 최적 설정 반환
-   * - 추론 모델(R1T Chimera)의 reasoning 파라미터로 추론량 제어
-   * - 추출/병합: reasoning low (추론 최소화 → JSON 출력에 토큰 집중)
-   * - 인사이트: reasoning medium (적절한 추론 → 깊은 통찰)
+   * 작업 유형별 시스템 프롬프트 및 온도 설정 반환
    */
   getTaskConfig(taskType) {
     const configs = {
@@ -88,7 +87,6 @@ class AgentRunner {
 
 [출력] 순수 JSON만. 설명/코드블록 없이 {로 시작 }로 끝남.`,
         temperature: 0.1,
-        reasoningEffort: 'low',
         tailInstruction: '위 에이전트 지시사항과 SKILL 규칙에 따라 모든 뉴스 아이템을 빠짐없이 추출하고 JSON으로 출력하세요. 하나라도 누락하면 안 됩니다. 최우선 규칙: 입력 텍스트에 없는 내용을 절대 지어내지 마시오. 본문이 충분한 아이템은 300자 이상, 제목만 있는 아이템은 있는 내용만 요약하시오.'
       },
       analyze: {
@@ -102,7 +100,6 @@ class AgentRunner {
 - items의 모든 내용은 반드시 한국어로 작성
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
-        reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 뉴스레터 구조를 분석하고 아이템을 추출하여 JSON으로 출력하세요.'
       },
       merge: {
@@ -125,53 +122,8 @@ class AgentRunner {
 - 메타데이터(message_id, source_email) 반드시 보존
 - 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
         temperature: 0.1,
-        reasoningEffort: 'low',
         tailInstruction: '위 지시사항에 따라 중복 아이템을 병합하고 JSON으로 출력하세요.'
       },
-      summarize: {
-        systemPrompt: `당신은 뉴스 아이템을 주제별로 요약하는 전문가입니다.
-
-[핵심 임무] 라벨 내 뉴스 아이템들을 주제(theme)별로 분류하고 간결하게 요약합니다.
-
-[출력 규칙]
-- 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력`,
-        temperature: 0.2,
-        reasoningEffort: 'low',
-        tailInstruction: '위 지시사항에 따라 뉴스 아이템을 주제별로 분류/요약하고 JSON으로 출력하세요.'
-      },
-      insight: {
-        systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
-
-[핵심 임무] 각 뉴스 아이템에 2가지 인사이트를 추가합니다:
-1. domain: 사용자의 사업에 구체적 영향과 액션 제시. 반드시 수치, 비교, 구체적 방법론 포함. (사용자 컨텍스트는 에이전트 지시사항 참고)
-2. cross_domain: 실명의 철학자, 구체적 역사적 사건, 실제 심리학 실험명을 인용한 본질적 통찰. 이름/연도/출처를 반드시 명시.
-
-[출력 규칙]
-- 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- 입력된 모든 필드(title, summary, keywords, link, source, message_id, source_email) 그대로 유지
-- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
-
-[금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
-        temperature: 0.3,
-        reasoningEffort: 'medium',
-        tailInstruction: '위 지시사항에 따라 각 아이템에 domain과 cross_domain 인사이트를 추가하고 JSON으로 출력하세요. 모든 기존 필드를 반드시 유지하세요.'
-      },
-      crossInsight: {
-        systemPrompt: `당신은 세계 최고 수준의 경영 전략 컨설턴트이자 인문학 석학입니다.
-
-[핵심 임무] 여러 라벨의 뉴스를 종합 분석하여 메가트렌드, 크로스 연결, CEO 액션을 도출합니다.
-
-[출력 규칙]
-- 유효한 JSON만 출력 ({로 시작, }로 끝남)
-- mega_trends, cross_connections, ceo_actions 3개 필드 필수
-- 설명, 추론 과정, 마크다운 코드블록 없이 순수 JSON만 출력
-
-[금지 표현] "패러다임 전환", "혁신적", "새로운 지평", "가속화할 것", "핵심이 될 것", "시사점을 제공", "중요성을 보여준다"`,
-        temperature: 0.3,
-        reasoningEffort: 'medium',
-        tailInstruction: '위 지시사항에 따라 메가트렌드, 크로스 연결, CEO 액션을 생성하고 JSON으로 출력하세요.'
-      }
     };
     return configs[taskType] || configs.extract;
   }
@@ -215,7 +167,7 @@ class AgentRunner {
 
       // 5. 전체 컨텍스트가 필요한 작업은 청크 분할하지 않음
       //    - analyze: 뉴스레터 구조 분석에 전체 본문 필요
-      //    - skipChunking: 크로스 인사이트 등 전체 데이터 간 연결이 필요한 작업
+      //    - skipChunking: 전체 데이터 간 연결이 필요한 작업
       if (this.currentTaskType === 'analyze' || options.skipChunking) {
         this.log(`전체 컨텍스트 필요, 단일 처리 (${inputData.length}자)`, 'info');
         return await this.runSinglePrompt(header, inputData, options);
@@ -236,6 +188,7 @@ class AgentRunner {
    */
   async runSinglePrompt(header, inputData, options) {
     const truncateRatios = [1.0, 0.8, 0.6, 0.4];
+    let lastError;
 
     for (let attempt = 0; attempt < truncateRatios.length; attempt++) {
       try {
@@ -267,6 +220,7 @@ class AgentRunner {
         return validated;
 
       } catch (error) {
+        lastError = error;
         // 토큰 초과 에러인지 확인
         if (this.isTokenLimitError(error) && attempt < truncateRatios.length - 1) {
           continue; // 다음 축소 비율로 재시도
@@ -274,6 +228,9 @@ class AgentRunner {
         throw error;
       }
     }
+
+    // 모든 축소 비율에서 토큰 초과로 continue → 루프 종료 (undefined 반환 방지)
+    throw lastError || new Error('runSinglePrompt: 모든 축소 시도 실패 (40%까지 토큰 초과)');
   }
 
   /**
@@ -477,6 +434,7 @@ class AgentRunner {
 
   /**
    * 텍스트 강제 분할 (문장 경계 유지 시도)
+   * CJK 풀폭 종결 부호(。！？) 포함
    */
   forceSplitText(text, maxChars) {
     const chunks = [];
@@ -485,13 +443,16 @@ class AgentRunner {
     while (remaining.length > maxChars) {
       let cutPoint = maxChars;
 
-      // 문장 끝에서 자르기 시도 (. ! ? 다음)
+      // 문장 끝에서 자르기 시도 (한·중·일·영 문장부호)
       const searchArea = remaining.substring(Math.floor(maxChars * 0.7), maxChars);
       const sentenceEnd = Math.max(
         searchArea.lastIndexOf('. '),
         searchArea.lastIndexOf('.\n'),
         searchArea.lastIndexOf('! '),
-        searchArea.lastIndexOf('? ')
+        searchArea.lastIndexOf('? '),
+        searchArea.lastIndexOf('。'),
+        searchArea.lastIndexOf('!'),
+        searchArea.lastIndexOf('?')
       );
 
       if (sentenceEnd > 0) {
@@ -511,6 +472,7 @@ class AgentRunner {
 
   /**
    * 텍스트 truncate (문장 경계 유지)
+   * 한국어/영어 마침표 + 일본·중국어 풀폭 종결 부호(。！？) 지원
    */
   truncateText(text, maxChars) {
     if (!text || text.length <= maxChars) {
@@ -519,14 +481,17 @@ class AgentRunner {
 
     const truncated = text.substring(0, maxChars);
 
-    // 마지막 완전한 문장에서 자르기
+    // 마지막 완전한 문장에서 자르기 (CJK 풀폭 문장부호 포함)
     const lastSentence = Math.max(
       truncated.lastIndexOf('.\n'),
       truncated.lastIndexOf('. '),
       truncated.lastIndexOf('!\n'),
       truncated.lastIndexOf('! '),
       truncated.lastIndexOf('?\n'),
-      truncated.lastIndexOf('? ')
+      truncated.lastIndexOf('? '),
+      truncated.lastIndexOf('。'),
+      truncated.lastIndexOf('!'),
+      truncated.lastIndexOf('?')
     );
 
     const cutPoint = lastSentence > maxChars * 0.5 ? lastSentence + 1 : maxChars;
@@ -554,13 +519,17 @@ class AgentRunner {
       return true;
     });
 
-    // 중복 제거 (title 유사도 기준)
+    // 중복 제거 (title 단어 단위 Jaccard 유사도 기준)
+    // 임계값 0.75: 청크 경계 중복은 보통 90%+ 유사하므로 보수적 (정상 아이템 손실 최소화)
+    // 버그 수정: 이전에는 공백을 모두 제거해서 단어 분리가 무력화되었음
+    //   → 공백은 보존하고 특수문자만 제거하여 titleSimilarity가 정상 작동하도록
     const seen = new Set();
     const uniqueItems = validItems.filter(item => {
-      const key = item.title.toLowerCase().trim().replace(/[^가-힣a-z0-9]/g, '');
-      // 60% 이상 겹치는 제목 제거 (청크 경계 중복 방지)
+      const key = item.title.toLowerCase().trim()
+        .replace(/[^\s가-힣a-z0-9]/g, '')  // 특수문자만 제거 (공백 보존)
+        .replace(/\s+/g, ' ');             // 다중 공백 → 단일 공백
       for (const existing of seen) {
-        if (this.titleSimilarity(key, existing) > 0.6) return false;
+        if (this.titleSimilarity(key, existing) > 0.75) return false;
       }
       seen.add(key);
       return true;
@@ -594,16 +563,16 @@ class AgentRunner {
     // Agent 문서 읽기
     let agentContent = fs.readFileSync(agentPath, 'utf8');
 
-    // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환)
+    // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환, 여러 번 등장 대비 replaceAll)
     if (agentContent.includes('{{USER_CONTEXT}}')) {
       const userContext = this.loadUserContext();
-      agentContent = agentContent.replace('{{USER_CONTEXT}}', userContext);
+      agentContent = agentContent.split('{{USER_CONTEXT}}').join(userContext);
     }
 
-    // 라벨별 우선순위 주제 주입 ({{FOCUS_TOPICS}} 플레이스홀더 치환)
+    // 라벨별 우선순위 주제 주입 ({{FOCUS_TOPICS}} 플레이스홀더 치환, 여러 번 등장 대비)
     if (agentContent.includes('{{FOCUS_TOPICS}}')) {
       const focusTopics = this.loadFocusTopics(agentPath);
-      agentContent = agentContent.replace('{{FOCUS_TOPICS}}', focusTopics);
+      agentContent = agentContent.split('{{FOCUS_TOPICS}}').join(focusTopics);
     }
 
     // SKILL 문서 읽기
@@ -631,16 +600,19 @@ ${agentContent}`;
   }
 
   /**
-   * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환
+   * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환 (캐시)
    */
   loadUserContext() {
+    if (this._userContextCache !== null) return this._userContextCache;
+
     const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
       const user = profile?.user;
       if (!user?.occupation) {
         this.log('user_profile.json: user 또는 occupation 누락', 'warn');
-        return '프로필 정보 없음';
+        this._userContextCache = '프로필 정보 없음';
+        return this._userContextCache;
       }
       const occ = user.occupation;
       const interests = user.interests || {};
@@ -657,22 +629,26 @@ ${agentContent}`;
         context += `\n- **지적 관심**: ${interests.intellectual.join(', ')}`;
       }
 
+      this._userContextCache = context;
       return context;
     } catch (e) {
       this.log(`user_profile.json 로드 실패: ${e.message}`, 'warn');
-      return '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
+      this._userContextCache = '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
+      return this._userContextCache;
     }
   }
 
   /**
-   * 에이전트 파일 경로에서 라벨명을 추출하고 labels.json의 focus_topics를 반환
+   * 에이전트 파일 경로에서 라벨명을 추출하고 labels.json의 focus_topics를 반환 (캐시)
    */
   loadFocusTopics(agentPath) {
     try {
       const labelName = path.basename(agentPath, '.md');
-      const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
-      const labelsJson = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
-      const labelConfig = labelsJson.labels.find(l => l.name === labelName);
+      if (!this._labelsJsonCache) {
+        const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
+        this._labelsJsonCache = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+      }
+      const labelConfig = this._labelsJsonCache.labels.find(l => l.name === labelName);
 
       if (labelConfig && labelConfig.focus_topics && labelConfig.focus_topics.length > 0) {
         return `다음 주제를 우선 추출: ${labelConfig.focus_topics.join(', ')}`;
@@ -759,7 +735,6 @@ ${agentContent}`;
    */
   async callSolar3WithRetry(prompt, maxTimeMs = 0) {
     let lastError;
-    let retryOverrides = {};
     let bestIncompleteResponse = null;
     const startTime = Date.now();
     const requiredFields = this.getRequiredFieldsForTask(this.currentTaskType);
@@ -777,7 +752,7 @@ ${agentContent}`;
         // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
         await this.checkRateLimit();
 
-        const response = await this.callSolar3(prompt, retryOverrides);
+        const response = await this.callSolar3(prompt);
 
         // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
@@ -819,15 +794,6 @@ ${agentContent}`;
 
         if (isRetryable && hasMoreRetries) {
           const delay = this.retryDelays[i];
-
-          // 빈 응답(추론 토큰만 소진)인 경우 reasoningEffort를 낮춰서 재시도
-          if (error.isEmptyResponse) {
-            this.log(`빈 응답 감지, reasoningEffort를 'low'로 낮춰서 재시도 (${i + 1}/${this.retryDelays.length})`, 'warn');
-            await this.sleep(delay);
-            retryOverrides = { reasoningEffort: 'low' };
-            continue;
-          }
-
           this.log(`에러 발생, ${delay/1000}초 후 재시도 (${i + 1}/${this.retryDelays.length}): ${error.message}`, 'warn');
           await this.sleep(delay);
           continue;
@@ -873,10 +839,7 @@ ${agentContent}`;
     const fieldMap = {
       extract: ['items'],
       analyze: ['items'],
-      merge: ['items'],
-      insight: ['items'],
-      summarize: ['label', 'themes'],
-      crossInsight: ['mega_trends', 'cross_connections', 'ceo_actions']
+      merge: ['items']
     };
     return fieldMap[taskType] || [];
   }
@@ -884,9 +847,8 @@ ${agentContent}`;
   /**
    * LLM API 호출 (단일) - Ollama Cloud API
    * @param {string} prompt - 프롬프트
-   * @param {object} overrides - 설정 오버라이드
    */
-  async callSolar3(prompt, overrides = {}) {
+  async callSolar3(prompt) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
     const fetch = await getFetch();
 
@@ -1177,8 +1139,9 @@ ${agentContent}`;
       }
     );
 
-    // 5. 문자열 값 내 제어 문자 이스케이프
-    repaired = repaired.replace(/"[^"]*"/g, (match) => {
+    // 5. 문자열 값 내 제어 문자 이스케이프 (escape된 따옴표 \"를 올바르게 처리)
+    // 패턴: "(?:[^"\\]|\\.)*" → 문자열 내 \" 같은 escape sequence를 보존
+    repaired = repaired.replace(/"(?:[^"\\]|\\.)*"/g, (match) => {
       return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     });
 

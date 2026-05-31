@@ -11,7 +11,8 @@ const { AgentGenerator } = require('./agent_generator');
 const { SkillGenerator } = require('./skill_generator');
 
 const app = express();
-const PORT = process.env.SETUP_PORT || 3000;
+// auth.js의 OAuth 콜백이 3000번 포트를 쓰므로 마법사는 3030 사용
+const PORT = process.env.SETUP_PORT || 3030;
 
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
@@ -208,7 +209,7 @@ app.post('/api/agents', async (req, res) => {
 
     for (const labelName of targetLabels) {
       const label = wizardState.labels.find(l => l.name === labelName) || { name: labelName };
-      const content = await agentGenerator.generate(label, targetProfile);
+      const content = await agentGenerator.generate(label);
 
       wizardState.generatedAgents.push({
         name: `${labelName}.md`,

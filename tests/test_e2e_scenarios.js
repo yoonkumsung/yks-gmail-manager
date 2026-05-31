@@ -114,13 +114,6 @@ module.exports = async function () {
         `발신자 불일치: ${mismatches.slice(0, 5).join('; ')}`);
     });
 
-    await it('settings.json 유효', () => {
-      const settingsPath = path.join(PROJECT_ROOT, 'config', 'settings.json');
-      if (fs.existsSync(settingsPath)) {
-        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-        assert.ok(settings);
-      }
-    });
   });
 
   // ============================================
@@ -190,7 +183,7 @@ module.exports = async function () {
     const agentDir = path.join(PROJECT_ROOT, 'agents');
 
     await it('핵심 에이전트 문서 존재', () => {
-      const coreAgents = ['뉴스레터분석.md', '라벨요약.md', '병합.md', '인사이트.md', '크로스인사이트.md'];
+      const coreAgents = ['뉴스레터분석.md', '병합.md'];
       const missing = coreAgents.filter(a => !fs.existsSync(path.join(agentDir, a)));
       assert.lengthOf(missing, 0,
         `누락된 핵심 에이전트: ${missing.join(', ')}`);
@@ -201,16 +194,6 @@ module.exports = async function () {
         fs.existsSync(path.join(agentDir, 'labels', '_공통규칙.md')),
         '_공통규칙.md 파일 없음'
       );
-    });
-
-    await it('인사이트 에이전트에 금지 표현 목록 존재', () => {
-      const insightPath = path.join(agentDir, '인사이트.md');
-      const content = fs.readFileSync(insightPath, 'utf8');
-      const bannedPhrases = ['패러다임 전환', '혁신적', '새로운 지평'];
-      for (const phrase of bannedPhrases) {
-        assert.includes(content, phrase,
-          `인사이트 에이전트에 금지 표현 "${phrase}" 명시 필요`);
-      }
     });
 
     await it('병합 에이전트에 분리 우선 원칙 명시', () => {
@@ -246,10 +229,10 @@ module.exports = async function () {
   await describe('파이프라인 시뮬레이션', async () => {
     const { AgentRunner } = require('../scripts/agent_runner');
     const {
-      _test: { findMergeCandidates, clusterItemsByKeyword, validateOutputQuality }
+      _test: { findMergeCandidates, clusterItemsByKeyword }
     } = require('../scripts/orchestrator');
 
-    await it('추출 → 중복제거 → 병합 후보 → 검증 플로우', () => {
+    await it('추출 → 중복제거 → 병합 후보 플로우', () => {
       // 여러 뉴스레터에서 추출된 아이템 시뮬레이션
       const extractedItems = [
         { title: '삼성전자 1분기 영업이익 10조원', summary: 'A'.repeat(400), keywords: ['삼성전자', '실적', '반도체'], source_email: 'a@a.com' },
@@ -267,17 +250,6 @@ module.exports = async function () {
       // 2. 클러스터링
       const clusters = clusterItemsByKeyword(extractedItems, 0.2);
       assert.gte(clusters.length, 2, '최소 2개 이상 클러스터 (삼성, NVIDIA, LG)');
-
-      // 3. 품질 검증
-      const originalConsoleWarn = console.warn;
-      const originalConsoleLog = console.log;
-      console.warn = () => {};
-      console.log = () => {};
-      const issues = validateOutputQuality(extractedItems, 'IT');
-      console.warn = originalConsoleWarn;
-      console.log = originalConsoleLog;
-      // 모든 아이템이 300자 이상이므로 이슈 없어야 함
-      assert.lengthOf(issues, 0, '품질 이슈 없어야 함');
     });
 
     await it('빈 입력 파이프라인', () => {
@@ -479,17 +451,13 @@ I hope this helps!`,  // 앞뒤 설명 포함
     const runner = new AgentRunner('test', 'test', { logDir: path.join(PROJECT_ROOT, 'logs') });
     runner.log = () => {};
 
-    await it('추출/인사이트 taskType에 할루시네이션 방지 포함', () => {
-      // merge는 중복 탐지 전용이므로 제외
-      const types = ['extract', 'insight'];
-      for (const type of types) {
-        const config = runner.getTaskConfig(type);
-        const prompt = config.systemPrompt;
-        assert.ok(
-          prompt.includes('금지') || prompt.includes('절대'),
-          `${type}: 금지 규칙이 시스템 프롬프트에 포함되어야 함`
-        );
-      }
+    await it('추출 taskType에 할루시네이션 방지 포함', () => {
+      const config = runner.getTaskConfig('extract');
+      const prompt = config.systemPrompt;
+      assert.ok(
+        prompt.includes('금지') || prompt.includes('절대'),
+        'extract: 금지 규칙이 시스템 프롬프트에 포함되어야 함'
+      );
     });
 
     await it('extract 프롬프트에 누락 방지 규칙 포함', () => {
@@ -499,7 +467,7 @@ I hope this helps!`,  // 앞뒤 설명 포함
     });
 
     await it('모든 프롬프트에 JSON 출력 지시 포함', () => {
-      const types = ['extract', 'analyze', 'merge', 'summarize', 'insight', 'crossInsight'];
+      const types = ['extract', 'analyze', 'merge'];
       for (const type of types) {
         const config = runner.getTaskConfig(type);
         assert.includes(config.systemPrompt, 'JSON',

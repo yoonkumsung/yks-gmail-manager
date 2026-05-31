@@ -44,3 +44,7 @@ logs/
 
 # 런타임 생성 (SKILL 건강도 추적)
 config/skill_health.json
+
+# 테스트 커버리지 리포트 (nyc + c8)
+coverage/
+.nyc_output/

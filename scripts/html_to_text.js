@@ -19,6 +19,8 @@ const path = require('path');
 // ============================================
 
 function decodeHtmlEntities(text) {
+  // null/undefined/비문자열 가드 (TypeError 방지)
+  if (text == null || typeof text !== 'string') return '';
   const entities = {
     '&nbsp;': ' ',
     '&amp;': '&',
@@ -449,6 +451,10 @@ function isNonNewsEmail(subject, from) {
  * 라인 번호가 포함된 정제 텍스트 생성
  */
 function createCleanTextWithLineNumbers(text) {
+  // null/undefined/빈 값 가드 (TypeError 방지)
+  if (!text || typeof text !== 'string') {
+    return { total_lines: 0, total_chars: 0, full_text: '', original_text: '', lines: [] };
+  }
   const lines = text.split('\n');
   const result = {
     total_lines: lines.length,

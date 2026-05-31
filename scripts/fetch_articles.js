@@ -8,7 +8,10 @@
 const { htmlToText } = require('./html_to_text');
 
 let fetchModule = null;
+// 테스트용 hook: setFetchForTesting(fn)으로 fetch 구현 교체 가능
+let _testFetch = null;
 async function getFetch() {
+  if (_testFetch) return _testFetch;
   if (!fetchModule) {
     fetchModule = (await import('node-fetch')).default;
   }
@@ -231,4 +234,15 @@ async function enrichWithArticles(newsletterText, options = {}) {
   return enriched;
 }
 
-module.exports = { enrichWithArticles, extractUrls, filterArticleUrls, fetchUrl };
+module.exports = {
+  enrichWithArticles,
+  extractUrls,
+  filterArticleUrls,
+  fetchUrl,
+  // 테스트용
+  _test: {
+    extractArticleBody,
+    setFetch: (fn) => { _testFetch = fn; },
+    resetFetch: () => { _testFetch = null; }
+  }
+};

@@ -214,6 +214,11 @@ function main() {
   console.log(`리포트 ${reports.length}개 발견`);
 
   const html = generateIndexHtml(reports);
+
+  // BASE_DIR / REPORTS_DIR 없으면 자동 생성 (writeFileSync ENOENT 방지)
+  if (!fs.existsSync(BASE_DIR)) fs.mkdirSync(BASE_DIR, { recursive: true });
+  if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR, { recursive: true });
+
   fs.writeFileSync(INDEX_PATH, html, 'utf8');
   fs.writeFileSync(REPORTS_INDEX_PATH, html, 'utf8');
   console.log(`인덱스 생성: ${INDEX_PATH}`);

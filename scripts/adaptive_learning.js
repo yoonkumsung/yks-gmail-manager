@@ -252,6 +252,33 @@ ${analysis.special_notes || '없음'}
   }
 
   /**
+   * 분석(analyze) 실패 카운터 +1
+   * 동일 발신자가 N회 연속 실패하면 더 이상 시도하지 말고 기본 추출로 fallback
+   */
+  recordAnalyzeFailure(senderEmail) {
+    const catalog = this.loadCatalog();
+    const newsletter = catalog.newsletters.find(
+      n => n.sender.toLowerCase() === senderEmail.toLowerCase()
+    );
+    if (!newsletter) return;
+    newsletter.analyze_failed_count = (newsletter.analyze_failed_count || 0) + 1;
+    newsletter.analyze_last_failed_at = new Date().toISOString();
+    this.saveCatalog(catalog);
+  }
+
+  /**
+   * 분석 시도를 건너뛰어야 하는지 여부 (3회 연속 실패 시 true)
+   * → 기본 라벨 에이전트로 fallback (analyze 무한 재시도 비용 방지)
+   */
+  shouldSkipAnalyze(senderEmail, maxAttempts = 3) {
+    const catalog = this.loadCatalog();
+    const newsletter = catalog.newsletters.find(
+      n => n.sender.toLowerCase() === senderEmail.toLowerCase()
+    );
+    return (newsletter?.analyze_failed_count || 0) >= maxAttempts;
+  }
+
+  /**
    * ID 생성 (도메인 우선, 중복 시 도메인_사용자)
    *
    * 규칙:

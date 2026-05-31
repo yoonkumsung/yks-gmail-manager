@@ -16,7 +16,7 @@ module.exports = async function () {
   beforeEach(() => {
     runner = new AgentRunner('test-key', 'test-model', {
       logDir: path.join(__dirname, '..', 'logs'),
-      chunkSize: 5000,
+      chunkSize: 8000,
     });
     // 로깅 무음
     runner.log = () => {};
@@ -196,7 +196,7 @@ module.exports = async function () {
       assert.equal(result.items[0].title, '유효한 뉴스');
     });
 
-    await it('중복 제목 제거 (60% 유사도 기준)', () => {
+    await it('중복 제목 제거 (75% 유사도 기준)', () => {
       // 정규화 후 같은 키가 되는 제목은 중복 제거됨
       const allItems = [
         { items: [
@@ -376,13 +376,12 @@ module.exports = async function () {
 
   await describe('getTaskConfig', async () => {
     await it('모든 작업 유형에 대한 설정 존재', () => {
-      const types = ['extract', 'analyze', 'merge', 'summarize', 'insight', 'crossInsight'];
+      const types = ['extract', 'analyze', 'merge'];
       for (const type of types) {
         const config = runner.getTaskConfig(type);
         assert.ok(config.systemPrompt, `${type}: systemPrompt 필수`);
         assert.ok(config.tailInstruction, `${type}: tailInstruction 필수`);
         assert.type(config.temperature, 'number', `${type}: temperature는 숫자`);
-        assert.ok(config.reasoningEffort, `${type}: reasoningEffort 필수`);
       }
     });
 
@@ -393,17 +392,6 @@ module.exports = async function () {
 
     await it('extract temperature = 0.1', () => {
       assert.equal(runner.getTaskConfig('extract').temperature, 0.1);
-    });
-
-    await it('insight temperature = 0.3', () => {
-      assert.equal(runner.getTaskConfig('insight').temperature, 0.3);
-    });
-
-    await it('금지 표현이 insight/crossInsight에 포함', () => {
-      const insight = runner.getTaskConfig('insight');
-      assert.includes(insight.systemPrompt, '패러다임 전환');
-      const cross = runner.getTaskConfig('crossInsight');
-      assert.includes(cross.systemPrompt, '혁신적');
     });
 
     await it('extract에 할루시네이션 방지 규칙 포함', () => {
@@ -426,15 +414,8 @@ module.exports = async function () {
       assert.deepEqual(runner.getRequiredFieldsForTask('merge'), ['items']);
     });
 
-    await it('summarize → label, themes', () => {
-      assert.deepEqual(runner.getRequiredFieldsForTask('summarize'), ['label', 'themes']);
-    });
-
-    await it('crossInsight → mega_trends, cross_connections, ceo_actions', () => {
-      const fields = runner.getRequiredFieldsForTask('crossInsight');
-      assert.includes(fields, 'mega_trends');
-      assert.includes(fields, 'cross_connections');
-      assert.includes(fields, 'ceo_actions');
+    await it('analyze → items', () => {
+      assert.deepEqual(runner.getRequiredFieldsForTask('analyze'), ['items']);
     });
 
     await it('알 수 없는 유형 → 빈 배열', () => {

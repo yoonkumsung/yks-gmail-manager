@@ -1,12 +1,29 @@
 #!/usr/bin/env bash
 # GitHub Actions를 통한 날짜별 순차 재처리
-# 사용법: bash scripts/batch_reprocess.sh 2026-01-04 2026-04-12
+# 사용법: bash scripts/batch_reprocess.sh 2026-01-04 2026-04-12 [owner/repo]
+# REPO 미지정 시 현재 git remote 'origin'에서 자동 추출
 set -euo pipefail
 
-START_DATE="${1:?사용법: bash scripts/batch_reprocess.sh YYYY-MM-DD YYYY-MM-DD}"
+START_DATE="${1:?사용법: bash scripts/batch_reprocess.sh YYYY-MM-DD YYYY-MM-DD [owner/repo]}"
 END_DATE="${2:?종료 날짜를 지정하세요}"
 WORKFLOW="Gmail 메일 정리"
-REPO="yoonkumsung/yks-gmail-manager"
+
+# REPO 인자 → 환경변수 → git remote 순으로 결정
+if [[ -n "${3:-}" ]]; then
+  REPO="$3"
+elif [[ -n "${GITHUB_REPO:-}" ]]; then
+  REPO="$GITHUB_REPO"
+else
+  # git remote get-url origin → owner/repo 추출
+  REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+  REPO=$(echo "$REMOTE_URL" | sed -E 's#^.*github.com[:/]([^/]+/[^/.]+)(\.git)?$#\1#')
+  if [[ -z "$REPO" || "$REPO" == "$REMOTE_URL" ]]; then
+    echo "오류: 저장소를 자동 감지할 수 없습니다. 3번째 인자 또는 GITHUB_REPO 환경변수로 'owner/repo'를 지정하세요." >&2
+    exit 1
+  fi
+fi
+
+echo "대상 저장소: $REPO"
 
 echo "=== 재처리: ${START_DATE} ~ ${END_DATE} ==="
 

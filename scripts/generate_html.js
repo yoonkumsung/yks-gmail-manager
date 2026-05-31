@@ -5,9 +5,8 @@
  * - Bento 그리드 통계 카드
  * - F-패턴 최적화 아이템 카드 (출처 상단, 큰 제목, 넉넉한 간격)
  * - 라벨별 색상 시스템 (12개 고유 색)
- * - 인사이트 탭화 (카드 내부 탭으로 공간 절약)
  * - 검색 하이라이팅 (<mark>)
- * - 빠른 필터 칩 (인사이트/원문링크)
+ * - 빠른 필터 칩 (원문링크/긴 요약)
  * - 출처별 그룹 보기 토글
  * - 미니맵 (데스크톱 사이드바)
  * - 스크롤 위치 기억 (sessionStorage)
@@ -79,6 +78,35 @@ function safeId(label) {
 }
 
 /**
+ * 발신자 이메일에서 도메인 추출 → 파비콘 URL용
+ * "name@mail.example.com" → "example.com" (일반 서브도메인 제거)
+ */
+function extractDomainForFavicon(email) {
+  if (!email || typeof email !== 'string') return '';
+  const match = email.match(/@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (!match) return '';
+  const domain = match[1].toLowerCase();
+  const parts = domain.split('.');
+  if (parts.length <= 2) return domain;
+  // 일반 서브도메인은 제거 (favicon은 보통 root domain에 있음)
+  const generic = new Set(['mail', 'e', 'www', 'news', 'email', 'newsletter', 'send', 'bounce', 'mg', 'em', 'm']);
+  if (generic.has(parts[0])) {
+    return parts.slice(1).join('.');
+  }
+  return domain;
+}
+
+/**
+ * 출처 파비콘 HTML (Google favicons 서비스, 실패 시 자동 숨김)
+ */
+function faviconImg(email) {
+  const domain = extractDomainForFavicon(email);
+  if (!domain) return '';
+  const safe = encodeURIComponent(domain);
+  return `<img class="item-favicon" src="https://www.google.com/s2/favicons?domain=${safe}&sz=32" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`;
+}
+
+/**
  * 수신 시각 포맷 (KST, MM/DD HH:MM)
  */
 function formatReceivedAtKST(dateStr) {
@@ -101,26 +129,20 @@ function formatReceivedAtKST(dateStr) {
 // 메인: 통합 HTML 리포트 생성
 // ============================================
 
-function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedMails = [], runStats = null) {
-  const hasCrossInsight = crossInsight && (
-    (crossInsight.mega_trends?.length > 0) ||
-    (crossInsight.cross_connections?.length > 0) ||
-    (crossInsight.action_items?.length > 0)
-  );
+function generateCombinedHtmlReport(allLabelsData, date, excludedMails = [], runStats = null) {
   const hasExcluded = excludedMails && excludedMails.length > 0;
 
   // 통계 카드 HTML
   const statsBentoHtml = renderStatsBento(runStats, allLabelsData);
 
   // 탭 버튼
-  const tabButtons = renderTabButtons(allLabelsData, hasCrossInsight, hasExcluded, excludedMails);
+  const tabButtons = renderTabButtons(allLabelsData, hasExcluded, excludedMails);
 
   // 탭 콘텐츠
-  const crossTabContent = hasCrossInsight ? renderCrossInsightTab(crossInsight) : '';
-  const labelTabsContent = allLabelsData.map((data, idx) => renderLabelTab(data, idx, hasCrossInsight)).join('\n');
+  const labelTabsContent = allLabelsData.map((data, idx) => renderLabelTab(data, idx)).join('\n');
   const excludedTabContent = hasExcluded ? renderExcludedTab(excludedMails) : '';
 
-  const allTabContents = crossTabContent + labelTabsContent + excludedTabContent;
+  const allTabContents = labelTabsContent + excludedTabContent;
 
   // 총 아이템 수 (통계 카드용)
   const totalItems = allLabelsData.reduce((sum, d) => sum + (d.items?.length || 0), 0);
@@ -148,30 +170,42 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     <div class="header-inner">
       <div class="header-top">
         <div class="header-title-wrap">
-          <h1 class="header-title">YKS Newsletter Report</h1>
+          <h1 class="header-title">오늘의 뉴스레터</h1>
           <span class="header-date">${escapeHtml(date)}</span>
         </div>
         <div class="header-meta">
           <span class="badge badge-total">${totalItems}개</span>
-          <button class="header-action-btn" id="search-btn" type="button" aria-label="검색" title="검색 (Cmd/Ctrl+K)">
+          <button class="header-action-btn" id="search-btn" type="button" aria-label="찾기" title="찾기 (Cmd/Ctrl+K)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
           </button>
-          <button class="header-action-btn" id="filter-btn" type="button" aria-label="필터" title="필터">
+          <button class="header-action-btn" id="filter-btn" type="button" aria-label="보기 옵션" title="보기 옵션">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
             </svg>
             <span class="header-action-dot" id="filter-dot"></span>
           </button>
-          <button class="header-action-btn" id="stats-btn" type="button" aria-label="실행 통계" title="실행 통계">
+          <button class="header-action-btn" id="stats-btn" type="button" aria-label="오늘 요약" title="오늘 요약">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
           </button>
+        </div>
+      </div>
+
+      <!-- 데스크톱 인라인 검색바 (640px+에서만 노출, 모바일은 검색 아이콘 → 모달) -->
+      <div class="header-search-row">
+        <div class="header-search-wrap">
+          <svg class="header-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <input type="text" id="search-input-header" class="header-search-input" placeholder="제목·키워드로 빠르게 찾기" aria-label="찾기">
+          <span class="search-count" id="search-count-header"></span>
         </div>
       </div>
 
@@ -185,49 +219,48 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
     ${allTabContents}
   </main>
 
-  <!-- 검색 모달 (검색만) -->
+  <!-- 검색 모달 (모바일 우선, 데스크톱 보조) -->
   <div class="modal-backdrop" id="search-modal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-labelledby="search-modal-title">
       <div class="modal-header">
-        <h3 class="modal-title" id="search-modal-title">검색</h3>
+        <h3 class="modal-title" id="search-modal-title">뉴스 찾기</h3>
         <button class="modal-close" data-close="search-modal" aria-label="닫기">×</button>
       </div>
       <div class="modal-body">
         <div class="search-bar">
-          <input type="text" id="search-input" placeholder="제목 · 요약 · 키워드 · 출처" aria-label="검색">
+          <input type="text" id="search-input" placeholder="제목·요약·키워드 어디든 찾아드려요" aria-label="찾기">
           <span class="search-count" id="search-count"></span>
         </div>
-        <p class="modal-hint">ESC로 닫기 · Cmd/Ctrl+K로 다시 열기</p>
+        <p class="modal-hint">ESC 키로 닫기 · 다시 열 땐 Cmd/Ctrl + K</p>
       </div>
     </div>
   </div>
 
-  <!-- 필터 모달 -->
+  <!-- 보기 옵션 모달 -->
   <div class="modal-backdrop" id="filter-modal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-labelledby="filter-modal-title">
       <div class="modal-header">
-        <h3 class="modal-title" id="filter-modal-title">필터</h3>
+        <h3 class="modal-title" id="filter-modal-title">보기 옵션</h3>
         <button class="modal-close" data-close="filter-modal" aria-label="닫기">×</button>
       </div>
       <div class="modal-body">
         <div class="modal-section modal-section-first">
-          <div class="modal-section-label">콘텐츠 종류</div>
+          <div class="modal-section-label">어떤 뉴스만 볼까요?</div>
           <div class="filter-chips">
-            <button class="filter-chip active" data-filter="all">전체</button>
-            <button class="filter-chip" data-filter="has-insight">💡 인사이트 있음</button>
-            <button class="filter-chip" data-filter="has-link">🔗 원문 링크 있음</button>
-            <button class="filter-chip" data-filter="long">📖 긴 요약 (400자+)</button>
+            <button class="filter-chip active" data-filter="all">전체 보기</button>
+            <button class="filter-chip" data-filter="has-link">🔗 원문이 있는 뉴스</button>
+            <button class="filter-chip" data-filter="long">📖 깊이 있는 뉴스</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 통계 모달 -->
+  <!-- 오늘 요약 모달 -->
   <div class="modal-backdrop" id="stats-modal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-labelledby="stats-modal-title">
       <div class="modal-header">
-        <h3 class="modal-title" id="stats-modal-title">실행 통계</h3>
+        <h3 class="modal-title" id="stats-modal-title">오늘 어떻게 준비했나요?</h3>
         <button class="modal-close" data-close="stats-modal" aria-label="닫기">×</button>
       </div>
       <div class="modal-body">
@@ -256,8 +289,22 @@ function generateCombinedHtmlReport(allLabelsData, date, crossInsight, excludedM
 
 function renderStatsBento(runStats, allLabelsData) {
   const totalItems = allLabelsData.reduce((sum, d) => sum + (d.items?.length || 0), 0);
-  const itemsWithInsight = allLabelsData.reduce((sum, d) =>
-    sum + (d.items?.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length || 0), 0);
+
+  // 출처(뉴스레터) 수 — 사용자 관점: "오늘 몇 곳에서 모았는가"
+  const sourceSet = new Set();
+  for (const d of allLabelsData) {
+    for (const item of (d.items || [])) {
+      const src = item.source || item.source_email;
+      if (src) sourceSet.add(src);
+    }
+  }
+  const sourceCount = sourceSet.size;
+
+  // 예상 읽기 시간 — 사용자 관점: 분당 평균 한국어 읽기 속도 ~500자
+  const totalChars = allLabelsData.reduce((sum, d) =>
+    sum + (d.items || []).reduce((s, i) => s + (i.summary?.length || 0) + (i.title?.length || 0), 0), 0);
+  const readMin = Math.max(1, Math.round(totalChars / 500));
+  const readStr = readMin >= 60 ? `${Math.floor(readMin / 60)}시간 ${readMin % 60}분` : `${readMin}분`;
 
   let durStr = '-';
   let tokensStr = '-';
@@ -282,38 +329,33 @@ function renderStatsBento(runStats, allLabelsData) {
     callsStr = String(runStats.usage?.totalCalls || 0);
   }
 
+  // 사용자 관점 카드 3개를 크게, 시스템 정보(토큰/호출/비용)는 작게 따로
   return `
       <div class="stats-bento">
-        <div class="stats-bento-card">
+        <div class="stats-bento-card stats-bento-card-primary">
           <div class="stats-bento-icon">📄</div>
           <div class="stats-bento-value">${totalItems}</div>
-          <div class="stats-bento-label">아이템</div>
+          <div class="stats-bento-label">모은 뉴스</div>
         </div>
-        <div class="stats-bento-card">
-          <div class="stats-bento-icon">💡</div>
-          <div class="stats-bento-value">${itemsWithInsight}<span class="stats-bento-suffix">/${totalItems}</span></div>
-          <div class="stats-bento-label">인사이트</div>
+        <div class="stats-bento-card stats-bento-card-primary">
+          <div class="stats-bento-icon">📰</div>
+          <div class="stats-bento-value">${sourceCount}</div>
+          <div class="stats-bento-label">출처</div>
         </div>
-        <div class="stats-bento-card">
+        <div class="stats-bento-card stats-bento-card-primary">
           <div class="stats-bento-icon">⏱</div>
-          <div class="stats-bento-value">${durStr}</div>
-          <div class="stats-bento-label">소요시간</div>
+          <div class="stats-bento-value">${readStr}</div>
+          <div class="stats-bento-label">예상 읽기 시간</div>
         </div>
-        <div class="stats-bento-card">
-          <div class="stats-bento-icon">🔤</div>
-          <div class="stats-bento-value">${tokensStr}</div>
-          <div class="stats-bento-label">토큰</div>
-        </div>
-        <div class="stats-bento-card">
-          <div class="stats-bento-icon">📡</div>
-          <div class="stats-bento-value">${callsStr}</div>
-          <div class="stats-bento-label">API 호출</div>
-        </div>
-        <div class="stats-bento-card">
-          <div class="stats-bento-icon">💰</div>
-          <div class="stats-bento-value">${costStr}</div>
-          <div class="stats-bento-label">비용</div>
-        </div>
+      </div>
+      <div class="stats-system-row">
+        <span class="stats-system-item"><span class="stats-system-label">처리 시간</span> ${durStr}</span>
+        <span class="stats-system-divider">·</span>
+        <span class="stats-system-item"><span class="stats-system-label">API 호출</span> ${callsStr}회</span>
+        <span class="stats-system-divider">·</span>
+        <span class="stats-system-item"><span class="stats-system-label">토큰</span> ${tokensStr}</span>
+        <span class="stats-system-divider">·</span>
+        <span class="stats-system-item"><span class="stats-system-label">비용</span> ${costStr}</span>
       </div>`;
 }
 
@@ -321,13 +363,9 @@ function renderStatsBento(runStats, allLabelsData) {
 // 탭 버튼
 // ============================================
 
-function renderTabButtons(allLabelsData, hasCrossInsight, hasExcluded, excludedMails) {
-  const crossBtn = hasCrossInsight
-    ? `<button class="tab-btn cross-tab-btn active" data-tab="종합인사이트">✨ 종합 인사이트</button>`
-    : '';
-
+function renderTabButtons(allLabelsData, hasExcluded, excludedMails) {
   const labelBtns = allLabelsData.map((data, idx) => {
-    const isActive = !hasCrossInsight && idx === 0;
+    const isActive = idx === 0;
     const count = data.items?.length || 0;
     const color = getLabelColor(data.label);
     const safe = safeId(data.label);
@@ -342,26 +380,24 @@ function renderTabButtons(allLabelsData, hasCrossInsight, hasExcluded, excludedM
     ? `<button class="tab-btn excluded-tab-btn" data-tab="제외됨">제외<span class="count">${excludedMails.length}</span></button>`
     : '';
 
-  return crossBtn + labelBtns + excludedBtn;
+  return labelBtns + excludedBtn;
 }
 
 // ============================================
 // 라벨별 탭 콘텐츠
 // ============================================
 
-function renderLabelTab(data, idx, hasCrossInsight) {
-  const isActive = !hasCrossInsight && idx === 0;
+function renderLabelTab(data, idx) {
+  const isActive = idx === 0;
   const safe = safeId(data.label);
   const color = getLabelColor(data.label);
   const items = data.items || [];
 
   const itemsHtml = items.map((item, itemIdx) => renderItemCard(item, itemIdx, data.label, color)).join('\n');
 
-  const insightCount = items.filter(i => i.insights?.domain?.content || i.insights?.cross_domain?.content).length;
   const statsLine = `<div class="label-stats-bar">
     <div class="label-stats-left">
       <span class="label-stat-main">📰 ${items.length}개 아이템</span>
-      ${insightCount > 0 ? `<span class="label-stat">💡 ${insightCount}개 인사이트</span>` : ''}
       ${data.stats?.duplicates_removed ? `<span class="label-stat">🔗 ${data.stats.duplicates_removed}개 중복 제거</span>` : ''}
     </div>
     <div class="grouping-toggle" role="tablist" aria-label="정렬 방식">
@@ -370,12 +406,19 @@ function renderLabelTab(data, idx, hasCrossInsight) {
     </div>
   </div>`;
 
+  // 모바일 점진 공개: 5개 초과 시 "더보기" 버튼 (CSS로 모바일에서만 노출)
+  const MOBILE_INITIAL_COUNT = 5;
+  const showMoreBtn = items.length > MOBILE_INITIAL_COUNT
+    ? `<button class="mobile-show-more" type="button">+ ${items.length - MOBILE_INITIAL_COUNT}개 더 보기</button>`
+    : '';
+
   return `
       <div class="tab-content ${isActive ? 'active' : ''}" id="tab-${safe}" data-label="${safe}" style="--label-color: ${color}">
         ${statsLine}
         <div class="items-list">
-          ${itemsHtml || '<p class="no-items">기사가 없습니다.</p>'}
+          ${itemsHtml || '<p class="no-items">아직 이 라벨에 모인 뉴스가 없어요</p>'}
         </div>
+        ${showMoreBtn}
       </div>`;
 }
 
@@ -384,19 +427,12 @@ function renderLabelTab(data, idx, hasCrossInsight) {
 // ============================================
 
 function renderItemCard(item, itemIdx, labelName, labelColor) {
-  const uniqueId = `${safeId(labelName)}-${itemIdx}`;
   const source = item.source || '';
   const sourceEmail = item.source_email || '';
   const title = item.title || '(제목 없음)';
   const summary = item.summary || '';
   const keywords = (item.keywords || []).slice(0, 8);
   const receivedAt = formatReceivedAtKST(item.received_at);
-
-  const hasDomain = !!item.insights?.domain?.content;
-  const hasCross = !!item.insights?.cross_domain?.content;
-  const hasInsight = hasDomain || hasCross;
-  const domainContent = item.insights?.domain?.content || '';
-  const crossContent = item.insights?.cross_domain?.content || '';
 
   // 링크
   const safeLink = safeUrl(item.link);
@@ -406,7 +442,6 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
   const isLongSummary = summary.length >= 400;
 
   // 링크 버튼: Gmail은 항상 표시, 원문은 link가 있을 때만 추가
-  // div로 묶어서 모바일에서 버튼이 따로 줄바꿈되지 않도록 함
   let linkBtns = '';
   if (gmailUrl) {
     linkBtns += `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
@@ -414,39 +449,7 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
   if (safeLink) {
     linkBtns += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
   }
-  const linkBtnHtml = linkBtns ? `<div class="item-btns">${linkBtns}</div>` : '';
-
-  // 키워드
-  const keywordsHtml = keywords.map(kw =>
-    `<span class="tag">#${escapeHtml(kw)}</span>`
-  ).join('');
-
-  // 푸터 행 (인사이트 탭 + 원문 링크 버튼)
-  let footerHtml = '';
-  if (hasInsight || linkBtnHtml) {
-    const tabs = [];
-    const panels = [];
-
-    if (hasDomain) {
-      const active = tabs.length === 0 ? 'active' : '';
-      tabs.push(`<button class="insight-tab ${active}" data-panel="domain-${uniqueId}">💡 실용적 인사이트</button>`);
-      panels.push(`<div class="insight-panel ${active}" id="domain-${uniqueId}">${escapeHtml(domainContent)}</div>`);
-    }
-    if (hasCross) {
-      const active = tabs.length === 0 ? 'active' : '';
-      tabs.push(`<button class="insight-tab ${active}" data-panel="cross-${uniqueId}">🌐 확장 인사이트</button>`);
-      panels.push(`<div class="insight-panel ${active}" id="cross-${uniqueId}">${escapeHtml(crossContent)}</div>`);
-    }
-
-    footerHtml = `
-      <div class="insights-container">
-        <div class="item-footer-row">
-          ${hasInsight ? `<div class="insights-tabs">${tabs.join('')}</div>` : '<div class="insights-tabs-spacer"></div>'}
-          ${linkBtnHtml}
-        </div>
-        ${panels.join('')}
-      </div>`;
-  }
+  const linkBtnHtml = linkBtns ? `<div class="item-footer-row"><div class="item-btns">${linkBtns}</div></div>` : '';
 
   // 키워드를 data 속성으로만 보존 (화면 표시 X, 검색에만 사용)
   const keywordsDataStr = keywords.map(k => `#${k}`).join(' ');
@@ -455,82 +458,18 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
         <article class="item"
           data-label="${safeId(labelName)}"
           data-source="${escapeHtml(source || sourceEmail)}"
-          data-has-insight="${hasInsight ? 'true' : 'false'}"
           data-has-link="${hasLink ? 'true' : 'false'}"
           data-long="${isLongSummary ? 'true' : 'false'}"
           data-keywords="${escapeHtml(keywordsDataStr)}">
           <span class="item-number">#${itemIdx + 1}</span>
           ${(source || sourceEmail || receivedAt) ? `<div class="item-meta-top">
-            ${(source || sourceEmail) ? `<span class="item-source">${escapeHtml(source || sourceEmail)}</span>` : ''}
+            ${(source || sourceEmail) ? `<span class="item-source">${faviconImg(sourceEmail)}${escapeHtml(source || sourceEmail)}</span>` : ''}
             ${receivedAt ? `<span class="item-time">${escapeHtml(receivedAt)}</span>` : ''}
           </div>` : ''}
           <h3 class="item-title">${escapeHtml(title)}</h3>
           <p class="item-summary">${escapeHtml(summary)}</p>
-          ${footerHtml}
+          ${linkBtnHtml}
         </article>`;
-}
-
-// ============================================
-// 크로스 인사이트 탭
-// ============================================
-
-function renderCrossInsightTab(crossInsight) {
-  const megaTrends = crossInsight.mega_trends || [];
-  const crossConnections = crossInsight.cross_connections || [];
-  const actionItems = crossInsight.action_items || [];
-
-  const megaHtml = megaTrends.map(t => `
-    <div class="cross-card mega-trend-card">
-      <h4 class="cross-card-title">${escapeHtml(t.title)}</h4>
-      <p class="cross-card-desc">${escapeHtml(t.description)}</p>
-      ${(t.related_items || []).length > 0 ? `
-        <div class="related-items">
-          ${t.related_items.map(r => `<span class="related-item-tag" style="--label-color: ${getLabelColor(r.label)}"><span class="label-name">${escapeHtml(r.label)}</span> ${escapeHtml(r.title)}</span>`).join('')}
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
-
-  const connHtml = crossConnections.map(c => `
-    <div class="cross-card cross-connection-card">
-      <h4 class="cross-card-title">${escapeHtml(c.title)}</h4>
-      <p class="cross-card-desc">${escapeHtml(c.description)}</p>
-      ${(c.connected_items || []).length > 0 ? `
-        <div class="related-items">
-          ${c.connected_items.map(r => `<span class="related-item-tag" style="--label-color: ${getLabelColor(r.label)}"><span class="label-name">${escapeHtml(r.label)}</span> ${escapeHtml(r.title)}</span>`).join('')}
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
-
-  const actionHtml = actionItems.map(a => `
-    <div class="cross-card action-item-card">
-      <div class="action-top">
-        <span class="action-timeline">${escapeHtml(a.timeline || '')}</span>
-        ${(a.related_labels || []).map(l => `<span class="action-label-tag" style="color: ${getLabelColor(l)}">${escapeHtml(l)}</span>`).join('')}
-      </div>
-      <p class="cross-card-desc">${escapeHtml(a.action)}</p>
-    </div>
-  `).join('');
-
-  return `
-      <div class="tab-content active" id="tab-종합인사이트">
-        ${megaTrends.length > 0 ? `
-        <section class="cross-section">
-          <h3 class="cross-section-title">🌟 메가트렌드</h3>
-          ${megaHtml}
-        </section>` : ''}
-        ${crossConnections.length > 0 ? `
-        <section class="cross-section">
-          <h3 class="cross-section-title">🔗 크로스 연결</h3>
-          ${connHtml}
-        </section>` : ''}
-        ${actionItems.length > 0 ? `
-        <section class="cross-section">
-          <h3 class="cross-section-title">🎯 사용자 액션</h3>
-          ${actionHtml}
-        </section>` : ''}
-      </div>`;
 }
 
 // ============================================
@@ -568,7 +507,7 @@ function renderExcludedTab(excludedMails) {
   `).join('');
 
   return `
-      <div class="tab-content" id="tab-제외됨">
+      <div class="tab-content" id="tab-제외됨" data-label="제외된 메일">
         <div class="label-stats-bar">
           <span class="label-stat-main">🚫 ${excludedMails.length}건 제외</span>
           <span class="label-stat">${Object.keys(groups).length}개 사유</span>
@@ -806,23 +745,18 @@ function generateStyles(labelColorCss) {
 
     /* ============================================
        통계 Bento 그리드 (모달 내부)
+       사용자 관점 카드 3개 (큼) + 시스템 정보 1줄 (작음)
        ============================================ */
     .stats-bento {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 0.6rem;
     }
-    @media (min-width: 520px) {
-      .stats-bento { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 400px) {
-      .stats-bento { grid-template-columns: repeat(2, 1fr); }
-    }
     .stats-bento-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 0.75rem 0.5rem;
+      padding: 1rem 0.5rem;
       text-align: center;
       transition: transform 0.15s, box-shadow 0.15s;
     }
@@ -831,35 +765,59 @@ function generateStyles(labelColorCss) {
       box-shadow: var(--shadow-md);
     }
     .stats-bento-icon {
-      font-size: 1rem;
-      opacity: 0.8;
-      margin-bottom: 0.2rem;
+      font-size: 1.4rem;
+      opacity: 0.85;
+      margin-bottom: 0.35rem;
     }
     .stats-bento-value {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 1.5rem;
+      font-weight: 800;
       color: var(--text);
       line-height: 1.1;
+      letter-spacing: -0.01em;
       font-variant-numeric: tabular-nums;
     }
+    .stats-bento-card-primary .stats-bento-value {
+      color: var(--primary);
+    }
     .stats-bento-suffix {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: var(--text-subtle);
       font-weight: 500;
     }
     .stats-bento-label {
-      font-size: 0.6rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
-      margin-top: 0.25rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      margin-top: 0.35rem;
       font-weight: 600;
     }
-    @media (max-width: 900px) {
-      .stats-bento { grid-template-columns: repeat(3, 1fr); }
+    .stats-system-row {
+      margin-top: 0.875rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.6rem;
+      justify-content: center;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
     }
-    @media (max-width: 500px) {
-      .stats-bento { grid-template-columns: repeat(2, 1fr); }
+    .stats-system-item {
+      white-space: nowrap;
+    }
+    .stats-system-label {
+      color: var(--text-subtle);
+      margin-right: 0.25rem;
+    }
+    .stats-system-divider {
+      color: var(--text-subtle);
+      opacity: 0.5;
+    }
+    @media (max-width: 480px) {
+      .stats-bento { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+      .stats-bento-value { font-size: 1.2rem; }
+      .stats-bento-label { font-size: 0.65rem; }
     }
 
     /* ============================================
@@ -962,6 +920,61 @@ function generateStyles(labelColorCss) {
     }
 
     /* ============================================
+       헤더 인라인 검색바 (데스크톱 전용, 모바일은 아이콘→모달)
+       ============================================ */
+    .header-search-row {
+      display: none;
+      margin-top: 0.5rem;
+    }
+    @media (min-width: 640px) {
+      .header-search-row { display: block; }
+    }
+    .header-search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 0.75rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .header-search-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .header-search-icon {
+      flex-shrink: 0;
+      color: var(--text-subtle);
+      margin-right: 0.5rem;
+    }
+    .header-search-wrap:focus-within .header-search-icon {
+      color: var(--primary);
+    }
+    .header-search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.85rem;
+      padding: 0.55rem 0;
+      font-family: inherit;
+      -webkit-appearance: none;
+    }
+    .header-search-input::placeholder {
+      color: var(--text-subtle);
+    }
+    #search-count-header {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    /* ============================================
        탭 (가로 스크롤)
        ============================================ */
     .tabs-wrapper {
@@ -1020,14 +1033,6 @@ function generateStyles(labelColorCss) {
       display: inline-block;
     }
     .tab-btn.active .tab-label-dot { display: none; }
-    .cross-tab-btn {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      border-color: transparent;
-    }
-    .cross-tab-btn.active {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    }
     .excluded-tab-btn {
       opacity: 0.65;
     }
@@ -1098,6 +1103,41 @@ function generateStyles(labelColorCss) {
     }
 
     /* ============================================
+       모바일 점진 공개 (640px 이하에서 첫 5개만 + 더보기)
+       데스크톱에서는 항상 전체 노출
+       ============================================ */
+    .mobile-show-more {
+      display: none;
+    }
+    @media (max-width: 640px) {
+      .items-list:not(.expanded) > .item:nth-of-type(n+6) {
+        display: none;
+      }
+      .mobile-show-more {
+        display: block;
+        width: 100%;
+        margin-top: 0.75rem;
+        padding: 0.875rem 1rem;
+        background: var(--card-bg);
+        color: var(--primary);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .mobile-show-more:active {
+        transform: scale(0.98);
+        background: var(--border-light);
+      }
+      .mobile-show-more.hidden {
+        display: none;
+      }
+    }
+
+    /* ============================================
        아이템 카드 (F-패턴 최적화)
        ============================================ */
     .items-list {
@@ -1132,11 +1172,17 @@ function generateStyles(labelColorCss) {
       font-weight: 700;
       text-transform: none;
       letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
     }
-    .item-source::before {
-      content: '📰';
-      margin-right: 0.3rem;
-      opacity: 0.7;
+    .item-favicon {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      opacity: 0.95;
+      object-fit: cover;
     }
     .item-time {
       color: var(--text-subtle);
@@ -1198,17 +1244,14 @@ function generateStyles(labelColorCss) {
       font-weight: 600;
       border: 1px solid color-mix(in srgb, var(--label-color, var(--primary)) 18%, transparent);
     }
-    /* 인사이트 탭 + 원문 버튼이 같이 있는 푸터 행 */
+    /* 원문 버튼 푸터 행 */
     .item-footer-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 0.75rem;
       margin-bottom: 0.5rem;
       flex-wrap: wrap;
-    }
-    .insights-tabs-spacer {
-      flex: 1;
     }
     .item-btns {
       display: flex;
@@ -1245,127 +1288,6 @@ function generateStyles(labelColorCss) {
     }
     .item-btn-gmail:hover {
       background: #e2e8f0;
-    }
-
-    /* ============================================
-       인사이트 탭 (카드 내부) + 원문 버튼
-       ============================================ */
-    .insights-container {
-      margin-top: 0.875rem;
-      padding-top: 0.75rem;
-      border-top: 1px dashed var(--border);
-    }
-    .insights-tabs {
-      display: flex;
-      gap: 0.25rem;
-      flex-wrap: wrap;
-    }
-    .insight-tab {
-      padding: 0.4rem 0.75rem;
-      background: transparent;
-      border: 1px solid transparent;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-radius: 6px;
-      font-weight: 600;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-    .insight-tab:hover {
-      background: var(--border-light);
-      color: var(--text);
-    }
-    .insight-tab.active {
-      background: color-mix(in srgb, var(--label-color, var(--primary)) 10%, transparent);
-      color: var(--label-color, var(--primary));
-    }
-    .insight-panel {
-      display: none;
-      padding: 0.875rem 1rem;
-      background: color-mix(in srgb, var(--label-color, var(--primary)) 4%, transparent);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      line-height: 1.75;
-      color: var(--text);
-      animation: fadeIn 0.2s ease;
-    }
-    .insight-panel.active { display: block; }
-
-    /* ============================================
-       크로스 인사이트 카드
-       ============================================ */
-    .cross-section {
-      margin-bottom: 1.5rem;
-    }
-    .cross-section-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 2px solid var(--border);
-    }
-    .cross-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.125rem 1.25rem;
-      margin-bottom: 0.75rem;
-      transition: box-shadow 0.15s;
-    }
-    .cross-card:hover { box-shadow: var(--shadow-md); }
-    .mega-trend-card { border-left: 4px solid #6366f1; }
-    .cross-connection-card { border-left: 4px solid #f59e0b; }
-    .action-item-card { border-left: 4px solid #10b981; }
-    .cross-card-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      line-height: 1.4;
-    }
-    .cross-card-desc {
-      font-size: 0.85rem;
-      line-height: 1.7;
-      color: var(--text);
-      margin-bottom: 0.75rem;
-    }
-    .related-items {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.375rem;
-    }
-    .related-item-tag {
-      font-size: 0.7rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 6px;
-      background: color-mix(in srgb, var(--label-color, var(--text-muted)) 10%, transparent);
-      color: var(--text);
-      border: 1px solid color-mix(in srgb, var(--label-color, var(--text-muted)) 20%, transparent);
-    }
-    .related-item-tag .label-name {
-      font-weight: 700;
-      color: var(--label-color, var(--primary));
-      margin-right: 0.3rem;
-    }
-    .action-top {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      margin-bottom: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .action-timeline {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 0.15rem 0.55rem;
-      border-radius: 999px;
-      background: #ecfdf5;
-      color: #065f46;
-      text-transform: uppercase;
-    }
-    .action-label-tag {
-      font-size: 0.7rem;
-      font-weight: 700;
     }
 
     /* ============================================
@@ -1546,6 +1468,9 @@ function generateStyles(labelColorCss) {
         --text-subtle: #64748b;
         --border: #334155;
         --border-light: #1e293b;
+        /* 다크 배경 명도 보정: 링크/액션 색을 더 밝게 (#2563eb → #60a5fa) */
+        --primary: #60a5fa;
+        --primary-light: #93c5fd;
       }
       .header-container {
         background: rgba(11, 17, 32, 0.85);
@@ -1564,9 +1489,12 @@ function generateStyles(labelColorCss) {
       .item-btn-gmail:hover {
         background: #475569;
       }
-      .action-timeline {
-        background: #064e3b;
-        color: #6ee7b7;
+      /* 다크모드에서 검색 focus glow도 더 밝게 */
+      .header-search-wrap:focus-within {
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+      }
+      #search-input:focus {
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
       }
     }
 
@@ -1575,11 +1503,10 @@ function generateStyles(labelColorCss) {
        ============================================ */
     @media print {
       .header-container { position: static; border: none; background: white; }
-      .tabs-wrapper, .search-bar, .filter-bar, .minimap, .scroll-top-btn, .item-actions, .insights-tabs { display: none !important; }
+      .tabs-wrapper, .search-bar, .filter-bar, .minimap, .scroll-top-btn, .item-actions { display: none !important; }
       .tab-content { display: block !important; page-break-after: always; }
-      .tab-content::before { content: attr(id); font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 1rem; }
+      .tab-content::before { content: attr(data-label); font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 1rem; }
       .item { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
-      .insight-panel { display: block !important; margin-top: 0.5rem; background: #f8f8f8 !important; }
       body { background: white; color: black; font-size: 10pt; line-height: 1.5; }
       .container { max-width: 100%; padding: 0.5rem; }
       .stats-bento { grid-template-columns: repeat(6, 1fr); page-break-after: avoid; }
@@ -1626,22 +1553,6 @@ function generateScripts() {
     });
 
     // ============================================
-    // 인사이트 탭 (카드 내부)
-    // ============================================
-    document.querySelectorAll('.insight-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const targetId = tab.dataset.panel;
-        const container = tab.closest('.insights-container');
-        if (!container) return;
-        container.querySelectorAll('.insight-tab').forEach(t => t.classList.remove('active'));
-        container.querySelectorAll('.insight-panel').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        const panel = document.getElementById(targetId);
-        if (panel) panel.classList.add('active');
-      });
-    });
-
-    // ============================================
     // 필터 상태
     // ============================================
     const filterState = {
@@ -1670,7 +1581,6 @@ function generateScripts() {
 
         // 필터 칩
         if (show && !filterState.chips.has('all')) {
-          if (filterState.chips.has('has-insight') && item.dataset.hasInsight !== 'true') show = false;
           if (filterState.chips.has('has-link') && item.dataset.hasLink !== 'true') show = false;
           if (filterState.chips.has('long') && item.dataset.long !== 'true') show = false;
         }
@@ -1679,11 +1589,12 @@ function generateScripts() {
         if (show) visible++;
       });
 
-      // 카운트 업데이트
-      const searchCount = document.getElementById('search-count');
-      if (searchCount) {
-        searchCount.textContent = (filterState.search || !filterState.chips.has('all')) ? (visible + '/' + total) : '';
-      }
+      // 카운트 업데이트 (모달 + 헤더 동기화)
+      const countText = (filterState.search || !filterState.chips.has('all')) ? (visible + '/' + total) : '';
+      ['search-count', 'search-count-header'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = countText;
+      });
 
       // 하이라이팅
       unhighlightMatches(activeTab);
@@ -1691,13 +1602,16 @@ function generateScripts() {
         highlightMatches(activeTab, filterState.search);
       }
 
+      // 모바일 점진 공개 (검색/필터 활성 시 자동 펼침)
+      applyMobileExpansion();
+
       // 결과 없음
       let noResults = activeTab.querySelector('.no-search-results');
       if (visible === 0 && (filterState.search || !filterState.chips.has('all'))) {
         if (!noResults) {
           noResults = document.createElement('div');
           noResults.className = 'no-search-results';
-          noResults.textContent = '검색 결과가 없습니다.';
+          noResults.textContent = '찾으시는 뉴스가 없어요';
           const list = activeTab.querySelector('.items-list');
           if (list) list.appendChild(noResults);
         }
@@ -1714,7 +1628,7 @@ function generateScripts() {
     // ============================================
     function highlightMatches(container, query) {
       const items = container.querySelectorAll('.item');
-      const selectors = '.item-title, .item-summary, .item-source, .insight-panel';
+      const selectors = '.item-title, .item-summary, .item-source';
       const re = new RegExp('(' + query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&') + ')', 'gi');
 
       items.forEach(item => {
@@ -1736,19 +1650,61 @@ function generateScripts() {
     }
 
     // ============================================
-    // 검색 입력
+    // 모바일 점진 공개: "더 보기" 버튼 + 검색 활성 시 자동 펼침
     // ============================================
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      let timer = null;
-      searchInput.addEventListener('input', () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          filterState.search = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll('.mobile-show-more').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const list = btn.previousElementSibling;
+        if (list && list.classList.contains('items-list')) {
+          list.classList.add('expanded');
+          list.dataset.userExpanded = 'true';  // 영구 펼침 표시 (검색 해제 후에도 유지)
+          btn.classList.add('hidden');
+        }
+      });
+    });
+
+    function applyMobileExpansion() {
+      const isFilterActive = filterState.search || !filterState.chips.has('all');
+      document.querySelectorAll('.items-list').forEach(list => {
+        const nextBtn = list.nextElementSibling;
+        const hasBtn = nextBtn && nextBtn.classList.contains('mobile-show-more');
+
+        if (isFilterActive) {
+          list.classList.add('expanded');
+          if (hasBtn) nextBtn.classList.add('hidden');
+        } else if (!list.dataset.userExpanded) {
+          // 사용자가 직접 펼친 적이 없으면 다시 접음 (검색 해제 시)
+          list.classList.remove('expanded');
+          if (hasBtn) nextBtn.classList.remove('hidden');
+        }
+      });
+    }
+
+    // ============================================
+    // 검색 입력 (모달 + 헤더 인라인 동기화)
+    // ============================================
+    const searchInputs = [
+      document.getElementById('search-input'),
+      document.getElementById('search-input-header')
+    ].filter(Boolean);
+
+    let searchTimer = null;
+    searchInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        const value = input.value.toLowerCase().trim();
+        // 다른 입력창에도 동기화 (사용자가 헤더 검색 후 모달 열어도 일관)
+        searchInputs.forEach(other => {
+          if (other !== input && other.value !== input.value) {
+            other.value = input.value;
+          }
+        });
+        searchTimer = setTimeout(() => {
+          filterState.search = value;
           applyAllFilters();
         }, 160);
       });
-    }
+    });
 
     // ============================================
     // 필터 칩 + 필터 활성화 표시 (dot)
@@ -2067,30 +2023,16 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     }
   }
 
-  // 제외 메일
+  // 제외 메일 (라벨 데이터에 포함되어 있을 수 있음)
   const allExcluded = [];
   for (const data of allLabelsData) {
     if (data.excluded?.length > 0) {
       allExcluded.push(...data.excluded.map(e => ({ ...e, label: data.label })));
     }
   }
-  const excludedFiles = fs.readdirSync(mergedDir).filter(f => f.startsWith('excluded_') && f.endsWith('.json'));
-  for (const file of excludedFiles) {
-    try {
-      const data = JSON.parse(fs.readFileSync(path.join(mergedDir, file), 'utf8'));
-      if (data.excluded) allExcluded.push(...data.excluded.map(e => ({ ...e, label: data.label })));
-    } catch (e) { /* skip */ }
-  }
 
   const filteredLabelsData = allLabelsData.filter(d => d.items?.length > 0);
   filteredLabelsData.sort((a, b) => a.label.localeCompare(b.label, 'ko'));
-
-  // 크로스 인사이트
-  let crossInsight = null;
-  const crossPath = path.join(mergedDir, '_cross_insight.json');
-  if (fs.existsSync(crossPath)) {
-    try { crossInsight = JSON.parse(fs.readFileSync(crossPath, 'utf8')); } catch (e) { /* skip */ }
-  }
 
   // 실행 통계
   let runStats = null;
@@ -2099,7 +2041,7 @@ function generateCombinedFromMergedFiles(mergedDir, outputPath, date) {
     try { runStats = JSON.parse(fs.readFileSync(statsPath, 'utf8')); } catch (e) { /* skip */ }
   }
 
-  const html = generateCombinedHtmlReport(filteredLabelsData, date, crossInsight, allExcluded, runStats);
+  const html = generateCombinedHtmlReport(filteredLabelsData, date, allExcluded, runStats);
   fs.writeFileSync(outputPath, html, 'utf8');
   console.log(`✓ 리포트 생성: ${outputPath}`);
   return outputPath;
@@ -2110,5 +2052,14 @@ module.exports = {
   generateCombinedFromMergedFiles,
   LABEL_COLORS,
   getLabelColor,
-  escapeHtml
+  escapeHtml,
+  // 테스트 용도
+  _test: {
+    extractDomainForFavicon,
+    faviconImg,
+    safeUrl,
+    safeId,
+    formatReceivedAtKST,
+    renderStatsBento
+  }
 };
