@@ -534,6 +534,12 @@ async function main() {
     // 6. AdaptiveLearning 인스턴스 생성 (전역으로 공유)
     const adaptiveLearning = new AdaptiveLearning();
 
+    // 6.5 Gmail 인증 사전 점검 (실패 시 즉시 중단 → 인증 깨짐을 빈 결과로 삼키는 silent green 방지)
+    console.log('--- Gmail 인증 점검 ---');
+    const authCheckFetcher = await getGmailFetcher();
+    const profile = await authCheckFetcher.verifyAuth();
+    console.log(`  인증 OK: ${profile.emailAddress}\n`);
+
     // 7. 메일 정리 실행
     const results = await processAllLabels(labels, timeRange, tempDir, progressManager, failedBatchManager, adaptiveLearning);
 
@@ -1001,8 +1007,9 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
   const rangeStart = timeRange.start.toISOString();
   const rangeEnd = timeRange.end.toISOString();
 
+  let fetcher = null;
   try {
-    const fetcher = await getGmailFetcher();
+    fetcher = await getGmailFetcher();
 
     const result = await fetcher.fetchMessages({
       label: label.gmail_label || label.name,
@@ -1016,6 +1023,11 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
 
     return result;
   } catch (error) {
+    // 인증 에러(토큰 만료/폐기)는 삼키지 않고 전파 → 전체 run이 실패하여 알림이 가도록
+    if (fetcher && typeof fetcher.isAuthError === 'function' && fetcher.isAuthError(error)) {
+      throw error;
+    }
+    // 그 외(일시적 오류, 라벨 없음 등)는 기존대로 관용 처리
     console.warn(`  Gmail API 오류 (메일 없을 수 있음): ${error.message}`);
     return null;
   }

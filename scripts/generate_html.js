@@ -447,7 +447,7 @@ function renderItemCard(item, itemIdx, labelName, labelColor) {
     linkBtns += `<a href="${escapeHtml(gmailUrl)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-gmail">Gmail에서 보기</a>`;
   }
   if (safeLink) {
-    linkBtns += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기 ↗</a>`;
+    linkBtns += `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="item-btn item-btn-primary">원문 보기</a>`;
   }
   const linkBtnHtml = linkBtns ? `<div class="item-footer-row"><div class="item-btns">${linkBtns}</div></div>` : '';
 
