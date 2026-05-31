@@ -63,10 +63,11 @@ Gmail API에 접근하려면 OAuth 인증 정보가 필요합니다.
    - 애플리케이션 유형: "데스크톱 앱"
    - **승인된 리디렉션 URI**: `http://localhost:3000/callback` 추가
 6. 생성된 JSON 파일을 다운로드하여 `config/credentials/client_secret.json`으로 저장
-7. **OAuth 동의 화면 → "앱 게시(PUBLISH APP)"** 클릭하여 Production 모드로 전환
-   - Testing 모드에서는 refresh token이 **7일 후 만료**되어 인증이 끊깁니다
-   - Production 모드에서는 토큰이 만료되지 않아 자동화에 적합합니다
+7. **OAuth 동의 화면 → "앱 게시(PUBLISH APP)"** 클릭하여 Production 모드로 전환 (필수)
+   - Testing 모드: refresh token이 **7일 후 만료** → 자동화 운영 불가
+   - Production 모드: 토큰 무기한 (revoke 전까지) → 자동화 적합
    - 개인 사용(100명 미만)은 Google 심사 없이 즉시 게시 가능
+   - sensitive scope(Gmail readonly/modify/labels)는 미검증 상태로도 본인 사용에는 무제한
 
 요청 권한 (스코프): Gmail readonly / labels / modify / settings.basic, Drive
 
@@ -303,15 +304,15 @@ const CONFIG = {
 
 ### Gmail 인증 실패 (401 에러)
 
-토큰 만료 시:
+access_token은 1시간마다 만료되지만 googleapis 라이브러리가 refresh_token으로 자동 갱신합니다. 그래도 실패하면:
 
 ```bash
-npm run refresh
+npm run refresh   # 수동 갱신 시도
 ```
 
-`config/credentials/token.json`의 `expiry_date`가 만료된 경우 자동 갱신합니다. 그래도 실패하면 토큰 파일을 삭제하고 `npm run auth`로 재인증합니다.
+`invalid_grant` 에러가 나면 refresh_token까지 무효화된 상태 → 토큰 파일 삭제 후 `npm run auth`로 재인증.
 
-> **OAuth Testing 모드인 경우 7일마다 재인증이 필요합니다.** OAuth 동의 화면에서 "앱 게시"로 Production 전환하세요.
+> Production 모드 게시 완료 상태라면 refresh_token은 만료되지 않음. revoke되거나 비밀번호 변경 같은 사용자 액션에서만 무효화됨.
 
 ### Rate Limit (429 에러) / Cloudflare 524 타임아웃
 

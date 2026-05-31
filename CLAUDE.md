@@ -81,9 +81,9 @@ node scripts/validate_skills.js --live  # SKILL 전수 검증
 
 ## OAuth 설정
 
-현재 Google OAuth가 **테스트 모드**로 설정되어 있어 refresh_token이 7일 후 만료됨.
-프로덕션 전환 방법:
-1. [Google Cloud Console](https://console.cloud.google.com/) 접속
-2. API 및 서비스 → OAuth 동의 화면
-3. "앱 게시" 클릭 → 프로덕션 모드로 전환
-4. 전환 후 `npm run auth`로 재인증 → refresh_token이 만료되지 않음
+Google OAuth는 **프로덕션 단계** 게시 완료 — refresh_token이 만료되지 않음.
+
+- 사용자 한도: 100명 (Google 미검증 sensitive scope 앱의 일반 제한, 개인 사용엔 무관)
+- access_token은 1시간 만료되지만 googleapis 라이브러리가 자동 갱신
+- 새 환경에 토큰 옮길 때만 `npm run auth` 또는 `npm run refresh` 실행
+- token.json 분실 시: `npm run auth`로 재발급
