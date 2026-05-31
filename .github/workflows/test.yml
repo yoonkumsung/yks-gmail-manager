@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          # cache: 'npm' 미사용 — package-lock.json이 .gitignore되어 있음 (의도된 정책)
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
