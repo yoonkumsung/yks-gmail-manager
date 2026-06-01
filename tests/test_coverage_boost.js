@@ -838,6 +838,88 @@ module.exports = async function () {
         delete require.cache[orchPath];
       }
     });
+
+    await it('인증 에러(invalid_grant)는 삼키지 않고 전파', async () => {
+      const fetchGmailPath = require.resolve('../scripts/fetch_gmail');
+      const original = require.cache[fetchGmailPath];
+      require.cache[fetchGmailPath] = {
+        id: fetchGmailPath, filename: fetchGmailPath, loaded: true,
+        exports: {
+          GmailFetcher: class {
+            async authenticate() {}
+            isAuthError() { return true; }
+            async fetchMessages() { throw new Error('invalid_grant'); }
+            async markMessagesAsRead() { return { success: 0, failed: 0 }; }
+          }
+        }
+      };
+      const orchPath = require.resolve('../scripts/orchestrator');
+      delete require.cache[orchPath];
+      const orchFresh = require('../scripts/orchestrator');
+      orchFresh._test._resetGlobals();
+
+      try {
+        let err;
+        try {
+          await orchFresh._test.fetchGmailMessages(
+            { name: 'IT', gmail_label: 'IT', sub_labels: [] },
+            { start: new Date(), end: new Date() },
+            os.tmpdir()
+          );
+        } catch (e) { err = e; }
+        assert.ok(err, '인증 에러는 전파되어야 함');
+        assert.includes(err.message, 'invalid_grant');
+      } finally {
+        if (original) require.cache[fetchGmailPath] = original;
+        else delete require.cache[fetchGmailPath];
+        delete require.cache[orchPath];
+      }
+    });
+  });
+
+  await describe('fetch_gmail: isAuthError / verifyAuth', async () => {
+    const { GmailFetcher } = require('../scripts/fetch_gmail');
+
+    await it('isAuthError: invalid_grant / 401은 인증 에러로 판정', () => {
+      const f = new GmailFetcher(os.tmpdir());
+      assert.equal(f.isAuthError(new Error('invalid_grant')), true);
+      assert.equal(f.isAuthError({ response: { status: 401 } }), true);
+      assert.equal(f.isAuthError({ response: { data: { error: 'invalid_grant' } } }), true);
+      assert.equal(f.isAuthError(new Error('Token has been expired or revoked')), true);
+    });
+
+    await it('isAuthError: 일시적 오류(429/500/네트워크)는 인증 에러 아님', () => {
+      const f = new GmailFetcher(os.tmpdir());
+      assert.equal(f.isAuthError({ response: { status: 429 } }), false);
+      assert.equal(f.isAuthError({ response: { status: 500 } }), false);
+      assert.equal(f.isAuthError(new Error('socket hang up')), false);
+      assert.equal(f.isAuthError({ code: 'ETIMEDOUT' }), false);
+    });
+
+    await it('verifyAuth: getProfile 성공 시 프로필 반환', async () => {
+      const f = new GmailFetcher(os.tmpdir());
+      f.gmail = { users: { getProfile: async () => ({ data: { emailAddress: 'a@b.com' } }) } };
+      const profile = await f.verifyAuth();
+      assert.equal(profile.emailAddress, 'a@b.com');
+    });
+
+    await it('verifyAuth: 인증 에러 시 안내 메시지 포함하여 throw', async () => {
+      const f = new GmailFetcher(os.tmpdir());
+      f.gmail = { users: { getProfile: async () => { throw new Error('invalid_grant'); } } };
+      let err;
+      try { await f.verifyAuth(); } catch (e) { err = e; }
+      assert.ok(err, 'throw 되어야 함');
+      assert.includes(err.message, 'npm run auth');
+    });
+
+    await it('verifyAuth: 비인증 에러는 원본 그대로 throw', async () => {
+      const f = new GmailFetcher(os.tmpdir());
+      f.gmail = { users: { getProfile: async () => { const e = new Error('boom'); e.response = { status: 500 }; throw e; } } };
+      let err;
+      try { await f.verifyAuth(); } catch (e) { err = e; }
+      assert.ok(err, 'throw 되어야 함');
+      assert.includes(err.message, 'boom');
+    });
   });
 
   await describe('html_to_text: enrichLinkAggregator (global fetch mock)', async () => {

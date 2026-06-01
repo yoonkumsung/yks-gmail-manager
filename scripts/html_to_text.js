@@ -108,11 +108,26 @@ function decodeHtmlEntities(text) {
 // URL 정리 (추적 파라미터만 제거, base URL 보존)
 // ============================================
 
-function cleanTrackingParams(url) {
+function cleanTrackingParams(url, _depth) {
   if (!url || !url.startsWith('http')) return url;
+  _depth = _depth || 0;
 
   try {
     const urlObj = new URL(url);
+
+    // 추적 리다이렉트 래퍼 풀기: lp=/url=/u= 등 파라미터에 실제 http URL이 들어있으면
+    // 그 실제 URL로 대체 (예: KDI accesslog/collect.jsp?lp=https://eiec.kdi.re.kr/... → 진짜 기사 URL).
+    // 트래커 URL을 그대로 두면 "잘못된 접근 경로" 등 오류가 나므로 unwrap.
+    if (_depth < 3) {
+      const redirectParams = ['lp', 'url', 'u', 'target', 'dest', 'destination', 'redirect', 'redirect_url', 'out'];
+      for (const p of redirectParams) {
+        const v = urlObj.searchParams.get(p);
+        if (v && /^https?:\/\//i.test(v)) {
+          return cleanTrackingParams(v, _depth + 1);
+        }
+      }
+    }
+
     const trackingParams = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
       'mc_cid', 'mc_eid', 'fbclid', 'gclid', '_hsenc', '_hsmi',
@@ -242,6 +257,20 @@ function htmlToStructuredMarkdown(html) {
   text = text.replace(/<(em|i)(?:\s[^>]*)?>/gi, '*');
   text = text.replace(/<\/(em|i)>/gi, '*');
 
+  // 2.5 링크 변환 (테이블/리스트/헤딩 처리보다 먼저 — 표 셀 안의 <a> 링크가 제거되기 전에 보존)
+  text = text.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, url, innerHtml) => {
+    const linkText = innerHtml.replace(/<[^>]+>/g, '').trim();
+    if (!linkText) return '';
+    if (!url || url.startsWith('#') || url.startsWith('javascript:') || url.startsWith('mailto:')) {
+      return linkText;
+    }
+    if (url.startsWith('http')) {
+      const cleanUrl = cleanTrackingParams(url);
+      return `[${linkText}](${cleanUrl})`;
+    }
+    return linkText;
+  });
+
   // 3. 테이블 → 마크다운 (내부 태그 포함 상태에서 변환)
   text = text.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_, tableContent) => {
     return convertTableToMarkdown(tableContent);
@@ -271,19 +300,7 @@ function htmlToStructuredMarkdown(html) {
     });
   }
 
-  // 7. 링크 변환 (URL 보존, 추적 파라미터만 제거)
-  text = text.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, url, innerHtml) => {
-    const linkText = innerHtml.replace(/<[^>]+>/g, '').trim();
-    if (!linkText) return '';
-    if (!url || url.startsWith('#') || url.startsWith('javascript:') || url.startsWith('mailto:')) {
-      return linkText;
-    }
-    if (url.startsWith('http')) {
-      const cleanUrl = cleanTrackingParams(url);
-      return `[${linkText}](${cleanUrl})`;
-    }
-    return linkText;
-  });
+  // 7. (링크 변환은 2.5단계로 이동 — 표/리스트 셀 안의 링크 보존)
 
   // 8. 이미지 alt 텍스트
   text = text.replace(/<img[^>]*alt=["']([^"']+)["'][^>]*>/gi, (_, alt) => {

@@ -107,6 +107,49 @@ class GmailFetcher {
   }
 
   /**
+   * 인증 관련(토큰 만료/폐기) 에러인지 판별
+   * 일시적 오류(429/5xx/네트워크)와 구분하여, 인증 에러는 삼키지 않고 전파하기 위함
+   */
+  isAuthError(error) {
+    const msg = (error && error.message) || '';
+    const status = error && error.response && error.response.status;
+    const dataErr = error && error.response && error.response.data && error.response.data.error;
+
+    return (
+      status === 401 ||
+      dataErr === 'invalid_grant' ||
+      msg.includes('invalid_grant') ||
+      msg.includes('Token has been expired or revoked') ||
+      msg.includes('No refresh token') ||
+      msg.includes('No access, refresh token') ||
+      msg.includes('invalid_client')
+    );
+  }
+
+  /**
+   * 인증 사전 점검 - 가벼운 API 호출(getProfile)로 토큰 유효성 확인
+   * 토큰이 만료/폐기됐으면 명확한 에러를 throw하여 파이프라인을 즉시 중단시킨다.
+   * (인증 실패를 "메일 없음"으로 삼켜 silent green이 되던 문제 방지)
+   */
+  async verifyAuth() {
+    if (!this.gmail) {
+      await this.authenticate();
+    }
+    try {
+      const res = await this.gmail.users.getProfile({ userId: 'me' });
+      return res.data;
+    } catch (error) {
+      if (this.isAuthError(error)) {
+        throw new Error(
+          `Gmail 인증 실패 (토큰 만료/폐기 추정): ${error.message}. ` +
+          `'npm run auth'로 토큰을 재발급한 뒤 GMAIL_TOKEN 시크릿을 갱신하세요.`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
    * 메시지 목록 가져오기 (재시도 포함)
    */
   async listMessages(options) {
