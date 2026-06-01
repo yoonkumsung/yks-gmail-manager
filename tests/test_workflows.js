@@ -58,17 +58,21 @@ module.exports = async function () {
       assert.match(content, /^name:\s+\S/m);
     });
 
-    await it('on 트리거: schedule + workflow_dispatch', () => {
+    await it('on 트리거: workflow_dispatch (cron 제거, 노트북 외부 트리거)', () => {
       assert.match(content, /^on:/m);
-      assert.includes(content, 'schedule:');
       assert.includes(content, 'workflow_dispatch:');
     });
 
-    await it('cron 표현식 5개 필드', () => {
-      const cronMatch = content.match(/cron:\s+['"]([^'"]+)['"]/);
-      assert.ok(cronMatch);
-      const fields = cronMatch[1].trim().split(/\s+/);
-      assert.equal(fields.length, 5);
+    await it('cron 미사용 (정시성 위해 외부 디스패치만 사용)', () => {
+      // GitHub cron 큐 지연 회피를 위해 schedule: cron 제거됨.
+      // 노트북 작업 스케줄러가 workflow_dispatch로 정시 트리거.
+      assert.ok(!/cron:/.test(content));
+    });
+
+    await it('mode 입력: schedule 옵션 + 기본값 schedule', () => {
+      // schedule 모드 = 전날 10:01~당일 10:00 KST 윈도우 (누락 없음)
+      assert.match(content, /default:\s*['"]schedule['"]/);
+      assert.includes(content, '- schedule');
     });
 
     await it('permissions: contents: write (SKILL 자동 commit용)', () => {
