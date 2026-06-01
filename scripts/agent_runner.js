@@ -897,6 +897,9 @@ ${agentContent}`;
         { role: 'user', content: prompt }
       ],
       stream: false,
+      // JSON 강제: 자유 텍스트 출력으로 인한 깨짐(따옴표/코드블록/잡설) 원천 차단.
+      // taskConfig.format 으로 모델별/작업별 재정의 가능. 'json'은 유효 JSON만 보장(스키마 비강제).
+      format: taskConfig.format || 'json',
       options: {
         temperature: taskConfig.temperature,
         num_predict: 16384   // 출력 토큰 충분히 확보 (잘림 방지)

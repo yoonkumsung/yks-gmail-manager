@@ -226,9 +226,9 @@ function createLimiter(concurrency) {
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 3개 처리
 
-  // 모델 설정 (Ollama Cloud - DeepSeek V4)
-  // 추출/분석/병합 모두 Flash 사용 (Pro의 Level 4 GPU 소모 회피 + 속도)
-  model: 'deepseek-v4-flash:cloud',
+  // 모델 설정 (Ollama Cloud). OLLAMA_MODEL 환경변수로 재정의 가능 → 모델 A/B 테스트 용이.
+  // 후보: 'qwen3-next:80b'(CJK 번역 강·활성 3B로 저비용), 'gpt-oss:120b', 'deepseek-v4-flash:cloud'(기존)
+  model: process.env.OLLAMA_MODEL || 'deepseek-v4-flash:cloud',
 
   mergeBatchSize: 15      // 병합 배치 크기
 };
@@ -368,6 +368,76 @@ function getRunner(logDir) {
     );
   }
   return globalRunner;
+}
+
+// ---------------------------------------------------------------------------
+// 카탈로그 라벨 가드
+//   같은 Gmail 메일에 여러 라벨(예: '경제' + '미국/경제')이 붙어 있으면, prep은
+//   라벨별로 메일을 가져오므로 동일 메일이 두 라벨에서 각각 추출되어
+//   (의역 제목이 달라) dedup을 빠져나간 채 양쪽 섹션에 중복 등장한다.
+//   newsletters.json 카탈로그는 발신자별 정규 라벨을 명시하므로,
+//   "카탈로그에 등록된 발신자인데 현재 라벨이 카탈로그 라벨에 없으면" 그 메일을
+//   현재 라벨에서 제외한다. (카탈로그에 없는 발신자는 건드리지 않음 → 보수적)
+// ---------------------------------------------------------------------------
+let _senderLabelMap = null;
+function getSenderLabelMap() {
+  if (_senderLabelMap) return _senderLabelMap;
+  _senderLabelMap = new Map();
+  try {
+    const p = path.join(__dirname, '..', 'config', 'newsletters.json');
+    const cat = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const arr = Array.isArray(cat) ? cat : (cat.newsletters || []);
+    for (const n of arr) {
+      const email = String(n.sender || n.from || '').toLowerCase().replace(/.*<|>.*/g, '').trim();
+      const labels = Array.isArray(n.labels) ? n.labels : (Array.isArray(n.label) ? n.label : (n.labels || n.label ? [n.labels || n.label] : []));
+      if (email && labels.length) _senderLabelMap.set(email, labels.map(String));
+    }
+  } catch (e) { /* 카탈로그 없으면 가드 비활성 (전부 통과) */ }
+  return _senderLabelMap;
+}
+
+function extractEmail(from) {
+  const m = String(from || '').match(/<([^>]+)>/);
+  return (m ? m[1] : String(from || '')).toLowerCase().trim();
+}
+
+// report 라벨명 → 실제 Gmail 라벨명 (labels.json gmail_label). 예: 미국_경제 → 미국/경제
+let _reportToGmail = null;
+function getReportToGmailMap() {
+  if (_reportToGmail) return _reportToGmail;
+  _reportToGmail = new Map();
+  try {
+    const p = path.join(__dirname, '..', 'config', 'labels.json');
+    for (const l of (JSON.parse(fs.readFileSync(p, 'utf8')).labels || [])) {
+      _reportToGmail.set(l.name, l.gmail_label || l.name);
+    }
+  } catch (e) { /* 무시 */ }
+  return _reportToGmail;
+}
+
+// rawDir의 msg_*.json 중, "현재 라벨(labelName)이 카탈로그 정규 라벨이 아니면서,
+// 그 메일이 카탈로그 라벨을 실제 Gmail 라벨로도 보유한 경우"에만 삭제한다.
+//   → 진짜 중복(다른 라벨에서도 잡힘)만 제거하고, 카탈로그 라벨 Gmail 라벨이 없는
+//     '고아' 메일은 유지(누락 방지). gmail_labels 정보가 없으면 보수적으로 유지.
+// 반환: 삭제한 개수
+function filterRawByCatalogLabel(rawDir, labelName) {
+  if (!labelName || !fs.existsSync(rawDir)) return 0;
+  const map = getSenderLabelMap();
+  if (map.size === 0) return 0;
+  const r2g = getReportToGmailMap();
+  let removed = 0;
+  for (const f of fs.readdirSync(rawDir).filter(x => x.startsWith('msg_'))) {
+    let data;
+    try { data = JSON.parse(fs.readFileSync(path.join(rawDir, f), 'utf8')); } catch (e) { continue; }
+    const labels = map.get(extractEmail(data.from));
+    if (!labels || labels.includes(labelName)) continue; // 카탈로그 미등록 or 현재 라벨이 정규 → 유지
+    const gmailLabels = Array.isArray(data.gmail_labels) ? data.gmail_labels : null;
+    if (!gmailLabels) continue; // 라벨 정보 없으면 보수적으로 유지(누락 방지)
+    const belongsToCatalog = labels.some(rl => gmailLabels.includes(r2g.get(rl) || rl) || gmailLabels.includes(rl));
+    if (belongsToCatalog) { fs.unlinkSync(path.join(rawDir, f)); removed++; }
+  }
+  if (removed > 0) console.log(`    [라벨가드] ${labelName}: 카탈로그 정규 라벨로 중복되는 ${removed}건 제외`);
+  return removed;
 }
 
 // 전역 GmailFetcher (라벨마다 새 인증 회피 → OAuth refresh 중복 방지)
@@ -1021,6 +1091,10 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
       outputDir
     });
 
+    // 카탈로그 라벨 가드: 다른 라벨이 정규인 발신자의 메일을 이 라벨에서 제외
+    // (중복/오염 방지 — 예: Morning Brew·Axios가 '경제'에 끌려오는 것 차단)
+    try { filterRawByCatalogLabel(outputDir, label.name); } catch (e) { /* 가드 실패는 무시 */ }
+
     return result;
   } catch (error) {
     // 인증 에러(토큰 만료/폐기)는 삼키지 않고 전파 → 전체 run이 실패하여 알림이 가도록
@@ -1436,6 +1510,8 @@ module.exports = {
     checkSetup,
     convertHtmlToText,
     fetchGmailMessages,
+    filterRawByCatalogLabel,
+    getSenderLabelMap,
     getRunner,
     getGmailFetcher,
     // 전역 상태 리셋 (테스트 격리용)
