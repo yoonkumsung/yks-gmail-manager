@@ -131,7 +131,7 @@ function renderLabelSection(data, idx) {
   for (const m of Object.keys(groups)) {
     const g = groups[m];
     const avg = g.reduce((s, i) => s + (i.summary || '').length, 0) / g.length;
-    if (g.length >= 25 && avg < 90) listMsgIds.add(m);
+    if (g.length >= 25 && avg < 110) listMsgIds.add(m);
   }
   const cardItems = items.filter(it => !listMsgIds.has(it.message_id || '_'));
   const listItems = items.filter(it => listMsgIds.has(it.message_id || '_'));
