@@ -1799,7 +1799,25 @@
       },
       "detected_at": "2026-05-25T20:31:53.851Z",
       "skill_generated": true
+    },
+    {
+      "id": "nytimes_breakingnews",
+      "sender": "breakingnews@nytimes.com",
+      "name": "The New York Times <breakingnews@nytimes.com>",
+      "labels": [
+        "NYT"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_nytimes_breakingnews.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "multi-item",
+        "item_count_avg": 4
+      },
+      "detected_at": "2026-05-31T13:39:48.203Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-05-25T21:02:07.489Z"
+  "last_scan": "2026-05-31T13:42:32.536Z"
 }
