@@ -175,7 +175,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 10
+        "item_count_avg": 20
       },
       "detected_at": "2026-02-03T20:50:44.695Z",
       "skill_generated": true
@@ -247,7 +247,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 3
+        "item_count_avg": 5
       },
       "detected_at": "2026-02-03T20:50:44.695Z",
       "skill_generated": true
@@ -319,7 +319,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 4
+        "item_count_avg": 5
       },
       "detected_at": "2026-02-05T14:22:41.394Z",
       "skill_generated": true
@@ -373,7 +373,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 8
+        "item_count_avg": 10
       },
       "detected_at": "2026-02-05T14:22:41.394Z",
       "skill_generated": true
@@ -427,7 +427,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 7
+        "item_count_avg": 5
       },
       "detected_at": "2026-02-05T15:05:16.215Z",
       "skill_generated": true
@@ -535,7 +535,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 5
+        "item_count_avg": 8
       },
       "detected_at": "2026-02-05T15:59:03.386Z",
       "skill_generated": true
@@ -894,11 +894,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "pdf-only",
+        "type": "multi-item",
         "item_count_avg": 5
       },
       "detected_at": "2026-02-09T05:33:38.814Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "glance",
@@ -984,8 +984,8 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
-        "item_count_avg": 15
+        "type": "single-topic",
+        "item_count_avg": 1
       },
       "detected_at": "2026-02-09T06:54:10.716Z",
       "skill_generated": true
@@ -1092,11 +1092,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "list-only",
+        "type": "multi-item",
         "item_count_avg": 30
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "catalogue",
@@ -1129,7 +1129,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 1
+        "item_count_avg": 5
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
       "skill_generated": true
@@ -1183,7 +1183,7 @@
       "encoding_ok": true,
       "structure": {
         "type": "multi-item",
-        "item_count_avg": 5
+        "item_count_avg": 2
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
       "skill_generated": true
@@ -1254,7 +1254,7 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "single-topic",
         "item_count_avg": 1
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
@@ -1272,11 +1272,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "list-only",
+        "type": "multi-item",
         "item_count_avg": 5
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "dailybyte",
@@ -1308,7 +1308,7 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "single-topic",
         "item_count_avg": 1
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
@@ -1344,7 +1344,7 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "single-topic",
         "item_count_avg": 1
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
@@ -1596,7 +1596,7 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "multi-item",
+        "type": "single-topic",
         "item_count_avg": 5
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
@@ -1614,8 +1614,8 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 3
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
       "skill_generated": true
@@ -1632,8 +1632,8 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "single-topic",
+        "item_count_avg": 1
       },
       "detected_at": "2026-05-23T00:00:00.000Z",
       "skill_generated": true
@@ -1704,11 +1704,11 @@
       "encoding": "utf-8",
       "encoding_ok": true,
       "structure": {
-        "type": "unknown",
-        "item_count_avg": null
+        "type": "multi-item",
+        "item_count_avg": 25
       },
       "detected_at": "2026-05-25T01:04:12.010Z",
-      "skill_generated": false
+      "skill_generated": true
     },
     {
       "id": "redwit",
