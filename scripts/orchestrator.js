@@ -554,10 +554,10 @@ async function main() {
     const combinedHtmlPath = path.join(finalDir, `${dateStr}_통합_메일정리.html`);
 
     if (fs.existsSync(mergedDir)) {
-      // HTML 통합 파일 생성
-      const { generateCombinedFromMergedFiles } = require('./generate_html');
+      // HTML 통합 파일 생성 (토스 스타일 render_report)
+      const { renderReportFromMergedDir } = require('./render_report');
       const dateFormatted = formatKST(timeRange.end).split(' ')[0];
-      generateCombinedFromMergedFiles(mergedDir, combinedHtmlPath, dateFormatted);
+      renderReportFromMergedDir(mergedDir, combinedHtmlPath, dateFormatted);
 
       // MD 통합 파일 생성
       const combinedMdPath = path.join(finalDir, `${dateStr}_통합_메일정리.md`);

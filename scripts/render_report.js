@@ -150,8 +150,22 @@ function renderLabelSection(data, idx) {
   </section>`;
 }
 
+function normItem(it) {
+  return {
+    ...it,
+    title: String(it.title == null ? '' : it.title),
+    summary: String(it.summary == null ? '' : it.summary),
+    link: typeof it.link === 'string' ? it.link : '',
+    source: String(it.source == null ? '' : it.source),
+    keywords: Array.isArray(it.keywords) ? it.keywords.filter(k => typeof k === 'string')
+      : (typeof it.keywords === 'string' ? it.keywords.split(/[,#]+/).map(s => s.trim()).filter(Boolean) : []),
+  };
+}
+
 function renderReport(allLabelsData, dateStr) {
-  const data = (allLabelsData || []).filter(d => (d.items || []).length > 0)
+  const data = (allLabelsData || [])
+    .map(d => ({ ...d, items: (d.items || []).map(normItem) }))
+    .filter(d => d.items.length > 0)
     .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
   const total = data.reduce((s, d) => s + d.items.length, 0);
 
