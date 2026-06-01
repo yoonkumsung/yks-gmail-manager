@@ -1068,9 +1068,10 @@ async function convertHtmlToText(rawDir, cleanDir) {
       if (cleanText.length > 0) {
         try {
           cleanText = await enrichWithArticles(cleanText, {
-            maxUrls: 5,
+            maxUrls: 15,
             maxCharsPerArticle: 3000,
             minArticleLength: 200,
+            concurrency: 5,
             log: (msg) => console.log(`    [${messageId.substring(0, 8)}] ${msg}`)
           });
         } catch (e) {
