@@ -148,9 +148,8 @@ module.exports = async function () {
     await it('비활성 라벨(enabled: false)은 제외', () => {
       const labels = getLabels(null);
       const names = labels.map(l => l.name);
-      // 쇼핑결제, 지원사업은 enabled: false
+      // 쇼핑결제는 enabled: false (지원사업은 활성화됨)
       assert.notIncludes(names, '쇼핑결제');
-      assert.notIncludes(names, '지원사업');
     });
   });
 

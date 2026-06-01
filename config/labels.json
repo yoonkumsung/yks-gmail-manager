@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "3.0",
   "labels": [
     {
       "name": "IT",
@@ -52,11 +52,11 @@
       ]
     },
     {
-      "name": "창업",
-      "gmail_label": "창업",
+      "name": "스타트업",
+      "gmail_label": "스타트업",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/창업.md",
+      "agent": "agents/labels/스타트업.md",
       "focus_topics": [
         "스타트업",
         "투자",
@@ -77,20 +77,6 @@
         "채권",
         "부동산",
         "가상자산"
-      ]
-    },
-    {
-      "name": "해외",
-      "gmail_label": "해외",
-      "sub_labels": [],
-      "enabled": true,
-      "agent": "agents/labels/해외.md",
-      "focus_topics": [
-        "미국",
-        "중국",
-        "유럽",
-        "글로벌",
-        "국제"
       ]
     },
     {
@@ -160,7 +146,22 @@
       "focus_topics": [
         "커뮤니티",
         "네트워킹",
-        "이벤트"
+        "이벤트",
+        "포럼"
+      ]
+    },
+    {
+      "name": "지원사업",
+      "gmail_label": "지원사업",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/지원사업.md",
+      "focus_topics": [
+        "정부지원",
+        "공모",
+        "사업공고",
+        "모집",
+        "지원사업"
       ]
     },
     {
@@ -172,59 +173,120 @@
       "focus_topics": []
     },
     {
-      "name": "NYT",
-      "gmail_label": "New York Times",
+      "name": "NYT_시사",
+      "gmail_label": "NYT/시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/NYT.md",
+      "agent": "agents/labels/NYT_시사.md",
       "focus_topics": [
         "미국정치",
-        "경제",
-        "기술",
         "국제",
-        "월가",
-        "딜"
+        "사회",
+        "오피니언"
       ]
     },
     {
-      "name": "미국",
-      "gmail_label": "미국",
+      "name": "NYT_경제",
+      "gmail_label": "NYT/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/미국.md",
+      "agent": "agents/labels/NYT_경제.md",
+      "focus_topics": [
+        "월가",
+        "딜",
+        "경제",
+        "기업"
+      ]
+    },
+    {
+      "name": "NYT_라이프",
+      "gmail_label": "NYT/라이프",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/NYT_라이프.md",
+      "focus_topics": [
+        "제품리뷰",
+        "라이프스타일",
+        "문화"
+      ]
+    },
+    {
+      "name": "미국_시사",
+      "gmail_label": "미국/시사",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/미국_시사.md",
       "focus_topics": [
         "미국정치",
-        "경제",
-        "외교",
-        "빅테크",
-        "정책"
+        "정책",
+        "외교"
       ]
     },
     {
-      "name": "중국",
-      "gmail_label": "중국",
+      "name": "미국_경제",
+      "gmail_label": "미국/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/중국.md",
+      "agent": "agents/labels/미국_경제.md",
+      "focus_topics": [
+        "증시",
+        "경제지표",
+        "연준",
+        "시장"
+      ]
+    },
+    {
+      "name": "중국_시사",
+      "gmail_label": "중국/시사",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/중국_시사.md",
+      "focus_topics": [
+        "중국정치",
+        "미중관계",
+        "사회",
+        "홍콩"
+      ]
+    },
+    {
+      "name": "중국_경제",
+      "gmail_label": "중국/경제",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/중국_경제.md",
       "focus_topics": [
         "중국경제",
-        "미중관계",
-        "기술",
+        "무역",
         "부동산",
-        "홍콩"
+        "증시"
+      ]
+    },
+    {
+      "name": "글로벌_시사",
+      "gmail_label": "글로벌/시사",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/글로벌_시사.md",
+      "focus_topics": [
+        "국제",
+        "유럽",
+        "글로벌정치"
+      ]
+    },
+    {
+      "name": "글로벌_경제",
+      "gmail_label": "글로벌/경제",
+      "sub_labels": [],
+      "enabled": true,
+      "agent": "agents/labels/글로벌_경제.md",
+      "focus_topics": [
+        "글로벌경제",
+        "시장"
       ]
     },
     {
       "name": "쇼핑결제",
       "gmail_label": "쇼핑/결제",
-      "sub_labels": [],
-      "enabled": false,
-      "agent": null,
-      "focus_topics": []
-    },
-    {
-      "name": "지원사업",
-      "gmail_label": "지원사업",
       "sub_labels": [],
       "enabled": false,
       "agent": null,

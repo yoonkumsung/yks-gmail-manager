@@ -113,7 +113,7 @@
       "sender": "newsletter@outstanding.kr",
       "name": "\"아웃스탠딩\" <newsletter@outstanding.kr>",
       "labels": [
-        "창업"
+        "스타트업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_outstanding.md",
@@ -131,7 +131,7 @@
       "sender": "no-reply@startuprecipe.co.kr",
       "name": "\"스타트업레시피\" <no-reply@startuprecipe.co.kr>",
       "labels": [
-        "창업"
+        "스타트업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_startuprecipe.md",
@@ -167,7 +167,7 @@
       "sender": "news@e.scmp.com",
       "name": "South China Morning Post <news@e.scmp.com>",
       "labels": [
-        "해외"
+        "중국_시사"
       ],
       "frequency": 8,
       "skill_file": "skills/newsletters/SKILL_scmp.md",
@@ -185,7 +185,7 @@
       "sender": "noreply@redditmail.com",
       "name": "Reddit <noreply@redditmail.com>",
       "labels": [
-        "해외"
+        "소셜포럼"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_redditmail.md",
@@ -203,7 +203,7 @@
       "sender": "markets@axios.com",
       "name": "Axios Markets <markets@axios.com>",
       "labels": [
-        "해외"
+        "미국_경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios.md",
@@ -221,7 +221,7 @@
       "sender": "mike@axios.com",
       "name": "Mike Allen <mike@axios.com>",
       "labels": [
-        "해외"
+        "미국_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios_mike.md",
@@ -239,7 +239,7 @@
       "sender": "noreply@thewirechina.com",
       "name": "The Wire <noreply@thewirechina.com>",
       "labels": [
-        "해외"
+        "중국_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_thewirechina.md",
@@ -527,7 +527,7 @@
       "sender": "crew@morningbrew.com",
       "name": "Morning Brew <crew@morningbrew.com>",
       "labels": [
-        "해외"
+        "미국_경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_morningbrew.md",
@@ -545,7 +545,7 @@
       "sender": "macro@axios.com",
       "name": "Axios Macro <macro@axios.com>",
       "labels": [
-        "해외"
+        "미국_경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_axios_macro.md",
@@ -707,7 +707,7 @@
       "sender": "londoncentric@substack.com",
       "name": "Jim Waterson from London Centric <londoncentric@substack.com>",
       "labels": [
-        "해외"
+        "글로벌_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_substack_londoncentric.md",
@@ -869,7 +869,7 @@
       "sender": "info@ztop.kr",
       "name": "\"제로투원미디어\" <info@ztop.kr>",
       "labels": [
-        "창업"
+        "스타트업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_ztop.md",
@@ -905,7 +905,7 @@
       "sender": "sungmin@glance.media",
       "name": "STARTUP WEEKLY <sungmin@glance.media>",
       "labels": [
-        "창업"
+        "스타트업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_glance.md",
@@ -1013,7 +1013,7 @@
       "sender": "account@seekingalpha.com",
       "name": "Must Reads <account@seekingalpha.com>",
       "labels": [
-        "해외"
+        "글로벌_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_seekingalpha.md",
@@ -1049,7 +1049,7 @@
       "sender": "connie@strictlyvc.com",
       "name": "StrictlyVC <connie@strictlyvc.com>",
       "labels": [
-        "해외"
+        "글로벌_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_strictlyvc.md",
@@ -1067,7 +1067,7 @@
       "sender": "nytdirect@nytimes.com",
       "name": "The New York Times <nytdirect@nytimes.com>",
       "labels": [
-        "NYT"
+        "NYT_시사"
       ],
       "frequency": 10,
       "skill_file": "skills/newsletters/SKILL_nytimes.md",
@@ -1607,7 +1607,7 @@
       "sender": "crew@community.morningbrew.com",
       "name": "Morning Brew <crew@community.morningbrew.com>",
       "labels": [
-        "IT"
+        "미국_경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_crew.md",
@@ -1643,7 +1643,7 @@
       "sender": "wendy.wu@e.scmp.com",
       "name": "\"Wendy Wu, SCMP\" <wendy.wu@e.scmp.com>",
       "labels": [
-        "중국"
+        "중국_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_wendy_wu.md",
@@ -1661,7 +1661,7 @@
       "sender": "craig.addison@e.scmp.com",
       "name": "\"Craig Addison, SCMP\" <craig.addison@e.scmp.com>",
       "labels": [
-        "IT"
+        "중국_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_scmp_craig_addison.md",
@@ -1679,7 +1679,7 @@
       "sender": "foryou-noreply@nytimes.com",
       "name": "The New York Times <foryou-noreply@nytimes.com>",
       "labels": [
-        "NYT"
+        "NYT_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_nytimes_foryou_noreply.md",
@@ -1697,7 +1697,7 @@
       "sender": "todaysheadlines-noreply@nytimes.com",
       "name": "The New York Times <todaysheadlines-noreply@nytimes.com>",
       "labels": [
-        "NYT"
+        "NYT_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_nytimes_todaysheadlines_noreply.md",
@@ -1715,7 +1715,7 @@
       "sender": "contact@redwit.io",
       "name": "\"전자연구노트 구노\" <contact@redwit.io>",
       "labels": [
-        "창업"
+        "스타트업"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_redwit.md",
@@ -1787,7 +1787,7 @@
       "sender": "victoria.bela@e.scmp.com",
       "name": "\"Victoria Bela, SCMP\" <victoria.bela@e.scmp.com>",
       "labels": [
-        "중국"
+        "중국_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_scmp_victoria_bela.md",
