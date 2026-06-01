@@ -1,19 +1,17 @@
 name: Gmail 메일 정리
 
 on:
-  # 매일 오전 10시 KST 목표 (GitHub Actions 지연 감안하여 08:30 KST = 23:30 UTC 설정)
-  schedule:
-    - cron: '30 23 * * *'
-
-  # 수동 실행 버튼
+  # 정시 실행은 노트북(24/7) 작업 스케줄러가 10:00 KST에 REST API로 트리거.
+  # GitHub cron은 큐 지연(30분~1시간+)이 커서 제거. 외부 디스패치만 사용.
   workflow_dispatch:
     inputs:
       mode:
         description: '실행 모드'
         required: true
-        default: 'today'
+        default: 'schedule'
         type: choice
         options:
+          - schedule     # 전날 10:01 ~ 당일 10:00 KST (정시 트리거용, 누락 없는 24h 윈도우)
           - today        # 오늘 0시부터 현재까지
           - last-24h     # 24시간 전부터 현재까지
           - custom       # 특정 날짜
@@ -96,7 +94,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_DATE: ${{ github.event.inputs.custom_date }}
-          EVENT_NAME: ${{ github.event_name }}
         run: |
           # 소요시간 계산용 시작 시각 저장
           echo "start_epoch=$(date +%s)" >> $GITHUB_OUTPUT
@@ -106,12 +103,8 @@ jobs:
             exit 0
           fi
 
-          # 모드 결정
-          if [ "$EVENT_NAME" = "schedule" ]; then
-            MODE="schedule"
-          else
-            MODE="${INPUT_MODE:-today}"
-          fi
+          # 모드 결정 (cron 제거 → 항상 workflow_dispatch, 기본 schedule)
+          MODE="${INPUT_MODE:-schedule}"
 
           # 모드 한글 표시
           case "$MODE" in
@@ -169,24 +162,20 @@ jobs:
             echo "$USER_PROFILE" > config/user_profile.json
           fi
 
-          # 실행 모드 결정
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            # 자동 실행
-            node scripts/orchestrator.js --mode schedule
-          else
-            # 수동 실행 (env로 전달받아 쉘 인젝션 방지)
-            ARGS="--mode $INPUT_MODE"
+          # 실행 모드 결정 (cron 제거 → 항상 workflow_dispatch.
+          # 노트북 스케줄러는 mode=schedule로 트리거, 수동 실행도 기본 schedule)
+          # env로 전달받아 쉘 인젝션 방지
+          ARGS="--mode ${INPUT_MODE:-schedule}"
 
-            if [ -n "$INPUT_CUSTOM_DATE" ]; then
-              ARGS="$ARGS --date $INPUT_CUSTOM_DATE"
-            fi
-
-            if [ -n "$INPUT_LABELS" ]; then
-              ARGS="$ARGS --labels $INPUT_LABELS"
-            fi
-
-            node scripts/orchestrator.js $ARGS
+          if [ -n "$INPUT_CUSTOM_DATE" ]; then
+            ARGS="$ARGS --date $INPUT_CUSTOM_DATE"
           fi
+
+          if [ -n "$INPUT_LABELS" ]; then
+            ARGS="$ARGS --labels $INPUT_LABELS"
+          fi
+
+          node scripts/orchestrator.js $ARGS
 
       - name: SKILL 파일 및 설정 커밋
         if: success() && steps.check-secrets.outputs.skip != 'true'
