@@ -1805,7 +1805,7 @@
       "sender": "breakingnews@nytimes.com",
       "name": "The New York Times <breakingnews@nytimes.com>",
       "labels": [
-        "NYT"
+        "NYT_시사"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_nytimes_breakingnews.md",

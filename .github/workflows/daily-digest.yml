@@ -226,6 +226,48 @@ jobs:
             output/final/**/*.html
           retention-days: 30
 
+      - name: GitHub Pages 발행 (토스 리포트)
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        env:
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_DATE: ${{ github.event.inputs.custom_date }}
+        run: |
+          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-'); DATE_DASH="$INPUT_DATE"
+          else
+            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d'); DATE_DASH=$(TZ='Asia/Seoul' date '+%Y-%m-%d')
+          fi
+          HTML=$(find "output/final/$RUN_ID" -name "*통합*.html" 2>/dev/null | head -1)
+          if [ -z "$HTML" ]; then echo "발행할 HTML 없음(처리 0건) → 건너뜀"; exit 0; fi
+          git fetch origin gh-pages
+          git worktree add ../ghpages gh-pages
+          mkdir -p ../ghpages/reports
+          cp "$HTML" "../ghpages/reports/$DATE_DASH.html"
+          node scripts/generate_index_page.js --base-dir ../ghpages || true
+          cd ../ghpages
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add reports/"$DATE_DASH".html reports/index.html index.html 2>/dev/null || git add -A
+          git commit -m "report: $DATE_DASH 뉴스레터 리포트" || echo "변경 없음"
+          git push origin gh-pages
+
+      - name: Google Drive 업로드 (통합 MD)
+        if: success() && steps.check-secrets.outputs.skip != 'true'
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_DATE: ${{ github.event.inputs.custom_date }}
+        run: |
+          if [ -z "$GDRIVE_FOLDER_ID" ]; then echo "GDRIVE_FOLDER_ID 미설정 → 건너뜀"; exit 0; fi
+          if [ "$INPUT_MODE" = "custom" ] && [ -n "$INPUT_DATE" ]; then
+            RUN_ID=$(echo "$INPUT_DATE" | tr -d '-')
+          else
+            RUN_ID=$(TZ='Asia/Seoul' date '+%Y%m%d')
+          fi
+          MD=$(find "output/final/$RUN_ID" -name "*통합*.md" 2>/dev/null | head -1)
+          if [ -z "$MD" ]; then echo "업로드할 MD 없음 → 건너뜀"; exit 0; fi
+          node scripts/upload_to_drive.js "$MD" "$(basename "$MD")" "${RUN_ID:0:4}"
+
       - name: Telegram 알림 및 파일 전송
         if: success() && steps.check-secrets.outputs.skip != 'true'
         env:
