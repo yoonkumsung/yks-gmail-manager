@@ -157,17 +157,19 @@ function extractArticleBody(html) {
  *
  * @param {string} newsletterText - 정제된 뉴스레터 본문
  * @param {object} options
- * @param {number} options.maxUrls - 최대 크롤링 URL 수 (기본 5)
+ * @param {number} options.maxUrls - 최대 크롤링 URL 수 (기본 15)
  * @param {number} options.maxCharsPerArticle - 기사당 최대 글자수 (기본 3000)
  * @param {number} options.minArticleLength - 유효 기사 최소 길이 (기본 200)
+ * @param {number} options.concurrency - 병렬 크롤링 배치 크기 (기본 5)
  * @param {Function} options.log - 로깅 함수
  * @returns {string} 보강된 텍스트
  */
 async function enrichWithArticles(newsletterText, options = {}) {
   const {
-    maxUrls = 5,
+    maxUrls = 15,
     maxCharsPerArticle = 3000,
     minArticleLength = 200,
+    concurrency = 5,
     log = console.log
   } = options;
 
@@ -181,37 +183,42 @@ async function enrichWithArticles(newsletterText, options = {}) {
 
   // 상위 N개만 처리
   const targetUrls = articleUrls.slice(0, maxUrls);
-  log(`  원문 링크 ${targetUrls.length}개 크롤링 시도...`);
+  log(`  원문 링크 ${targetUrls.length}개 크롤링 시도 (${concurrency}개씩 병렬)...`);
 
-  // 2. 각 URL 크롤링 (순차 처리 - 서버 부하 방지)
-  const fetchedArticles = [];
+  const paywallKeywords = [
+    '구독자 전용', '유료 구독', '프리미엄 콘텐츠', '전문 보기',
+    'subscribe to read', 'premium content', 'members only',
+    'paywall', 'sign in to continue', '로그인 후 이용'
+  ];
 
-  for (const url of targetUrls) {
+  // 단일 URL 처리 (크롤링 + 본문 추출 + 페이월 감지)
+  const processOne = async (url) => {
     const result = await fetchUrl(url);
-    if (!result) continue;
+    if (!result) return null;
 
     const articleText = extractArticleBody(result.html);
-    if (articleText.length < minArticleLength) continue;
+    if (articleText.length < minArticleLength) return null;
 
-    // 기사 길이 제한
     const trimmed = articleText.length > maxCharsPerArticle
       ? articleText.substring(0, maxCharsPerArticle) + '\n[...]'
       : articleText;
 
-    // 페이월/유료 콘텐츠 감지
-    const paywallKeywords = [
-      '구독자 전용', '유료 구독', '프리미엄 콘텐츠', '전문 보기',
-      'subscribe to read', 'premium content', 'members only',
-      'paywall', 'sign in to continue', '로그인 후 이용'
-    ];
     const isPaywalled = paywallKeywords.some(kw =>
       articleText.toLowerCase().includes(kw.toLowerCase()) || result.html.toLowerCase().includes(kw.toLowerCase())
     );
 
-    fetchedArticles.push({
+    return {
       url: result.url,
       text: isPaywalled ? trimmed + '\n(유료 구독 콘텐츠 - 공개 부분만 수집)' : trimmed
-    });
+    };
+  };
+
+  // 2. 각 URL 크롤링 (concurrency개씩 병렬, 원본 순서 보존)
+  const fetchedArticles = [];
+  for (let i = 0; i < targetUrls.length; i += concurrency) {
+    const batch = targetUrls.slice(i, i + concurrency);
+    const results = await Promise.all(batch.map(processOne));
+    for (const r of results) if (r) fetchedArticles.push(r);
   }
 
   if (fetchedArticles.length === 0) {
