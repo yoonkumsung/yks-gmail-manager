@@ -139,7 +139,7 @@
     },
     {
       "name": "소셜포럼",
-      "gmail_label": "소셜/포럼",
+      "gmail_label": "소셜포럼",
       "sub_labels": [],
       "enabled": true,
       "agent": "agents/labels/소셜포럼.md",
