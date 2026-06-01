@@ -491,7 +491,7 @@
       "sender": "editor@hankyung.com",
       "name": "\"한경 💌 CHO Insight\" <editor@hankyung.com>",
       "labels": [
-        "시사"
+        "경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_hankyung.md",
@@ -617,7 +617,7 @@
       "sender": "zzan@newsooletter.com",
       "name": "\"뉴술레터\" <zzan@newsooletter.com>",
       "labels": [
-        "기타"
+        "라이프"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_newsooletter.md",
@@ -761,7 +761,7 @@
       "sender": "news@unesco.or.kr",
       "name": "\"유네스코뉴스\" <news@unesco.or.kr>",
       "labels": [
-        "기타"
+        "인문학"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_unesco.md",
@@ -1463,7 +1463,7 @@
       "sender": "nalhome@nanet.go.kr",
       "name": "\"국회도서관\" <nalhome@nanet.go.kr>",
       "labels": [
-        "라이프"
+        "인문학"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_nanet.md",
@@ -1661,7 +1661,7 @@
       "sender": "craig.addison@e.scmp.com",
       "name": "\"Craig Addison, SCMP\" <craig.addison@e.scmp.com>",
       "labels": [
-        "중국_시사"
+        "중국_경제"
       ],
       "frequency": 1,
       "skill_file": "skills/newsletters/SKILL_scmp_craig_addison.md",
