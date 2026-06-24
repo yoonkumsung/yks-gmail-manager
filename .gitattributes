@@ -1,0 +1,5 @@
+# 기본: git이 텍스트/바이너리 자동 판별
+* text=auto
+
+# 셸 스크립트는 Linux 서버에서 실행되므로 반드시 LF (CRLF면 `/bin/bash\r` 에러)
+*.sh text eol=lf
