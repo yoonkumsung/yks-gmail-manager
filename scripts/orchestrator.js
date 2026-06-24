@@ -226,9 +226,9 @@ function createLimiter(concurrency) {
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 3개 처리
 
-  // 모델 설정 (Ollama Cloud). OLLAMA_MODEL 환경변수로 재정의 가능 → 모델 A/B 테스트 용이.
-  // 후보: 'qwen3-next:80b'(CJK 번역 강·활성 3B로 저비용), 'gpt-oss:120b', 'deepseek-v4-flash:cloud'(기존)
-  model: process.env.OLLAMA_MODEL || 'deepseek-v4-flash:cloud',
+  // 모델 설정 (OpenRouter). OPENROUTER_MODEL 환경변수로 재정의 가능 → 모델 A/B 테스트 용이.
+  // 후보: 'deepseek/deepseek-v4-flash'(저비용), 'google/gemini-2.5-flash'(CJK 강)
+  model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro',
 
   mergeBatchSize: 15      // 병합 배치 크기
 };
@@ -357,8 +357,8 @@ function clusterItemsByKeyword(items, threshold = 0.2) {
 let globalRunner = null;
 
 function getRunner(logDir) {
-  const apiKey = process.env.OLLAMA_API_KEY;
-  if (!apiKey) throw new Error('OLLAMA_API_KEY 환경변수가 설정되지 않았습니다');
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error('OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다');
 
   if (!globalRunner) {
     globalRunner = new AgentRunner(
@@ -478,19 +478,19 @@ function checkSetup() {
     });
   }
 
-  // 2. 환경 변수 (.env + OLLAMA_API_KEY)
+  // 2. 환경 변수 (.env + OPENROUTER_API_KEY)
   const envPath = path.join(projectRoot, '.env');
   if (!fs.existsSync(envPath)) {
     errors.push({
       type: '환경 변수',
       message: '.env 파일이 없습니다.',
-      solution: '.env 파일 생성 후 OLLAMA_API_KEY=xxx 추가'
+      solution: '.env 파일 생성 후 OPENROUTER_API_KEY=xxx 추가'
     });
-  } else if (!process.env.OLLAMA_API_KEY) {
+  } else if (!process.env.OPENROUTER_API_KEY) {
     errors.push({
       type: '환경 변수',
-      message: 'OLLAMA_API_KEY가 설정되지 않았습니다.',
-      solution: '.env 파일에 OLLAMA_API_KEY=xxx 추가'
+      message: 'OPENROUTER_API_KEY가 설정되지 않았습니다.',
+      solution: '.env 파일에 OPENROUTER_API_KEY=xxx 추가'
     });
   }
 

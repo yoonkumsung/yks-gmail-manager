@@ -1,7 +1,7 @@
 /**
  * 통합 테스트 — 실제 뉴스레터 추출 품질 검증
  *
- * 실행 조건: --live 플래그 + Gmail OAuth 인증 + OLLAMA_API_KEY 환경변수
+ * 실행 조건: --live 플래그 + Gmail OAuth 인증 + OPENROUTER_API_KEY 환경변수
  *   node tests/test_runner.js integration --live
  *
  * 테스트 내용:
@@ -31,15 +31,15 @@ module.exports = async function () {
   const { GmailFetcher } = require('../scripts/fetch_gmail');
   const { htmlToText, cleanNewsletterText, isNonNewsEmail } = require('../scripts/html_to_text');
 
-  const apiKey = process.env.OLLAMA_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     await describe('통합 테스트', async () => {
-      skip('OLLAMA_API_KEY 환경변수 없음');
+      skip('OPENROUTER_API_KEY 환경변수 없음');
     });
     return;
   }
 
-  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { logDir: 'logs' });
+  const flashRunner = new AgentRunner(apiKey, process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro', { logDir: 'logs' });
   flashRunner.log = () => {}; // 로깅 무음
 
   let fetcher;

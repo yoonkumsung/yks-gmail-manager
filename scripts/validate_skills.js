@@ -199,14 +199,14 @@ async function liveValidation(targetLabel) {
   const { GmailFetcher } = require('./fetch_gmail');
   const { htmlToText, cleanNewsletterText } = require('./html_to_text');
 
-  const apiKey = process.env.OLLAMA_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    console.error('OLLAMA_API_KEY가 설정되지 않았습니다');
+    console.error('OPENROUTER_API_KEY가 설정되지 않았습니다');
     return [];
   }
 
-  const runner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', { logDir: 'logs' });
+  const runner = new AgentRunner(apiKey, process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro', { logDir: 'logs' });
 
   // newsletters.json 로드
   const { newsletters } = JSON.parse(
@@ -342,7 +342,7 @@ async function liveValidation(targetLabel) {
 
         // 자체 품질 평가 (같은 모델로 self-judge)
         runner.currentTaskType = 'extract';
-        const evalResult = await runner.callSolar3WithRetry(
+        const evalResult = await runner.callLLMWithRetry(
           `당신은 뉴스레터 추출 품질 평가 전문가입니다.
 
 아래는 원문 뉴스레터의 처음 3000자와 LLM이 추출한 결과입니다.

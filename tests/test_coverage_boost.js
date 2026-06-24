@@ -268,8 +268,8 @@ module.exports = async function () {
     });
   });
 
-  await describe('agent_runner: callOllama done_reason=length 경고', async () => {
-    await it('done_reason=length → log warn 호출됨, content 반환', async () => {
+  await describe('agent_runner: callOpenRouter finish_reason=length 경고', async () => {
+    await it('finish_reason=length → log warn 호출됨, content 반환', async () => {
       const r = new AgentRunner('k', 'm', { logDir: os.tmpdir() });
       let warnCount = 0;
       r.log = (msg, level) => { if (level === 'warn') warnCount++; };
@@ -279,13 +279,12 @@ module.exports = async function () {
         ok: true, status: 200,
         text: async () => '',
         json: async () => ({
-          message: { content: '{"items":[]}' },
-          done_reason: 'length',
-          eval_count: 16384
+          choices: [{ message: { content: '{"items":[]}' }, finish_reason: 'length' }],
+          usage: { prompt_tokens: 100, completion_tokens: 16384 }
         })
       });
 
-      const content = await r.callOllama('p', r.getTaskConfig('extract'), new AbortController(), fetch);
+      const content = await r.callOpenRouter('p', r.getTaskConfig('extract'), new AbortController(), fetch);
       assert.includes(content, 'items');
       assert.gt(warnCount, 0, '잘림 감지 warn이 호출되어야 함');
     });
@@ -1034,7 +1033,7 @@ module.exports = async function () {
     });
   });
 
-  await describe('agent_runner: callSolar3WithRetry 시간 예산 분기', async () => {
+  await describe('agent_runner: callLLMWithRetry 시간 예산 분기', async () => {
     function makeRunner() {
       const r = new AgentRunner('k', 'm', { logDir: os.tmpdir() });
       r.log = () => {};
@@ -1045,7 +1044,7 @@ module.exports = async function () {
     await it('bestIncompleteResponse 복구 성공 (마지막 시도)', async () => {
       const r = makeRunner();
       let attempt = 0;
-      r.callOllama = async () => {
+      r.callOpenRouter = async () => {
         attempt++;
         // 모든 시도에서 불완전 JSON 반환 (각 시도마다 더 긴 응답)
         return '{"items":[{"title":"a"}' + (attempt >= 3 ? '' : ',{"title":"b"');
@@ -1053,16 +1052,16 @@ module.exports = async function () {
       r.currentTaskType = 'extract';
 
       // 마지막 시도의 응답이 bestIncompleteResponse로 저장되고, 복구 시도
-      const result = await r.callSolar3WithRetry('p');
+      const result = await r.callLLMWithRetry('p');
       const parsed = JSON.parse(result);
       assert.ok(parsed.items);
     });
 
-    await it('callSolar3 (별칭) — content 직접 반환', async () => {
+    await it('callLLM (별칭) — content 직접 반환', async () => {
       const r = makeRunner();
-      r.callOllama = async () => '{"items":[]}';
+      r.callOpenRouter = async () => '{"items":[]}';
       r.currentTaskType = 'extract';
-      const content = await r.callSolar3('test');
+      const content = await r.callLLM('test');
       assert.equal(content, '{"items":[]}');
     });
   });
@@ -1141,24 +1140,24 @@ module.exports = async function () {
       const r = makeRunner();
       let attempts = 0;
       // 각 시도마다 미완성 JSON. 마지막 시도가 가장 길어서 best로 저장됨.
-      r.callOllama = async () => {
+      r.callOpenRouter = async () => {
         attempts++;
         if (attempts === 1) return '{"items":[';  // 매우 짧은 미완성
         return '{"items":[{"title":"a"}';  // 더 길지만 여전히 미완성, repair 가능
       };
 
-      const result = await r.callSolar3WithRetry('p');
+      const result = await r.callLLMWithRetry('p');
       const parsed = JSON.parse(result);
       assert.ok(parsed.items);
     });
 
     await it('모든 시도 불완전 + 복구 불가 → throw', async () => {
       const r = makeRunner();
-      r.callOllama = async () => 'completely broken not json at all';
+      r.callOpenRouter = async () => 'completely broken not json at all';
 
       let caught = null;
       try {
-        await r.callSolar3WithRetry('p');
+        await r.callLLMWithRetry('p');
       } catch (e) { caught = e; }
       assert.ok(caught);
     });

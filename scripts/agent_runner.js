@@ -1,9 +1,9 @@
 /**
- * Agent Runner - Ollama LLM API 호출 및 에이전트 실행
- * 모델: deepseek-v4-flash:cloud 단일 (추출/분석/병합 전 단계)
+ * Agent Runner - OpenRouter LLM API 호출 및 에이전트 실행
+ * 모델: deepseek/deepseek-v4-pro 단일, reasoning OFF (추출/분석/병합 전 단계)
  *
  * 주요 기능:
- * - Ollama API (OpenAI 호환) 지원
+ * - OpenRouter API (OpenAI Chat Completions 호환) 지원
  * - 긴 텍스트 자동 청크 분할 처리 (정보 손실 없음)
  * - 토큰 초과 에러 자동 복구
  * - Rate Limit 관리
@@ -23,18 +23,21 @@ async function getFetch() {
 }
 
 class AgentRunner {
-  constructor(apiKey, model = 'deepseek-v4-flash:cloud', options = {}) {
+  constructor(apiKey, model = 'deepseek/deepseek-v4-pro', options = {}) {
     this.apiKey = apiKey;
     this.model = model;
     this.logDir = options.logDir || 'logs';
 
-    // API 프로바이더 (Ollama Cloud 전용)
-    this.provider = 'ollama';
+    // API 프로바이더 (OpenRouter 전용)
+    this.provider = 'openrouter';
+    // OpenRouter 권장 헤더 (앱 식별·랭킹용, 선택)
+    this.referer = options.referer || 'https://github.com/yoonkumsung/yks-gmail-manager';
+    this.title = options.title || 'yks-gmail-manager';
 
     // 청크 분할 설정 - 섹션 기반 적응형 청킹
-    // Ollama Cloud: Cloudflare 100초 타임아웃 + 출력 토큰 16K 제한
     // 8K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
-    // 청크당 출력 토큰 사용률 ~25% (16K 한도 내 안전 마진), 100초 타임아웃 여유 ~50초
+    // 청크당 출력 토큰 사용률 ~25% (16K 한도 내 안전 마진)
+    // (출력 토큰 16K 안전마진 위해 8K 유지. OpenRouter는 게이트웨이 타임아웃 제약 없음)
     this.chunkSize = options.chunkSize || 8000;
     this.minChunkSize = 2000;  // 최소 청크 크기 (524 폴백 시 하위 분할 하한)
 
@@ -44,7 +47,7 @@ class AgentRunner {
     // 재시도 설정 (7회, 524 타임아웃 대비 긴 대기)
     this.retryDelays = [5000, 10000, 15000, 30000, 45000, 60000, 90000];
 
-    // Rate Limit 설정 (Ollama Pro: 넉넉한 제한)
+    // Rate Limit 설정 (OpenRouter: 넉넉한 제한)
     this.requestCount = 0;
     this.requestWindowStart = Date.now();
     this.maxRequestsPerMinute = options.maxRequestsPerMinute || 30;
@@ -206,7 +209,7 @@ class AgentRunner {
         const prompt = this.buildFullPrompt(header, currentInput);
 
         // API 호출 (시간 예산 전달)
-        const response = await this.callSolar3WithRetry(prompt, options.maxTimeMs || 0);
+        const response = await this.callLLMWithRetry(prompt, options.maxTimeMs || 0);
 
         // 응답 검증
         const validated = this.validateResponse(response, options.schema);
@@ -729,11 +732,11 @@ ${agentContent}`;
   // ============================================
 
   /**
-   * Solar3 API 호출 (재시도 포함, 시간 예산 + 불완전 JSON 복구)
+   * LLM API 호출 (재시도 포함, 시간 예산 + 불완전 JSON 복구)
    * @param {string} prompt - 프롬프트
    * @param {number} maxTimeMs - 시간 예산 (ms). 0이면 무제한
    */
-  async callSolar3WithRetry(prompt, maxTimeMs = 0) {
+  async callLLMWithRetry(prompt, maxTimeMs = 0) {
     let lastError;
     let bestIncompleteResponse = null;
     const startTime = Date.now();
@@ -752,7 +755,7 @@ ${agentContent}`;
         // 매 시도마다 rate limit 체크 (재시도 시에도 준수)
         await this.checkRateLimit();
 
-        const response = await this.callSolar3(prompt);
+        const response = await this.callLLM(prompt);
 
         // 불완전 JSON 감지 시 복구 시도 후 재시도
         if (!this.isJsonComplete(response)) {
@@ -845,10 +848,10 @@ ${agentContent}`;
   }
 
   /**
-   * LLM API 호출 (단일) - Ollama Cloud API
+   * LLM API 호출 (단일) - OpenRouter API
    * @param {string} prompt - 프롬프트
    */
-  async callSolar3(prompt) {
+  async callLLM(prompt) {
     const taskConfig = this.getTaskConfig(this.currentTaskType);
     const fetch = await getFetch();
 
@@ -862,7 +865,7 @@ ${agentContent}`;
     try {
       let content;
 
-      content = await this.callOllama(prompt, taskConfig, controller, fetch);
+      content = await this.callOpenRouter(prompt, taskConfig, controller, fetch);
 
       clearTimeout(timeoutId);
 
@@ -885,10 +888,14 @@ ${agentContent}`;
   }
 
   /**
-   * Ollama Cloud API 호출 (api.ollama.com 네이티브 엔드포인트)
+   * OpenRouter API 호출 (OpenAI Chat Completions 호환 엔드포인트)
    */
-  async callOllama(prompt, taskConfig, controller, fetch) {
-    const apiUrl = 'https://api.ollama.com/api/chat';
+  async callOpenRouter(prompt, taskConfig, controller, fetch) {
+    const apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+
+    // JSON 강제: 자유 텍스트 출력으로 인한 깨짐(따옴표/코드블록/잡설) 원천 차단.
+    // taskConfig.format 으로 작업별 재정의 가능. 기본 'json' → response_format json_object.
+    const wantJson = (taskConfig.format || 'json') === 'json';
 
     const requestBody = {
       model: this.model,
@@ -897,21 +904,23 @@ ${agentContent}`;
         { role: 'user', content: prompt }
       ],
       stream: false,
-      // JSON 강제: 자유 텍스트 출력으로 인한 깨짐(따옴표/코드블록/잡설) 원천 차단.
-      // taskConfig.format 으로 모델별/작업별 재정의 가능. 'json'은 유효 JSON만 보장(스키마 비강제).
-      format: taskConfig.format || 'json',
-      options: {
-        temperature: taskConfig.temperature,
-        num_predict: 16384   // 출력 토큰 충분히 확보 (잘림 방지)
-      }
+      temperature: taskConfig.temperature,
+      max_tokens: 16384,   // 출력 토큰 충분히 확보 (잘림 방지)
+      // 추론(thinking) OFF — 추출/병합은 추론 불필요, 비용·지연 절감
+      reasoning: { enabled: false }
     };
+    if (wantJson) {
+      requestBody.response_format = { type: 'json_object' };
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
+        'Authorization': `Bearer ${this.apiKey}`,
+        'HTTP-Referer': this.referer,
+        'X-Title': this.title
       },
       body: JSON.stringify(requestBody)
     });
@@ -920,23 +929,30 @@ ${agentContent}`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      const error = new Error(`Ollama API Error (${response.status}): ${errorText}`);
+      const error = new Error(`OpenRouter API Error (${response.status}): ${errorText}`);
       error.status = response.status;
       throw error;
     }
 
     const data = await response.json();
-    const content = data.message?.content || '';
+    // OpenRouter는 에러를 200 본문 내 error 필드로 반환하기도 함
+    if (data.error) {
+      const error = new Error(`OpenRouter API Error: ${data.error.message || JSON.stringify(data.error)}`);
+      error.status = data.error.code || 500;
+      throw error;
+    }
+    const choice = data.choices?.[0];
+    const content = choice?.message?.content || '';
 
     // 토큰 부족으로 응답이 잘린 경우 감지
-    if (data.done_reason === 'length') {
-      this.log(`⚠️ 출력 토큰 부족으로 응답 잘림 (done_reason: length)`, 'warn');
-      // 잘린 JSON을 repair 시도 (callSolar3WithRetry에서 처리)
+    if (choice?.finish_reason === 'length') {
+      this.log(`⚠️ 출력 토큰 부족으로 응답 잘림 (finish_reason: length)`, 'warn');
+      // 잘린 JSON을 repair 시도 (callLLMWithRetry에서 처리)
     }
 
     // 디버그: 토큰 사용량 출력
-    if (data.prompt_eval_count || data.eval_count) {
-      this.log(`  토큰: 입력 ${data.prompt_eval_count || 0}, 출력 ${data.eval_count || 0}, 소요 ${Math.round((data.total_duration || 0) / 1e9)}초`, 'debug');
+    if (data.usage) {
+      this.log(`  토큰: 입력 ${data.usage.prompt_tokens || 0}, 출력 ${data.usage.completion_tokens || 0}`, 'debug');
     }
 
     return content;
