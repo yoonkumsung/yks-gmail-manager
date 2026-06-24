@@ -39,8 +39,8 @@ const BANNED_PHRASES = [
 async function main() {
   console.log('\n=== FAIL/WARN 수정 검증 테스트 ===\n');
 
-  const apiKey = process.env.OLLAMA_API_KEY;
-  if (!apiKey) { console.error('OLLAMA_API_KEY 없음'); process.exit(1); }
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) { console.error('OPENROUTER_API_KEY 없음'); process.exit(1); }
 
   const { AgentRunner } = require('../scripts/agent_runner');
   const { GmailFetcher } = require('../scripts/fetch_gmail');
@@ -53,7 +53,7 @@ async function main() {
     fs.readFileSync(path.join(PROJECT_ROOT, 'config', 'labels.json'), 'utf8')
   ).labels;
 
-  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', {
+  const flashRunner = new AgentRunner(apiKey, process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro', {
     logDir: path.join(PROJECT_ROOT, 'logs'),
   });
   flashRunner.log = () => {};

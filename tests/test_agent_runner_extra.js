@@ -177,8 +177,8 @@ module.exports = async function () {
   await describe('runSinglePrompt 토큰 초과 폴백', async () => {
     await it('마지막 시도에서 토큰 초과 → throw (undefined 반환 X)', async () => {
       const runner = makeRunner();
-      // callSolar3WithRetry를 mock하여 항상 토큰 초과 에러 throw
-      runner.callSolar3WithRetry = async () => {
+      // callLLMWithRetry를 mock하여 항상 토큰 초과 에러 throw
+      runner.callLLMWithRetry = async () => {
         const err = new Error('context length exceeded');
         throw err;
       };
@@ -197,7 +197,7 @@ module.exports = async function () {
 
     await it('첫 시도 성공 시 정상 반환', async () => {
       const runner = makeRunner();
-      runner.callSolar3WithRetry = async () => '{"items": [{"title": "test"}]}';
+      runner.callLLMWithRetry = async () => '{"items": [{"title": "test"}]}';
       runner.currentTaskType = 'extract';
 
       const result = await runner.runSinglePrompt('header', 'data', {});

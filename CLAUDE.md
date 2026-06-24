@@ -16,14 +16,16 @@
 ## 아키텍처
 
 ```
-Gmail → HTML→텍스트 → 원문링크 크롤링 → Flash 추출 → Pro 병합 → HTML/MD 리포트
+Gmail → HTML→텍스트 → 원문링크 크롤링 → LLM 추출 → LLM 병합 → HTML/MD 리포트
 ```
 
-## 모델 전략 (Ollama Cloud Pro $20/월)
+## 모델 전략 (OpenRouter)
 
-- **단일 모델** (`deepseek-v4-flash:cloud`): 추출, 분석, 병합 전 단계에 사용.
-- Pro(Level 4 GPU heavy) 사용을 중단하여 Ollama 할당량 부담 ↓ + 속도 ↑.
-- Cloudflare 100초 타임아웃 제약 → 청크 크기 8000자 제한 (입력 컨텍스트는 1M까지 가능하나 출력 16K 토큰과 100초 타임아웃이 실제 병목).
+- **프로바이더: OpenRouter** (OpenAI Chat Completions 호환, 2026-06 도입).
+- **단일 모델** (`deepseek/deepseek-v4-pro`, **reasoning OFF**): 추출, 분석, 병합 전 단계에 사용. `OPENROUTER_MODEL` env로 재정의 가능(후보: `deepseek/deepseek-v4-flash`, `google/gemini-2.5-flash`).
+- 추론(thinking)은 추출/병합에 불필요 → `reasoning:{enabled:false}`로 비활성화(비용·지연 절감).
+- 출력 16K 토큰 안전마진 위해 청크 크기 8000자 유지. (OpenRouter는 게이트웨이 타임아웃 제약 없음.)
+- 인증: `.env`의 `OPENROUTER_API_KEY`. JSON 강제는 `response_format:{type:'json_object'}`.
 
 ## 라벨 구조 (15개 활성)
 
@@ -48,17 +50,17 @@ IT, 경제, 시사, 창업, 투자, 해외, 마케팅, 라이프, 인문학, 스
 
 ## 알려진 이슈
 
-- Ollama Cloud Cloudflare 524 타임아웃: 서버 부하에 따라 발생, 재시도로 대응
+- OpenRouter 5xx/429: 서버 부하·rate limit 시 발생, 재시도로 대응
 - PDF 뉴스레터 (센서블박스): 텍스트 추출 불가 → 비활성화
 - 청크 경계 잘림: 불완전 아이템(50자 미만) 자동 제거
 
 ## 코드 수정 시 주의사항
 
-- `agent_runner.js` 수정 시: 금지 표현 목록 유지, 할루시네이션 방지 규칙 유지, 청크 크기 8K (출력 토큰 16K의 ~25% 사용률)
-- `orchestrator.js` 수정 시: 단일 `runner`(Flash) 사용. Pro 재도입 시 `getRunner` 분기 필요
+- `agent_runner.js` 수정 시: 금지 표현 목록 유지, 할루시네이션 방지 규칙 유지, 청크 크기 8K (출력 토큰 16K의 ~25% 사용률). LLM 호출은 `callOpenRouter` 단일 지점(OpenAI 호환).
+- `orchestrator.js` 수정 시: 단일 `runner`(OpenRouter) 사용. 멀티모델 재도입 시 `getRunner` 분기 필요
 - SKILL 파일 수정 시: 발신자 이메일이 newsletters.json과 반드시 일치, 실제 메일 본문을 읽고 작성
 - 새 라벨 추가 시: labels.json + agents/labels/*.md + (필요 시) newsletters.json 업데이트
-- 타임아웃: Ollama Cloud = Cloudflare 100초 제한 (재시도 대기 5~90초), Gmail API = 재시도 2~30초
+- 타임아웃: OpenRouter 호출 5분 abort + 재시도(대기 5~90초), Gmail API = 재시도 2~30초
 
 ## 실행
 
@@ -72,12 +74,26 @@ node scripts/validate_skills.js --live  # SKILL 전수 검증
 
 코드/프롬프트/SKILL 수정 후 반드시 아래 프로세스를 따른다:
 
-1. **Haiku를 LLM으로 사용**하여 추출 프로세스 실행 (Ollama 대용)
+1. **Haiku를 LLM으로 사용**하여 추출 프로세스 실행 (프로덕션 OpenRouter 대용)
 2. **해당 날짜의 모든 뉴스레터 × 모든 아이템** 대상 (일부 샘플링 금지)
 3. Haiku 추출 결과를 **직접 원문 메일을 읽고 확인한 내용과 1:1 비교**
 4. 누락 아이템, 금지 표현, 할루시네이션, 번역 품질을 하나하나 체크
 5. 문제 발견 시 SKILL/프롬프트/파싱 코드 즉시 수정 → 재테스트
 6. 몇 개만 뽑아서 하면 안 됨. 전수 검사.
+
+## 전수 디버깅·근본원인 프로세스 (품질 문제 조사 시)
+
+리포트 품질 문제를 조사할 땐 표본/추측으로 끝내지 말고 아래 순서로 **전수**로 간다. (2026-06 조사에서 정립; 산출물은 `작업현황.md` → `보완계획.md` → `docs/분석_근본원인.md` → `docs/품질대조_*/`)
+
+1. **코드 정독**: orchestrator·agent_runner·fetch_gmail·fetch_articles·html_to_text·render_report·generate_index_page 전 경로를 읽고 데이터 흐름 파악.
+2. **실제 데이터로 정량 분석**: `output/backfill/<날짜>/`의 **병합 전(items) vs 병합 후(merged)** 를 스크립트로 비교 — 출처 누락/정크/중복/번역/누락을 수치화. (가설을 데이터로 검증·반증)
+3. **구조 전수 census(스크립트, 결정적)**: 라벨 에이전트(파손=백슬래시 단독줄)·SKILL 101개(언어플래그·번역규칙)·카탈로그 structure를 100% 검사. validate_skills로는 부족.
+4. **콘텐츠 전수 대조(병렬 에이전트)**: 라벨별/뉴스레터별로 추출 items를 원문 `clean_text`와 1:1 대조(누락·할루·번역·정크·중복·출처·완결성). **표본 금지·전건**, 결과는 임시폴더 말고 `docs/품질대조_*/`에 영구 기록.
+5. **발신자 전수 집계**: 30일 백필 clean의 `from`으로 등장 발신자 전수 → 카탈로그 orphan / 미등장 / 멀티주소 누락 규명.
+6. **0건 라벨 직접 확인**: 백필 0건은 silent 실패일 수 있음 → Gmail API로 라벨별 실제 볼륨 조회해 **죽은 라벨 vs fetch 실패** 구분(RC-Q).
+7. **근본원인으로 수렴**: 증상을 RC로 묶고, 각 RC를 **LLM이 풀 문제 / 룰베이스(코드·JSON)로 결정할 문제**로 분류. 출처·라벨·중복·정크·렌더모드는 룰, 요약·번역·의미병합은 LLM.
+
+원칙: "라벨 하나 0건"이나 "표본 통과"를 정상으로 넘기지 말 것. 고볼륨 라벨(NYT 등)이 silent하게 통째 빠질 수 있다.
 
 ## OAuth 설정
 

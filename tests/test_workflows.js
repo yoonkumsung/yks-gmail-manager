@@ -1,8 +1,8 @@
 /**
- * GitHub Actions workflow 정적 검증
- * - YAML 파싱 가능
- * - 필수 필드 존재 (name, on, jobs)
- * - daily-digest.yml: 필수 secrets 참조, permissions, concurrency
+ * GitHub Actions workflow + 서버 실행 스크립트 정적 검증
+ * - YAML 파싱 가능 / 필수 필드 존재
+ * - daily-digest.yml 제거됨 (2026-06 노트북 서버 systemd 타이머로 이전)
+ * - run_digest.sh: 서버 실행 파이프라인 단계 존재
  * - test.yml: matrix, npm test 단계, coverage
  * - 위험 패턴 (skip 안전 검사, force push 등) 부재
  *
@@ -37,89 +37,47 @@ module.exports = async function () {
       assert.gt(files.length, 0);
     });
 
-    await it('daily-digest.yml + test.yml 둘 다 존재', () => {
+    await it('test.yml(CI) 존재', () => {
       const files = listWorkflows();
-      assert.includes(files, 'daily-digest.yml');
       assert.includes(files, 'test.yml');
+    });
+
+    await it('daily-digest.yml 제거됨 (노트북 서버 systemd 타이머로 이전)', () => {
+      assert.ok(!fs.existsSync(path.join(WORKFLOW_DIR, 'daily-digest.yml')));
     });
   });
 
-  await describe('daily-digest.yml 정적 검증', async () => {
-    const content = fs.existsSync(path.join(WORKFLOW_DIR, 'daily-digest.yml'))
-      ? loadWorkflow('daily-digest.yml')
-      : '';
+  await describe('run_digest.sh (서버 실행 스크립트) 정적 검증', async () => {
+    const scriptPath = path.join(PROJECT_ROOT, 'scripts', 'run_digest.sh');
+    const content = fs.existsSync(scriptPath) ? fs.readFileSync(scriptPath, 'utf8') : '';
 
-    await it('YAML 파싱 가능 (탭 문자 없음)', () => {
-      // 탭 문자는 YAML에서 금지
-      assert.notIncludes(content, '\t');
+    await it('스크립트 존재', () => {
+      assert.ok(fs.existsSync(scriptPath));
     });
 
-    await it('name 필드 존재', () => {
-      assert.match(content, /^name:\s+\S/m);
+    await it('schedule 모드로 orchestrator 실행', () => {
+      assert.includes(content, 'orchestrator.js');
+      assert.includes(content, 'schedule');
     });
 
-    await it('on 트리거: workflow_dispatch (cron 제거, 노트북 외부 트리거)', () => {
-      assert.match(content, /^on:/m);
-      assert.includes(content, 'workflow_dispatch:');
+    await it('.env 로드 (OpenRouter 키는 서버 .env)', () => {
+      assert.includes(content, '.env');
     });
 
-    await it('cron 미사용 (정시성 위해 외부 디스패치만 사용)', () => {
-      // GitHub cron 큐 지연 회피를 위해 schedule: cron 제거됨.
-      // 노트북 작업 스케줄러가 workflow_dispatch로 정시 트리거.
-      assert.ok(!/cron:/.test(content));
+    await it('gh-pages 발행 단계 (worktree)', () => {
+      assert.includes(content, 'gh-pages');
+      assert.includes(content, 'generate_index_page.js');
     });
 
-    await it('mode 입력: schedule 옵션 + 기본값 schedule', () => {
-      // schedule 모드 = 전날 10:01~당일 10:00 KST 윈도우 (누락 없음)
-      assert.match(content, /default:\s*['"]schedule['"]/);
-      assert.includes(content, '- schedule');
-    });
-
-    await it('permissions: contents: write (SKILL 자동 commit용)', () => {
-      assert.includes(content, 'permissions:');
-      assert.match(content, /contents:\s+write/);
-    });
-
-    await it('concurrency 그룹 정의 (동시 실행 방지)', () => {
-      assert.includes(content, 'concurrency:');
-      assert.match(content, /group:\s+\S/);
-    });
-
-    await it('필수 secrets 참조: OLLAMA_API_KEY, GMAIL_CREDENTIALS, GMAIL_TOKEN', () => {
-      assert.includes(content, '${{ secrets.OLLAMA_API_KEY }}');
-      assert.includes(content, '${{ secrets.GMAIL_CREDENTIALS }}');
-      assert.includes(content, '${{ secrets.GMAIL_TOKEN }}');
-    });
-
-    await it('OPENROUTER_API_KEY 참조 없음 (구버전 잔재 확인)', () => {
-      assert.notIncludes(content, 'OPENROUTER_API_KEY');
-    });
-
-    await it('인사이트/크로스인사이트 잔여 참조 없음', () => {
-      assert.notIncludes(content, '인사이트');
-      assert.notIncludes(content, 'cross_insight');
-    });
-
-    await it('Node setup 액션 사용', () => {
-      assert.includes(content, 'actions/setup-node');
-    });
-
-    await it('Telegram 알림 secrets 옵셔널 (있으면 사용)', () => {
-      // TELEGRAM_TOKEN가 if 또는 -z 체크로 옵셔널 처리되어야 함
+    await it('SKILL 자동커밋 + Drive 업로드 + Telegram 단계', () => {
+      assert.includes(content, 'newsletters.json');
+      assert.includes(content, 'upload_to_drive.js');
       assert.includes(content, 'TELEGRAM_TOKEN');
     });
 
-    await it('orchestrator.js 실행 단계 존재', () => {
-      assert.includes(content, 'orchestrator.js');
-    });
-
-    await it('timeout-minutes 설정 (무한 실행 방지)', () => {
-      assert.match(content, /timeout-minutes:\s+\d+/);
-    });
-
-    await it('skip-secrets-check 패턴 (필수 secrets 누락 시 안전 종료)', () => {
-      // check-secrets step이 skip 출력하면 후속 단계 건너뜀
-      assert.match(content, /check-secrets/i);
+    await it('OLLAMA 잔재 없음 (OpenRouter 전환)', () => {
+      assert.notIncludes(content, 'OLLAMA');
+      assert.notIncludes(content, 'ollama');
     });
   });
 

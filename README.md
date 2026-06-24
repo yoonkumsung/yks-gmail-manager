@@ -2,11 +2,11 @@
 
 > Gmail 뉴스레터를 AI가 매일 자동으로 추출·중복 제거하여 HTML/Markdown 다이제스트로 만들어주는 시스템
 
-매일 쏟아지는 뉴스레터를 하나하나 읽을 시간이 없다면, yks-gmail-manager가 대신 읽고 핵심만 정리해드립니다. Gmail 라벨별로 분류된 뉴스레터를 수집하고, **Ollama Cloud의 DeepSeek V4** 모델이 핵심 아이템을 추출하고 중복을 병합하여 깔끔한 HTML/Markdown 리포트로 만들어줍니다. 추가 분석(인사이트·트렌드 종합 등)이 필요하면 생성된 MD 파일을 별도 LLM에 넣어 그때그때 돌리는 방식입니다.
+매일 쏟아지는 뉴스레터를 하나하나 읽을 시간이 없다면, yks-gmail-manager가 대신 읽고 핵심만 정리해드립니다. Gmail 라벨별로 분류된 뉴스레터를 수집하고, **OpenRouter의 DeepSeek V4 Pro** 모델이 핵심 아이템을 추출하고 중복을 병합하여 깔끔한 HTML/Markdown 리포트로 만들어줍니다. 추가 분석(인사이트·트렌드 종합 등)이 필요하면 생성된 MD 파일을 별도 LLM에 넣어 그때그때 돌리는 방식입니다.
 
 ## 주요 기능
 
-- **AI 기반 뉴스 추출**: DeepSeek V4 Flash/Pro 모델이 뉴스레터에서 핵심 아이템을 빠짐없이 추출
+- **AI 기반 뉴스 추출**: DeepSeek V4 Pro 모델이 뉴스레터에서 핵심 아이템을 빠짐없이 추출
 - **라벨별 분류 처리**: Gmail 라벨 기준으로 IT, 경제, 시사, NYT 등 16개 영역 병렬 처리
 - **자동 중복 제거**: 코드 사전필터링(Jaccard 유사도) + LLM 병합으로 같은 뉴스를 하나로 통합
 - **적응형 SKILL 학습**: 새 뉴스레터를 자동 감지해 발신자별 구조 분석 SKILL 파일 자동 생성
@@ -71,19 +71,19 @@ Gmail API에 접근하려면 OAuth 인증 정보가 필요합니다.
 
 요청 권한 (스코프): Gmail readonly / labels / modify / settings.basic, Drive
 
-### 4. Ollama Cloud API 키 (Ollama Pro)
+### 4. OpenRouter API 키
 
-LLM 호출에 사용되는 API 키입니다. 본 시스템은 **Ollama Cloud의 DeepSeek V4 모델**을 사용합니다.
+LLM 호출에 사용되는 API 키입니다. 본 시스템은 **OpenRouter의 DeepSeek V4 Pro 모델(reasoning OFF)**을 사용합니다.
 
-1. [Ollama Cloud](https://ollama.com/cloud) 가입
-2. **Pro 플랜 구독** (~$20/월) — DeepSeek V4 Flash/Pro 모델 사용 권한
-3. API Keys 페이지에서 키 생성 → `.env` 파일에 `OLLAMA_API_KEY=...` 추가
+1. [OpenRouter](https://openrouter.ai) 가입
+2. [API Keys](https://openrouter.ai/keys) 페이지에서 키 생성 → `.env`에 `OPENROUTER_API_KEY=...` 추가
+3. (선택) `OPENROUTER_MODEL`로 모델 재정의
 
 | 모델 | 용도 | 비고 |
 |------|------|------|
-| `deepseek-v4-flash:cloud` | 추출, 구조 분석, 중복 병합 (전 단계) | GPU 소모 적음, 1M 컨텍스트 |
+| `deepseek/deepseek-v4-pro` | 추출, 구조 분석, 중복 병합 (전 단계) | reasoning OFF, 후보: `deepseek/deepseek-v4-flash`, `google/gemini-2.5-flash` |
 
-> **참고**: Ollama Cloud는 Cloudflare 게이트웨이를 거치며 단일 요청당 **100초 타임아웃** 제약이 있습니다. 본 시스템은 청크 크기를 8000자로 제한하고 7회 재시도(최대 90초 대기)로 대응합니다.
+> **참고**: OpenAI Chat Completions 호환 엔드포인트(`/api/v1/chat/completions`)를 사용합니다. JSON은 `response_format`으로 강제, 출력 16K 토큰 안전마진을 위해 청크 크기 8000자 제한 + 재시도(최대 90초 대기)로 대응합니다.
 
 ## 설치 및 설정
 
@@ -108,7 +108,8 @@ npm run auth
 프로젝트 루트에 `.env` 파일을 생성합니다:
 
 ```env
-OLLAMA_API_KEY=your_ollama_cloud_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=deepseek/deepseek-v4-pro
 
 # 선택 (Telegram 알림 사용 시)
 TELEGRAM_TOKEN=your_telegram_bot_token
@@ -188,7 +189,7 @@ npm run digest -- --mode today --labels IT,경제
        ↓
 3. 새 발신자 감지    처음 보는 발신자는 적응형 학습이 SKILL 자동 생성 (분석+추출 동시)
        ↓
-4. LLM 아이템 추출   Flash 모델 + 라벨 에이전트 + 발신자별 SKILL로 핵심 추출
+4. LLM 아이템 추출   DeepSeek V4 Pro + 라벨 에이전트 + 발신자별 SKILL로 핵심 추출
        ↓
 5. 코드 사전필터링   Jaccard 유사도로 병합 후보만 추려서 LLM 호출 최적화
        ↓
@@ -222,7 +223,8 @@ Repository → Settings → Secrets and variables → Actions에서 다음 Secre
 
 | Secret | 설명 | 필수 |
 |--------|------|:----:|
-| `OLLAMA_API_KEY` | Ollama Cloud Pro API 키 | O |
+| `OPENROUTER_API_KEY` | OpenRouter API 키 | O |
+| `OPENROUTER_MODEL` | 모델 슬러그 (미설정 시 deepseek/deepseek-v4-pro) | - |
 | `GMAIL_CREDENTIALS` | `client_secret.json`의 전체 내용 | O |
 | `GMAIL_TOKEN` | `token.json`의 전체 내용 | O |
 | `USER_PROFILE` | `user_profile.json`의 전체 내용 | X (권장) |
@@ -282,13 +284,13 @@ Repository → Settings → Secrets and variables → Actions에서 다음 Secre
 ```javascript
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 라벨 처리 수
-  model: 'deepseek-v4-flash:cloud',   // 추출/분석/병합 전 단계
+  model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro',   // 추출/분석/병합 전 단계
   mergeBatchSize: 15
 };
 ```
 
-- 단일 모델 사용 (Flash). Pro(`deepseek-v4-pro:cloud`)는 Level 4 GPU heavy라 Ollama Pro 할당량을 빠르게 소진하므로 회피.
-- 더 강력한 모델이 필요하면 Pro로 교체 가능 (1줄 변경). 모델 목록: [ollama.com/library](https://ollama.com/library)
+- 단일 모델 사용 (DeepSeek V4 Pro, reasoning OFF). `.env`의 `OPENROUTER_MODEL`로 1줄 없이 재정의 가능.
+- 모델 후보: `deepseek/deepseek-v4-flash`(저비용), `google/gemini-2.5-flash`(CJK 강). 목록: [openrouter.ai/models](https://openrouter.ai/models)
 
 ### 에이전트 / SKILL 수정
 
@@ -340,7 +342,7 @@ npm run digest -- --mode custom --date 2026-01-30
 
 ### 초기 설정 누락
 
-실행 시 누락된 설정(`token.json`, `OLLAMA_API_KEY`, `labels.json`)을 자동 감지하고 안내 메시지를 출력합니다. 누락 항목이 있으면 `npm run setup`으로 웹 마법사를 통해 설정할 수 있습니다 (기본 포트 3030).
+실행 시 누락된 설정(`token.json`, `OPENROUTER_API_KEY`, `labels.json`)을 자동 감지하고 안내 메시지를 출력합니다. 누락 항목이 있으면 `npm run setup`으로 웹 마법사를 통해 설정할 수 있습니다 (기본 포트 3030).
 
 ### 결과물 누적 정리
 
@@ -369,7 +371,7 @@ yks-gmail-manager/
 │   └── credentials/        # OAuth 자격증명 (gitignored)
 ├── scripts/
 │   ├── orchestrator.js     # 메인 파이프라인
-│   ├── agent_runner.js     # Ollama API 호출 + 청크 분할 + JSON 복구
+│   ├── agent_runner.js     # OpenRouter API 호출 + 청크 분할 + JSON 복구
 │   ├── fetch_gmail.js      # Gmail API 래퍼
 │   ├── html_to_text.js     # HTML → 구조화 마크다운 변환
 │   ├── fetch_articles.js   # 원문 링크 크롤링 보강

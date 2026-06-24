@@ -22,9 +22,9 @@ async function main() {
   console.log('\n=== 모든 뉴스레터 전수 품질 테스트 ===\n');
 
   // 환경 검증
-  const apiKey = process.env.OLLAMA_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.error('OLLAMA_API_KEY 환경변수가 없습니다.');
+    console.error('OPENROUTER_API_KEY 환경변수가 없습니다.');
     process.exit(1);
   }
 
@@ -53,7 +53,7 @@ async function main() {
   console.log(`활성 (SKILL 있음): ${activeNewsletters.length}개\n`);
 
   // LLM 러너 (로그 무음화 — 결과 라인만 출력)
-  const flashRunner = new AgentRunner(apiKey, 'deepseek-v4-flash:cloud', {
+  const flashRunner = new AgentRunner(apiKey, process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-pro', {
     logDir: path.join(PROJECT_ROOT, 'logs'),
     minRequestInterval: 2000,
   });

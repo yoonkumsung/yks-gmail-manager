@@ -156,9 +156,9 @@ module.exports = async function () {
     const orchPath = require.resolve('../scripts/orchestrator');
     delete require.cache[orchPath];
 
-    // OLLAMA_API_KEY 환경변수 (없으면 throw)
-    const origKey = process.env.OLLAMA_API_KEY;
-    process.env.OLLAMA_API_KEY = 'test-key';
+    // OPENROUTER_API_KEY 환경변수 (없으면 throw)
+    const origKey = process.env.OPENROUTER_API_KEY;
+    process.env.OPENROUTER_API_KEY = 'test-key';
 
     const orchestrator = require('../scripts/orchestrator');
 
@@ -170,8 +170,8 @@ module.exports = async function () {
       baseTmp,
       cleanup: () => {
         try { fs.rmSync(baseTmp, { recursive: true, force: true }); } catch {}
-        if (origKey !== undefined) process.env.OLLAMA_API_KEY = origKey;
-        else delete process.env.OLLAMA_API_KEY;
+        if (origKey !== undefined) process.env.OPENROUTER_API_KEY = origKey;
+        else delete process.env.OPENROUTER_API_KEY;
 
         // require.cache 복원: 후속 테스트(test_pipeline_integration 등)가 실제 모듈을 받도록
         [fetchGmailPath, htmlPath, articlesPath, agentRunnerPath, alPath, orchPath].forEach(p => {
@@ -554,17 +554,17 @@ module.exports = async function () {
       if (ctx) ctx.cleanup();
     });
 
-    await it('OLLAMA_API_KEY 누락 → errors에 환경변수 항목', () => {
+    await it('OPENROUTER_API_KEY 누락 → errors에 환경변수 항목', () => {
       ctx = setup({});
       const orch = ctx.orchestrator;
-      const origKey = process.env.OLLAMA_API_KEY;
-      delete process.env.OLLAMA_API_KEY;
+      const origKey = process.env.OPENROUTER_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
       try {
         const result = orch._test.checkSetup();
         const envErr = result.errors.find(e => e.type === '환경 변수');
         assert.ok(envErr);
       } finally {
-        if (origKey !== undefined) process.env.OLLAMA_API_KEY = origKey;
+        if (origKey !== undefined) process.env.OPENROUTER_API_KEY = origKey;
       }
     });
   });

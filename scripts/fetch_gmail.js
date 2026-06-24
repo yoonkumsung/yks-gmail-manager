@@ -190,6 +190,25 @@ class GmailFetcher {
   }
 
   /**
+   * Gmail 라벨 ID→이름 맵 (1회 조회 후 캐시).
+   * 메일이 실제로 어떤 라벨들을 갖는지 파악해 라벨 중복 가드에 사용.
+   */
+  async getLabelIdNameMap() {
+    if (this._labelIdNameMap) return this._labelIdNameMap;
+    this._labelIdNameMap = new Map();
+    try {
+      const res = await this.withRetry(
+        () => this.gmail.users.labels.list({ userId: 'me' }),
+        'labels.list'
+      );
+      for (const l of (res.data.labels || [])) this._labelIdNameMap.set(l.id, l.name);
+    } catch (e) {
+      console.warn(`  라벨 목록 조회 실패(가드 비활성): ${e.message}`);
+    }
+    return this._labelIdNameMap;
+  }
+
+  /**
    * 단일 메시지 상세 정보 가져오기 (재시도 포함)
    */
   async getMessage(messageId) {
@@ -401,6 +420,10 @@ class GmailFetcher {
         const headers = this.extractHeaders(msgData);
         const { subject, from, date } = headers;
 
+        // 메일의 실제 Gmail 라벨 이름 (중복 가드용)
+        const labelIdMap = await this.getLabelIdNameMap();
+        const gmailLabels = (msgData.labelIds || []).map(id => labelIdMap.get(id)).filter(Boolean);
+
         // 시간 범위 필터링
         if ((rangeStart && rangeEnd) || targetDate) {
           if (!this.isInDateRange(date, rangeStart, rangeEnd, targetDate)) {
@@ -444,6 +467,7 @@ class GmailFetcher {
           from,
           date,
           date_kst: dateKstStr,
+          gmail_labels: gmailLabels,
           html_length: htmlBody.length,
           html_body: htmlBody
         };

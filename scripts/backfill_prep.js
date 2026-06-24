@@ -1,6 +1,6 @@
 /**
  * 백필 prep: 특정 리포트 날짜의 메일을 fetch → 텍스트화 → 원문크롤링하여 clean_*.json 생성.
- * LLM(Ollama) 미사용. 추출은 별도 단계(Haiku 서브에이전트)에서 수행.
+ * LLM 미사용. 추출은 별도 단계(Haiku 서브에이전트)에서 수행.
  *
  * 윈도우: 스케줄 모드와 동일하게 (D-1) 10:01 ~ D 10:00 KST (연속 날짜 타일링, 중복/누락 방지)
  * 출력: output/backfill/<YYYYMMDD>/labels/<label>/{raw,clean}/
