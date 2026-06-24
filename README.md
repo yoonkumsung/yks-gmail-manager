@@ -158,7 +158,7 @@ npm run setup
 ## 실행 방법
 
 ```bash
-# 기본 실행 (스케줄 모드: 전날 09:01 ~ 당일 09:00 KST)
+# 기본 실행 (스케줄 모드: 전날 09:41 ~ 당일 09:40 KST)
 npm run digest
 
 # 오늘 (KST 0시 ~ 현재)
@@ -234,7 +234,7 @@ Repository → Settings → Secrets and variables → Actions에서 다음 Secre
 ### 자동 실행
 
 - **시간**: 매일 KST 08:30 (GitHub Actions 지연 감안한 cron `30 23 * * *`)
-- **범위**: schedule 모드 = 전날 09:01 ~ 당일 09:00 KST
+- **범위**: schedule 모드 = 전날 09:41 ~ 당일 09:40 KST
 - **결과 수신**:
   - Telegram으로 HTML + 통합 MD 파일 자동 전송 (Telegram Secrets 설정 시)
   - 시작/완료/에러 알림 자동 발송

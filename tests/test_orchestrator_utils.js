@@ -70,7 +70,7 @@ module.exports = async function () {
   });
 
   await describe('calculateTimeRange', async () => {
-    await it('schedule 모드: 전날 09:01 ~ 당일 09:00 KST', () => {
+    await it('schedule 모드: 전날 09:41 ~ 당일 09:40 KST', () => {
       const range = calculateTimeRange('schedule');
       const diffHours = (range.end - range.start) / (1000 * 60 * 60);
       assert.closeTo(diffHours, 24, 0.1);  // 약 24시간

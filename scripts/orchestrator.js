@@ -1336,15 +1336,15 @@ function calculateTimeRange(mode, customDate) {
 
   switch (mode) {
     case 'schedule':
-      // 자동 실행: 전날 09:01 ~ 당일 09:00 (KST). 타이머가 매일 09:00 KST에 실행.
+      // 자동 실행: 전날 09:41 ~ 당일 09:40 (KST). 타이머가 매일 09:40 KST에 실행.
       const todayKST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
       const todayStr = todayKST.toISOString().split('T')[0];
       const yesterdayKST = new Date(todayKST.getTime() - 24 * 60 * 60 * 1000);
       const yesterdayStr = yesterdayKST.toISOString().split('T')[0];
 
       return {
-        start: new Date(yesterdayStr + 'T09:01:00+09:00'),
-        end: new Date(todayStr + 'T09:00:00+09:00')
+        start: new Date(yesterdayStr + 'T09:41:00+09:00'),
+        end: new Date(todayStr + 'T09:40:00+09:00')
       };
 
     case 'today':
@@ -1386,8 +1386,8 @@ function calculateTimeRange(mode, customDate) {
       const defaultYesterdayStr = defaultYesterdayKST.toISOString().split('T')[0];
 
       return {
-        start: new Date(defaultYesterdayStr + 'T09:01:00+09:00'),
-        end: new Date(defaultTodayStr + 'T09:00:00+09:00')
+        start: new Date(defaultYesterdayStr + 'T09:41:00+09:00'),
+        end: new Date(defaultTodayStr + 'T09:40:00+09:00')
       };
   }
 }
@@ -1450,7 +1450,7 @@ function printSummary(results) {
 function generateRunId(timeRange) {
   // timeRange.end 기준으로 Run ID 생성 (사용자가 요청한 날짜)
   // Custom: 2월 4일 입력 → end = Feb 4 23:59 → Run ID = 20260204
-  // Schedule: 2월 5일 실행 → end = Feb 5 09:00 → Run ID = 20260205
+  // Schedule: 2월 5일 실행 → end = Feb 5 09:40 → Run ID = 20260205
   const targetDate = timeRange ? timeRange.end : new Date();
   const kstTarget = new Date(targetDate.getTime() + 9 * 60 * 60 * 1000);
   const year = kstTarget.getUTCFullYear();
