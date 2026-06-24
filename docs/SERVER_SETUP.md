@@ -1,7 +1,7 @@
 # 서버(노트북) 정시 실행 셋업 — GitHub Actions 대체
 
 > 2026-06 GitHub Actions(`daily-digest.yml`)를 제거하고, 24/7 노트북 서버(WSL Ubuntu)의
-> **systemd user 타이머**가 매일 10:00 KST에 다이제스트를 직접 실행하도록 전환했다.
+> **systemd user 타이머**가 매일 09:00 KST에 다이제스트를 직접 실행하도록 전환했다.
 > GitHub은 **코드 보관 + Pages 호스팅(gh-pages)** 용도로만 쓴다.
 >
 > 실행 주체: `~/yks-gmail-manager/scripts/run_digest.sh` ← `yks-newsletter.service` ← `yks-newsletter.timer`
@@ -66,7 +66,7 @@ cd ~/yks-gmail-manager && git push --dry-run origin main
 - **SSH** — `ssh-keygen -t ed25519` → 공개키를 GitHub에 등록 →
   `git remote set-url origin git@github.com:yoonkumsung/yks-gmail-manager.git`
 
-## 4. 타임존 (10:00을 KST로)
+## 4. 타임존 (09:00을 KST로)
 
 ```bash
 sudo timedatectl set-timezone Asia/Seoul   # 또는 신형 systemd면 timer의 OnCalendar에 TZ 명시
@@ -104,8 +104,8 @@ Pages 라우팅: `https://yoonkumsung.github.io/yks-gmail-manager/reports/`.
 
 ## 운영 메모
 
-- 스케줄 윈도우는 코드가 KST 기준 **전날 10:01 ~ 당일 10:00**으로 계산(누락 없는 24h 타일링).
-- 노트북이 10시에 꺼져 있었으면 `Persistent=true`로 **켜진 직후 1회 보충 실행**.
+- 스케줄 윈도우는 코드가 KST 기준 **전날 09:01 ~ 당일 09:00**으로 계산(누락 없는 24h 타일링).
+- 노트북이 9시에 꺼져 있었으면 `Persistent=true`로 **켜진 직후 1회 보충 실행**.
 - 코드 업데이트: 데스크탑에서 push → 서버는 `run_digest.sh`가 매 실행 시작에 `git pull`로 자동 최신화.
 - 실패 시 Telegram 에러 알림 + `journalctl --user -u yks-newsletter -n 100`로 원인 확인.
 - GitHub Actions는 제거됨. 더 이상 GitHub 시크릿(OPENROUTER_API_KEY 등) 불필요.

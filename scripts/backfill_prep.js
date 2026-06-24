@@ -2,7 +2,7 @@
  * 백필 prep: 특정 리포트 날짜의 메일을 fetch → 텍스트화 → 원문크롤링하여 clean_*.json 생성.
  * LLM 미사용. 추출은 별도 단계(Haiku 서브에이전트)에서 수행.
  *
- * 윈도우: 스케줄 모드와 동일하게 (D-1) 10:01 ~ D 10:00 KST (연속 날짜 타일링, 중복/누락 방지)
+ * 윈도우: 스케줄 모드와 동일하게 (D-1) 09:01 ~ D 09:00 KST (연속 날짜 타일링, 중복/누락 방지)
  * 출력: output/backfill/<YYYYMMDD>/labels/<label>/{raw,clean}/
  *
  * 사용법: node scripts/backfill_prep.js 2026-05-30
@@ -24,14 +24,14 @@ prev.setUTCDate(prev.getUTCDate() - 1);
 const pad = n => String(n).padStart(2, '0');
 const prevStr = `${prev.getUTCFullYear()}-${pad(prev.getUTCMonth() + 1)}-${pad(prev.getUTCDate())}`;
 const timeRange = {
-  start: new Date(`${prevStr}T10:01:00+09:00`),
-  end: new Date(`${date}T10:00:00+09:00`)
+  start: new Date(`${prevStr}T09:01:00+09:00`),
+  end: new Date(`${date}T09:00:00+09:00`)
 };
 const runId = date.replace(/-/g, '');
 const baseDir = path.join(__dirname, '..', 'output', 'backfill', runId);
 const labels = orch.getLabels(null);
 
-console.log(`백필 prep: ${date} (윈도우 ${prevStr} 10:01 ~ ${date} 10:00 KST)`);
+console.log(`백필 prep: ${date} (윈도우 ${prevStr} 09:01 ~ ${date} 09:00 KST)`);
 console.log(`출력: ${baseDir}\n`);
 
 (async () => {
