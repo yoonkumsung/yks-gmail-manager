@@ -7,8 +7,12 @@ config/user_profile.json
 output/
 gmail-digest.json
 
-# Claude Code 로컬 설정
-.claude/
+# Claude Code 로컬 설정 (moai 템플릿은 머신마다 재생성 → 로컬 전용)
+# 단, 커스텀 스킬은 git으로 동기화 (다른 머신에서 git clone 시 따라옴)
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/digest-quality-audit/
 
 # Windows 예약어 파일
 nul
