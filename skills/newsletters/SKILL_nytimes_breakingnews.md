@@ -11,7 +11,7 @@ The New York Times <breakingnews@nytimes.com> 뉴스레터의 구조 분석 및 
 | 이름 | The New York Times <breakingnews@nytimes.com> |
 | 발신자 | breakingnews@nytimes.com |
 | 유형 | multi-item |
-| 언어 | ko |
+| 언어 | en |
 | 평균 아이템 수 | 4개 |
 | 생성일 | 2026-05-31 |
 

@@ -11,7 +11,7 @@ Behind the Balance Sheet <behindthebalancesheet@substack.com> 뉴스레터의 �
 | 이름 | Behind the Balance Sheet <behindthebalancesheet@substack.com> |
 | 발신자 | behindthebalancesheet@substack.com |
 | 유형 | single-topic |
-| 언어 | ko |
+| 언어 | en |
 | 평균 아이템 수 | 1개 |
 | 생성일 | 2026-05-23 |
 
