@@ -959,13 +959,19 @@ ${agentContent}`;
     // 1년 토큰(CLAUDE_CODE_OAUTH_TOKEN)이 있으면 --bare(키체인 우회·hooks/skills 스킵, 무인 서버용),
     // 없으면 인터랙티브 로그인(~/.claude/credentials.json) 사용 → 첫 스모크 테스트 간편.
     const args = ['-p', '--model', this.claudeModel, '--output-format', 'json'];
-    if (process.env.CLAUDE_CODE_OAUTH_TOKEN) args.unshift('--bare');
+    // --bare는 명시 opt-in(CLAUDE_BARE=1). hooks/skills 스킵·오버헤드 절감용이나
+    // CLAUDE_CODE_OAUTH_TOKEN(헤드리스 토큰)이 프로세스 env에 닿아야 함. 기본은 non-bare
+    // (인터랙티브 로그인 credentials 사용, 자동 갱신 — WSL/Windows interop env 문제 회피).
+    if (process.env.CLAUDE_BARE === '1') args.unshift('--bare');
+
+    // 바이너리: 기본 'claude'. WSL에서 Windows 인증 재사용 시 CLAUDE_BIN=claude.exe.
+    const claudeBin = process.env.CLAUDE_BIN || 'claude';
 
     return await new Promise((resolve, reject) => {
       let stdout = '', stderr = '';
       let child;
       try {
-        child = spawn('claude', args, { signal: controller.signal });
+        child = spawn(claudeBin, args, { signal: controller.signal });
       } catch (e) { return reject(e); }
 
       child.stdout.on('data', d => { stdout += d; });
