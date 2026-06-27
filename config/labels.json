@@ -8,16 +8,7 @@
         "IT/AI"
       ],
       "enabled": true,
-      "agent": "agents/labels/IT.md",
-      "focus_topics": [
-        "AI",
-        "LLM",
-        "클라우드",
-        "스타트업",
-        "보안",
-        "반도체",
-        "빅테크"
-      ]
+      "agent": "agents/labels/IT.md"
     },
     {
       "name": "경제",
@@ -26,72 +17,35 @@
         "경제/기관 홍보"
       ],
       "enabled": true,
-      "agent": "agents/labels/경제.md",
-      "focus_topics": [
-        "금리",
-        "인플레이션",
-        "환율",
-        "고용",
-        "증시",
-        "부동산",
-        "정책"
-      ]
+      "agent": "agents/labels/경제.md"
     },
     {
       "name": "시사",
       "gmail_label": "시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/시사.md",
-      "focus_topics": [
-        "정치",
-        "외교",
-        "사회",
-        "국제",
-        "정책"
-      ]
+      "agent": "agents/labels/시사.md"
     },
     {
       "name": "스타트업",
       "gmail_label": "스타트업",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/스타트업.md",
-      "focus_topics": [
-        "스타트업",
-        "투자",
-        "창업",
-        "VC",
-        "엑셀러레이터"
-      ]
+      "agent": "agents/labels/스타트업.md"
     },
     {
       "name": "투자",
       "gmail_label": "투자",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/투자.md",
-      "focus_topics": [
-        "주식",
-        "펀드",
-        "채권",
-        "부동산",
-        "가상자산"
-      ]
+      "agent": "agents/labels/투자.md"
     },
     {
       "name": "마케팅",
       "gmail_label": "마케팅",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/마케팅.md",
-      "focus_topics": [
-        "마케팅",
-        "광고",
-        "브랜딩",
-        "SNS",
-        "콘텐츠"
-      ]
+      "agent": "agents/labels/마케팅.md"
     },
     {
       "name": "라이프",
@@ -100,197 +54,112 @@
         "라이프/기관 홍보"
       ],
       "enabled": true,
-      "agent": "agents/labels/라이프.md",
-      "focus_topics": [
-        "건강",
-        "여행",
-        "음식",
-        "문화",
-        "라이프스타일"
-      ]
+      "agent": "agents/labels/라이프.md"
     },
     {
       "name": "인문학",
       "gmail_label": "인문학",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/인문학.md",
-      "focus_topics": [
-        "철학",
-        "역사",
-        "문학",
-        "예술",
-        "교양"
-      ]
+      "agent": "agents/labels/인문학.md"
     },
     {
       "name": "스포츠",
       "gmail_label": "스포츠",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/스포츠.md",
-      "focus_topics": [
-        "축구",
-        "야구",
-        "농구",
-        "골프",
-        "스포츠"
-      ]
+      "agent": "agents/labels/스포츠.md"
     },
     {
       "name": "소셜포럼",
       "gmail_label": "소셜포럼",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/소셜포럼.md",
-      "focus_topics": [
-        "커뮤니티",
-        "네트워킹",
-        "이벤트",
-        "포럼"
-      ]
+      "agent": "agents/labels/소셜포럼.md"
     },
     {
       "name": "지원사업",
       "gmail_label": "지원사업",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/지원사업.md",
-      "focus_topics": [
-        "정부지원",
-        "공모",
-        "사업공고",
-        "모집",
-        "지원사업"
-      ]
+      "agent": "agents/labels/지원사업.md"
     },
     {
       "name": "기타",
       "gmail_label": "기타",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/기타.md",
-      "focus_topics": []
+      "agent": "agents/labels/기타.md"
     },
     {
       "name": "NYT_시사",
       "gmail_label": "NYT/시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/NYT_시사.md",
-      "focus_topics": [
-        "미국정치",
-        "국제",
-        "사회",
-        "오피니언"
-      ]
+      "agent": "agents/labels/NYT_시사.md"
     },
     {
       "name": "NYT_경제",
       "gmail_label": "NYT/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/NYT_경제.md",
-      "focus_topics": [
-        "월가",
-        "딜",
-        "경제",
-        "기업"
-      ]
+      "agent": "agents/labels/NYT_경제.md"
     },
     {
       "name": "NYT_라이프",
       "gmail_label": "NYT/라이프",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/NYT_라이프.md",
-      "focus_topics": [
-        "제품리뷰",
-        "라이프스타일",
-        "문화"
-      ]
+      "agent": "agents/labels/NYT_라이프.md"
     },
     {
       "name": "미국_시사",
       "gmail_label": "미국/시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/미국_시사.md",
-      "focus_topics": [
-        "미국정치",
-        "정책",
-        "외교"
-      ]
+      "agent": "agents/labels/미국_시사.md"
     },
     {
       "name": "미국_경제",
       "gmail_label": "미국/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/미국_경제.md",
-      "focus_topics": [
-        "증시",
-        "경제지표",
-        "연준",
-        "시장"
-      ]
+      "agent": "agents/labels/미국_경제.md"
     },
     {
       "name": "중국_시사",
       "gmail_label": "중국/시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/중국_시사.md",
-      "focus_topics": [
-        "중국정치",
-        "미중관계",
-        "사회",
-        "홍콩"
-      ]
+      "agent": "agents/labels/중국_시사.md"
     },
     {
       "name": "중국_경제",
       "gmail_label": "중국/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/중국_경제.md",
-      "focus_topics": [
-        "중국경제",
-        "무역",
-        "부동산",
-        "증시"
-      ]
+      "agent": "agents/labels/중국_경제.md"
     },
     {
       "name": "글로벌_시사",
       "gmail_label": "글로벌/시사",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/글로벌_시사.md",
-      "focus_topics": [
-        "국제",
-        "유럽",
-        "글로벌정치"
-      ]
+      "agent": "agents/labels/글로벌_시사.md"
     },
     {
       "name": "글로벌_경제",
       "gmail_label": "글로벌/경제",
       "sub_labels": [],
       "enabled": true,
-      "agent": "agents/labels/글로벌_경제.md",
-      "focus_topics": [
-        "글로벌경제",
-        "시장"
-      ]
+      "agent": "agents/labels/글로벌_경제.md"
     },
     {
       "name": "쇼핑결제",
       "gmail_label": "쇼핑/결제",
       "sub_labels": [],
       "enabled": false,
-      "agent": null,
-      "focus_topics": []
+      "agent": null
     }
   ]
 }

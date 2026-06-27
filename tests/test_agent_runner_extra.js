@@ -25,45 +25,6 @@ module.exports = async function () {
     return runner;
   }
 
-  await describe('loadUserContext 캐시', async () => {
-    await it('두 번 호출해도 동일 결과 (캐시 적중)', () => {
-      const runner = makeRunner();
-      const first = runner.loadUserContext();
-      const second = runner.loadUserContext();
-      assert.equal(first, second);
-      // 캐시 객체 채워짐
-      assert.ok(runner._userContextCache !== null);
-    });
-
-    await it('user_profile.json 없을 때 fallback 메시지 반환', () => {
-      const runner = makeRunner();
-      // user_profile.json 없는 환경이라 fallback 케이스 (실제 파일에 있으면 정상값)
-      const result = runner.loadUserContext();
-      assert.type(result, 'string');
-      assert.gt(result.length, 0);
-    });
-  });
-
-  await describe('loadFocusTopics 캐시', async () => {
-    await it('두 번 호출해도 디스크 IO 1회 (_labelsJsonCache 적중)', () => {
-      const runner = makeRunner();
-      const agentPath = path.join(__dirname, '..', 'agents', 'labels', 'IT.md');
-      runner.loadFocusTopics(agentPath);
-      assert.ok(runner._labelsJsonCache);
-      // 두 번째 호출
-      const before = runner._labelsJsonCache;
-      runner.loadFocusTopics(agentPath);
-      assert.equal(runner._labelsJsonCache, before);  // 동일 객체 참조
-    });
-
-    await it('알 수 없는 라벨 → 기본 메시지', () => {
-      const runner = makeRunner();
-      const fakeAgentPath = path.join(__dirname, '..', 'agents', 'labels', '존재하지않는라벨.md');
-      const result = runner.loadFocusTopics(fakeAgentPath);
-      assert.equal(result, '모든 주요 아이템 추출');
-    });
-  });
-
   await describe('getRequiredFieldsForTask', async () => {
     await it('extract → items', () => {
       const runner = makeRunner();
@@ -147,32 +108,6 @@ module.exports = async function () {
     });
   });
 
-  await describe('buildHeader replaceAll 동작', async () => {
-    let tmpAgentPath;
-
-    beforeEach(() => {
-      tmpAgentPath = path.join(os.tmpdir(), `test-agent-${Date.now()}.md`);
-    });
-
-    afterEach(() => {
-      try { fs.unlinkSync(tmpAgentPath); } catch {}
-    });
-
-    await it('{{USER_CONTEXT}}가 여러 번 등장해도 모두 치환', async () => {
-      fs.writeFileSync(tmpAgentPath, '# Agent\n\nContext: {{USER_CONTEXT}}\n\nAgain: {{USER_CONTEXT}}\n');
-      const runner = makeRunner();
-      const header = await runner.buildHeader(tmpAgentPath, {});
-      // {{USER_CONTEXT}}가 더 이상 남아있지 않아야 함
-      assert.notIncludes(header, '{{USER_CONTEXT}}');
-    });
-
-    await it('{{FOCUS_TOPICS}}가 여러 번 등장해도 모두 치환', async () => {
-      fs.writeFileSync(tmpAgentPath, '# Agent\n\nTopics: {{FOCUS_TOPICS}}\nMore: {{FOCUS_TOPICS}}\n');
-      const runner = makeRunner();
-      const header = await runner.buildHeader(tmpAgentPath, {});
-      assert.notIncludes(header, '{{FOCUS_TOPICS}}');
-    });
-  });
 
   await describe('runSinglePrompt 토큰 초과 폴백', async () => {
     await it('마지막 시도에서 토큰 초과 → throw (undefined 반환 X)', async () => {

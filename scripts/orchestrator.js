@@ -616,6 +616,15 @@ async function main() {
     const mergedDir = path.join(tempDir, 'merged');
     const finalDir = path.join(tempDir, 'final');
 
+    // 7-b. 토큰/비용 통계 기록 (_run_stats.json → generate_html이 소비, 분석용 보존)
+    try {
+      if (fs.existsSync(mergedDir)) {
+        const stats = getRunner(path.join(tempDir, 'logs')).getStats();
+        fs.writeFileSync(path.join(mergedDir, '_run_stats.json'), JSON.stringify(stats, null, 2), 'utf8');
+        console.log(`\n토큰/비용: 입력 ${stats.usage.totalPromptTokens}, 출력 ${stats.usage.totalCompletionTokens}, 호출 ${stats.usage.totalCalls}회, 캐시히트 ${stats.usage.totalCachedPromptTokens} → $${stats.cost.total_usd}`);
+      }
+    } catch (e) { console.warn(`  run_stats 기록 실패: ${e.message}`); }
+
     // 8. 통합 HTML 생성
     console.log('\n--- 통합 HTML 생성 ---');
     // KST 기준 날짜로 파일명 생성 (timeRange.end = 사용자 요청 날짜)
@@ -664,7 +673,8 @@ async function main() {
     process.exit(1);
   } finally {
     // 성공 시 임시 폴더 삭제, 실패 시 유지 (디버깅용)
-    if (success && tempDir) {
+    // KEEP_TEMP=1 이면 성공해도 보존 (품질 분석·전수 대조용 중간 산출물 확보)
+    if (success && tempDir && process.env.KEEP_TEMP !== '1') {
       cleanupTempDir(tempDir);
     } else if (tempDir) {
       console.log(`\n[디버깅] 임시 폴더 유지됨: ${tempDir}`);
