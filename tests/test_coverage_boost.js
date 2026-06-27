@@ -1334,26 +1334,6 @@ module.exports = async function () {
     });
   });
 
-  await describe('agent_runner: loadFocusTopics 에러 경로', async () => {
-    await it('labels.json 자체가 손상 → catch → 기본 메시지', () => {
-      const r = new AgentRunner('k', 'm', { logDir: os.tmpdir() });
-      r.log = () => {};
-      // _labelsJsonCache를 잘못된 형식으로 채워 .labels.find() throw 유도
-      r._labelsJsonCache = { broken: true };  // .labels 없음
-      const result = r.loadFocusTopics(path.join(__dirname, '..', 'agents', 'labels', 'IT.md'));
-      assert.equal(result, '모든 주요 아이템 추출');
-    });
-
-    await it('focus_topics 빈 배열 → 기본 메시지', () => {
-      const r = new AgentRunner('k', 'm', { logDir: os.tmpdir() });
-      r.log = () => {};
-      r._labelsJsonCache = {
-        labels: [{ name: 'TEST', focus_topics: [] }]
-      };
-      const result = r.loadFocusTopics(path.join('agents', 'labels', 'TEST.md'));
-      assert.equal(result, '모든 주요 아이템 추출');
-    });
-  });
 
   await describe('agent_runner: log 메서드 — 모든 레벨 + 디렉토리 생성', async () => {
     await it('logDir 없으면 자동 생성', () => {

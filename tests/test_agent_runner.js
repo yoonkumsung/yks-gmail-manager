@@ -505,28 +505,6 @@ module.exports = async function () {
     });
   });
 
-  // ============================================
-  // loadUserContext
-  // ============================================
-
-  await describe('loadUserContext', async () => {
-    await it('user_profile.json이 없으면 에러 안 남', () => {
-      // loadUserContext는 try-catch로 감싸져 있음
-      const ctx = runner.loadUserContext();
-      assert.type(ctx, 'string');
-    });
-
-    await it('프로필이 있으면 문자열 반환', () => {
-      const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
-      if (fs.existsSync(profilePath)) {
-        const ctx = runner.loadUserContext();
-        assert.type(ctx, 'string');
-        assert.gt(ctx.length, 0);
-      } else {
-        skip('user_profile.json 파일 없음');
-      }
-    });
-  });
 
   // ============================================
   // buildFullPrompt

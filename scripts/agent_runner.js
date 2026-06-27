@@ -34,6 +34,16 @@ class AgentRunner {
     this.referer = options.referer || 'https://github.com/yoonkumsung/yks-gmail-manager';
     this.title = options.title || 'yks-gmail-manager';
 
+    // 추론(reasoning) 토글: 기본 OFF(비용·지연 절감). 추출 완결성↑ 필요 시 ON.
+    // options.reasoning 또는 env REASONING_ENABLED=1 로 켤 수 있음.
+    this.reasoningEnabled = options.reasoning === true || process.env.REASONING_ENABLED === '1';
+
+    // LLM 백엔드: 'openrouter'(기본, 종량제) | 'claude'(Claude Code CLI, 정액 구독 헤드리스).
+    // env LLM_BACKEND 또는 options.backend로 전환. claude 백엔드는 `claude -p` 셸아웃(callClaudeCLI).
+    this.backend = options.backend || process.env.LLM_BACKEND || 'openrouter';
+    // claude 백엔드 모델 별칭(haiku|sonnet|opus). env CLAUDE_MODEL로 재정의. 단계별 분할은 추후.
+    this.claudeModel = options.claudeModel || process.env.CLAUDE_MODEL || 'haiku';
+
     // 청크 분할 설정 - 섹션 기반 적응형 청킹
     // 8K 입력 → 섹션 기반으로 기사 경계를 유지하면서 분할
     // 청크당 출력 토큰 사용률 ~25% (16K 한도 내 안전 마진)
@@ -54,14 +64,46 @@ class AgentRunner {
     this.minRequestInterval = options.minRequestInterval || 2000;   // 2초 간격
     this.lastRequestTime = 0;
 
-    // 프로필/라벨 캐시 (loadUserContext, loadFocusTopics가 매 호출마다 디스크 IO하지 않도록)
-    this._userContextCache = null;
-    this._labelsJsonCache = null;
+
+    // 토큰/비용 누적 통계 (run 전체. _run_stats.json으로 직렬화 → generate_html이 소비)
+    this.usage = {
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalCachedPromptTokens: 0,  // 프롬프트 캐시 히트분 (있으면)
+      totalCalls: 0
+    };
 
     // 로그 디렉토리 생성
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
+  }
+
+  /**
+   * 누적 토큰/비용 통계 반환. _run_stats.json 직렬화용.
+   * 가격은 2026-06 OpenRouter 단가(USD per 1M tokens). 미등록 모델은 0 처리.
+   */
+  getStats() {
+    const PRICING = {
+      'deepseek/deepseek-v4-pro':   { in: 0.435, out: 0.87,  cached: 0.003625 },
+      'deepseek/deepseek-v4-flash': { in: 0.14,  out: 0.28,  cached: 0.0028 },
+      'google/gemini-2.5-flash':    { in: 0.30,  out: 2.50,  cached: 0.075 },
+      'anthropic/claude-haiku-4.5': { in: 1.0,   out: 5.0,   cached: 0.10 }
+    };
+    const p = PRICING[this.model] || { in: 0, out: 0, cached: 0 };
+    const u = this.usage;
+    const freshIn = Math.max(0, u.totalPromptTokens - u.totalCachedPromptTokens);
+    const inUsd = (freshIn / 1e6) * p.in + (u.totalCachedPromptTokens / 1e6) * p.cached;
+    const outUsd = (u.totalCompletionTokens / 1e6) * p.out;
+    return {
+      model: this.model,
+      usage: { ...u },
+      cost: {
+        input_usd: +inUsd.toFixed(4),
+        output_usd: +outUsd.toFixed(4),
+        total_usd: +(inUsd + outUsd).toFixed(4)
+      }
+    };
   }
 
   // ============================================
@@ -563,20 +605,8 @@ class AgentRunner {
    * 프롬프트 헤더 구성 (에이전트 + 스킬)
    */
   async buildHeader(agentPath, options) {
-    // Agent 문서 읽기
+    // Agent 문서 읽기 (개인화 제거: USER_CONTEXT/FOCUS_TOPICS 주입 폐지 — 누락제로 원칙)
     let agentContent = fs.readFileSync(agentPath, 'utf8');
-
-    // 사용자 프로필 주입 ({{USER_CONTEXT}} 플레이스홀더 치환, 여러 번 등장 대비 replaceAll)
-    if (agentContent.includes('{{USER_CONTEXT}}')) {
-      const userContext = this.loadUserContext();
-      agentContent = agentContent.split('{{USER_CONTEXT}}').join(userContext);
-    }
-
-    // 라벨별 우선순위 주제 주입 ({{FOCUS_TOPICS}} 플레이스홀더 치환, 여러 번 등장 대비)
-    if (agentContent.includes('{{FOCUS_TOPICS}}')) {
-      const focusTopics = this.loadFocusTopics(agentPath);
-      agentContent = agentContent.split('{{FOCUS_TOPICS}}').join(focusTopics);
-    }
 
     // SKILL 문서 읽기
     let skillsContent = '';
@@ -600,67 +630,6 @@ ${agentContent}`;
     }
 
     return header;
-  }
-
-  /**
-   * config/user_profile.json에서 사용자 컨텍스트를 읽어 프롬프트용 텍스트로 변환 (캐시)
-   */
-  loadUserContext() {
-    if (this._userContextCache !== null) return this._userContextCache;
-
-    const profilePath = path.join(__dirname, '..', 'config', 'user_profile.json');
-    try {
-      const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-      const user = profile?.user;
-      if (!user?.occupation) {
-        this.log('user_profile.json: user 또는 occupation 누락', 'warn');
-        this._userContextCache = '프로필 정보 없음';
-        return this._userContextCache;
-      }
-      const occ = user.occupation;
-      const interests = user.interests || {};
-
-      let context = `- **직업**: ${occ.title}\n- **상세**: ${occ.description}`;
-
-      if (interests.technical?.length > 0) {
-        context += `\n- **기술 관심**: ${interests.technical.join(', ')}`;
-      }
-      if (interests.business?.length > 0) {
-        context += `\n- **비즈니스 관심**: ${interests.business.join(', ')}`;
-      }
-      if (interests.intellectual?.length > 0) {
-        context += `\n- **지적 관심**: ${interests.intellectual.join(', ')}`;
-      }
-
-      this._userContextCache = context;
-      return context;
-    } catch (e) {
-      this.log(`user_profile.json 로드 실패: ${e.message}`, 'warn');
-      this._userContextCache = '- 사용자 프로필 미설정 (config/user_profile.json 참고)';
-      return this._userContextCache;
-    }
-  }
-
-  /**
-   * 에이전트 파일 경로에서 라벨명을 추출하고 labels.json의 focus_topics를 반환 (캐시)
-   */
-  loadFocusTopics(agentPath) {
-    try {
-      const labelName = path.basename(agentPath, '.md');
-      if (!this._labelsJsonCache) {
-        const labelsPath = path.join(__dirname, '..', 'config', 'labels.json');
-        this._labelsJsonCache = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
-      }
-      const labelConfig = this._labelsJsonCache.labels.find(l => l.name === labelName);
-
-      if (labelConfig && labelConfig.focus_topics && labelConfig.focus_topics.length > 0) {
-        return `다음 주제를 우선 추출: ${labelConfig.focus_topics.join(', ')}`;
-      }
-      return '모든 주요 아이템 추출';
-    } catch (e) {
-      this.log(`focus_topics 로드 실패: ${e.message}`, 'warn');
-      return '모든 주요 아이템 추출';
-    }
   }
 
   /**
@@ -865,7 +834,9 @@ ${agentContent}`;
     try {
       let content;
 
-      content = await this.callOpenRouter(prompt, taskConfig, controller, fetch);
+      content = this.backend === 'claude'
+        ? await this.callClaudeCLI(prompt, taskConfig, controller)
+        : await this.callOpenRouter(prompt, taskConfig, controller, fetch);
 
       clearTimeout(timeoutId);
 
@@ -906,8 +877,8 @@ ${agentContent}`;
       stream: false,
       temperature: taskConfig.temperature,
       max_tokens: 16384,   // 출력 토큰 충분히 확보 (잘림 방지)
-      // 추론(thinking) OFF — 추출/병합은 추론 불필요, 비용·지연 절감
-      reasoning: { enabled: false }
+      // 추론(thinking): 기본 OFF(비용·지연 절감), this.reasoningEnabled로 재정의 가능
+      reasoning: { enabled: this.reasoningEnabled }
     };
     if (wantJson) {
       requestBody.response_format = { type: 'json_object' };
@@ -950,12 +921,90 @@ ${agentContent}`;
       // 잘린 JSON을 repair 시도 (callLLMWithRetry에서 처리)
     }
 
-    // 디버그: 토큰 사용량 출력
+    // 디버그: 토큰 사용량 출력 + 누적
     if (data.usage) {
-      this.log(`  토큰: 입력 ${data.usage.prompt_tokens || 0}, 출력 ${data.usage.completion_tokens || 0}`, 'debug');
+      const pt = data.usage.prompt_tokens || 0;
+      const ct = data.usage.completion_tokens || 0;
+      // OpenRouter/DeepSeek 캐시 히트 토큰 (필드명 프로바이더별 상이 → 모두 시도)
+      const cached = data.usage.prompt_cache_hit_tokens
+        || data.usage.cached_tokens
+        || data.usage.prompt_tokens_details?.cached_tokens
+        || 0;
+      this.usage.totalPromptTokens += pt;
+      this.usage.totalCompletionTokens += ct;
+      this.usage.totalCachedPromptTokens += cached;
+      this.usage.totalCalls += 1;
+      this.log(`  토큰: 입력 ${pt}, 출력 ${ct}, 캐시히트 ${cached}`, 'debug');
     }
 
     return content;
+  }
+
+  /**
+   * Claude Code CLI 호출 (헤드리스 `claude -p`, 정액 구독 백엔드).
+   * 시스템+유저 프롬프트를 stdin으로 전달하고 --output-format json 봉투의 result(모델 content)를 반환.
+   * 반환값은 OpenRouter content와 동일 위치 → 상위 callLLMWithRetry가 동일하게 JSON 파싱/리페어.
+   * 인증/쿼터 실패는 error.isAuthFailure / error.isRateLimit 로 표면화(상위에서 폴백·0건 가드 연계).
+   */
+  async callClaudeCLI(prompt, taskConfig, controller) {
+    const { spawn } = require('child_process');
+    const wantJson = (taskConfig.format || 'json') === 'json';
+
+    // 시스템 지시 + (json 강제 시) JSON-only 가드 + 본문을 단일 stdin 페이로드로
+    const jsonGuard = wantJson
+      ? '\n\n[출력 형식] 유효한 JSON 객체 하나만 출력. 코드펜스(```)·설명·잡설 금지.'
+      : '';
+    const payload = `${taskConfig.systemPrompt}${jsonGuard}\n\n${prompt}`;
+
+    // 1년 토큰(CLAUDE_CODE_OAUTH_TOKEN)이 있으면 --bare(키체인 우회·hooks/skills 스킵, 무인 서버용),
+    // 없으면 인터랙티브 로그인(~/.claude/credentials.json) 사용 → 첫 스모크 테스트 간편.
+    const args = ['-p', '--model', this.claudeModel, '--output-format', 'json'];
+    // --bare는 명시 opt-in(CLAUDE_BARE=1). hooks/skills 스킵·오버헤드 절감용이나
+    // CLAUDE_CODE_OAUTH_TOKEN(헤드리스 토큰)이 프로세스 env에 닿아야 함. 기본은 non-bare
+    // (인터랙티브 로그인 credentials 사용, 자동 갱신 — WSL/Windows interop env 문제 회피).
+    if (process.env.CLAUDE_BARE === '1') args.unshift('--bare');
+
+    // 바이너리: 기본 'claude'. WSL에서 Windows 인증 재사용 시 CLAUDE_BIN=claude.exe.
+    const claudeBin = process.env.CLAUDE_BIN || 'claude';
+
+    return await new Promise((resolve, reject) => {
+      let stdout = '', stderr = '';
+      let child;
+      try {
+        child = spawn(claudeBin, args, { signal: controller.signal });
+      } catch (e) { return reject(e); }
+
+      child.stdout.on('data', d => { stdout += d; });
+      child.stderr.on('data', d => { stderr += d; });
+      child.on('error', err => reject(err));   // ENOENT(미설치)·AbortError(타임아웃) 포함
+      child.on('close', code => {
+        this.log(`claude CLI 종료 (code ${code}, 모델 ${this.claudeModel})`, 'debug');
+        if (code !== 0) {
+          const err = new Error(`claude CLI 실패 (code ${code}): ${stderr.slice(0, 500)}`);
+          err.status = code;
+          if (/OAuth token|Not logged in|subscription access/i.test(stderr)) err.isAuthFailure = true;
+          else if (/weekly limit|rate.?limit|hit your.*limit|\b429\b/i.test(stderr)) err.isRateLimit = true;
+          return reject(err);
+        }
+        let env;
+        try { env = JSON.parse(stdout); }
+        catch (e) { return reject(new Error(`claude CLI 봉투 JSON 파싱 실패: ${stdout.slice(0, 300)}`)); }
+        // 토큰/비용 누적 (_run_stats용). claude 봉투 usage 필드 사용.
+        const u = env.usage || {};
+        this.usage.totalPromptTokens += u.input_tokens || 0;
+        this.usage.totalCompletionTokens += u.output_tokens || 0;
+        this.usage.totalCachedPromptTokens += (u.cache_read_input_tokens || 0);
+        this.usage.totalCalls += 1;
+        if (typeof env.total_cost_usd === 'number') {
+          this.usage.claudeCostUsd = (this.usage.claudeCostUsd || 0) + env.total_cost_usd;
+        }
+        resolve(env.result || '');
+      });
+
+      // 인자 길이 한계·이스케이프 회피 위해 페이로드는 stdin으로
+      child.stdin.write(payload);
+      child.stdin.end();
+    });
   }
 
 

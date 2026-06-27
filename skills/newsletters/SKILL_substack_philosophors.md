@@ -43,6 +43,8 @@ Philosophors from Philosophy Quotes <philosophors@substack.com> 뉴스레터의 
 
 ## 추출 규칙
 
+> ⚠️ **번역 필수 (해외 영문 소스)**: 모든 title·summary·keywords를 자연스러운 한국어로 의역한다. 직역·영문 잔존·임의 음역 금지. 인명·회사명·제품명 등 고유명사는 한국어(원어) 병기.
+
 1. 'Quote №'로 시작하는 섹션을 아이템으로 구분
 2. 인용문 텍스트와 출처를 본문으로 추출
 3. Follow-up Question을 요약에 포함

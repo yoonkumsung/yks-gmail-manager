@@ -42,6 +42,8 @@
 
 ## 추출 규칙
 
+> ⚠️ **번역 필수 (해외 영문 소스)**: 모든 title·summary·keywords를 자연스러운 한국어로 의역한다. 직역·영문 잔존·임의 음역 금지. 인명·회사명·제품명 등 고유명사는 한국어(원어) 병기.
+
 1. Identify sections by '##' headings
 2. For each section, extract the heading as title (clean up)
 3. Extract the following paragraphs as summary
