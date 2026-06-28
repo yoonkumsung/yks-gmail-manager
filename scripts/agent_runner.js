@@ -980,10 +980,13 @@ ${agentContent}`;
       child.on('close', code => {
         this.log(`claude CLI 종료 (code ${code}, 모델 ${this.claudeModel})`, 'debug');
         if (code !== 0) {
-          const err = new Error(`claude CLI 실패 (code ${code}): ${stderr.slice(0, 500)}`);
+          // claude는 에러를 stdout(JSON 봉투)에 쓰기도 함 → stderr 비면 stdout도 노출
+          const detail = (stderr.trim() || stdout.trim() || '(출력 없음)').slice(0, 800);
+          const err = new Error(`claude CLI 실패 (code ${code}): ${detail}`);
           err.status = code;
-          if (/OAuth token|Not logged in|subscription access/i.test(stderr)) err.isAuthFailure = true;
-          else if (/weekly limit|rate.?limit|hit your.*limit|\b429\b/i.test(stderr)) err.isRateLimit = true;
+          const probe = stderr + ' ' + stdout;
+          if (/OAuth token|Not logged in|subscription access/i.test(probe)) err.isAuthFailure = true;
+          else if (/weekly limit|rate.?limit|hit your.*limit|\b429\b/i.test(probe)) err.isRateLimit = true;
           return reject(err);
         }
         let env;
