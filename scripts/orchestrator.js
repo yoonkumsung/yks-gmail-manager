@@ -233,12 +233,91 @@ const CONFIG = {
   mergeBatchSize: 15      // 병합 배치 크기
 };
 
+// 추적/캠페인 파라미터: dedup 키에서 제거(같은 기사인데 utm만 다른 변형 통합).
+// 일반 쿼리(?idxno=123 등 기사 식별자)는 보존 → 다른 기사 오병합 방지.
+const TRACKING_PARAMS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+  'utm_name', 'utm_reader', 'fbclid', 'gclid', 'dclid', 'igshid', 'mc_cid', 'mc_eid',
+  'ref', 'ref_src', 'referrer', 'source', 'spm', 'cmpid', 'ncid', 'oly_enc_id', 'oly_anon_id'
+]);
+
+/**
+ * URL 정규화 - 같은 원문을 가리키는 link를 동일 키로 수렴시키는 dedup용 정규화.
+ * - 프로토콜(http/https) 무시, 호스트 소문자·www 제거, 기본 포트 제거
+ * - trailing slash 제거, 해시(#) 제거
+ * - 추적 파라미터(utm_* 등)만 제거하고 나머지 쿼리는 정렬 보존(기사 식별자 보호)
+ * 외부 의존성 없이 node:url(URL) 사용. 파싱 실패 시 소문자+trailing slash 제거 폴백.
+ * @param {string} rawUrl
+ * @returns {string} 정규화 키. 빈/무효 입력은 '' (그룹핑 제외).
+ */
+function normalizeUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  let s = rawUrl.trim();
+  if (!s) return '';
+  // 스킴이 전혀 없을 때만 https 가정 (scheme-less 링크 대비).
+  // 이미 스킴이 있으면(mailto:, ftp: 등) 접두하지 않고 아래 protocol 체크에서 걸러냄.
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s)) {
+    s = 'https://' + s;
+  }
+  let u;
+  try {
+    u = new URL(s);
+  } catch (e) {
+    return rawUrl.trim().toLowerCase().replace(/\/+$/, '');
+  }
+  // http/https/기타가 아니면(mailto: 등) dedup 대상 아님
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+  const isDefaultPort = !u.port
+    || (u.protocol === 'http:' && u.port === '80')
+    || (u.protocol === 'https:' && u.port === '443');
+  const port = isDefaultPort ? '' : `:${u.port}`;
+  const pathName = u.pathname.replace(/\/+$/, ''); // 루트('')는 그대로 빈 문자열
+  const params = [];
+  for (const [k, v] of u.searchParams.entries()) {
+    if (TRACKING_PARAMS.has(k.toLowerCase())) continue;
+    params.push([k, v]);
+  }
+  params.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : (a[1] < b[1] ? -1 : 1)));
+  const query = params.length
+    ? '?' + params.map(([k, v]) => `${k}=${v}`).join('&')
+    : '';
+  // 프로토콜 제외 → http/https 변형 통합
+  return `${host}${port}${pathName}${query}`.toLowerCase();
+}
+
 /**
  * 병합 사전 필터링 - 코드 기반 유사도 계산으로 LLM 호출 최적화
  * 유사한 아이템만 LLM에 보내고, 유사도 없는 아이템은 바로 통과
+ *
+ * dedup 핵심: 같은 원문 URL(정규화 link)을 가리키는 아이템은 Jaccard 유사도와
+ * 무관하게 무조건 병합 후보로 묶는다. 뉴스레터 본문 티저 요약과 크롤링된 원문 전문이
+ * 별개 아이템으로 추출돼도 같은 link를 공유하므로, 청킹/유사도와 무관하게 견고하게 잡힌다.
+ * link가 다르면 절대 묶지 않으므로 오병합 위험은 없다.
  */
 function findMergeCandidates(items) {
   const candidateMap = new Map(); // idx -> Set<idx>
+
+  // 0) 동일 원문 URL 기반 강제 후보 묶기 (티저 vs 전문 중복 dedup)
+  const linkGroups = new Map(); // normLink -> [idx]
+  for (let i = 0; i < items.length; i++) {
+    const norm = normalizeUrl(items[i] && items[i].link);
+    if (!norm) continue; // link 없/무효 → 기존 Jaccard 로직에 위임
+    if (!linkGroups.has(norm)) linkGroups.set(norm, []);
+    linkGroups.get(norm).push(i);
+  }
+  for (const idxs of linkGroups.values()) {
+    if (idxs.length < 2) continue;
+    for (let a = 0; a < idxs.length; a++) {
+      for (let b = a + 1; b < idxs.length; b++) {
+        const i = idxs[a], j = idxs[b];
+        if (!candidateMap.has(i)) candidateMap.set(i, new Set());
+        if (!candidateMap.has(j)) candidateMap.set(j, new Set());
+        candidateMap.get(i).add(j);
+        candidateMap.get(j).add(i);
+      }
+    }
+  }
 
   for (let i = 0; i < items.length; i++) {
     const kwA = new Set((items[i].keywords || []).map(k => k.toLowerCase()));
@@ -1506,6 +1585,7 @@ module.exports = {
     ProgressManager,
     FailedBatchManager,
     findMergeCandidates,
+    normalizeUrl,
     clusterItemsByKeyword,
     parseArgs,
     calculateTimeRange,
