@@ -164,6 +164,71 @@ function getTempDir(runId) {
 }
 
 /**
+ * 추출 캐시(메일별 items_*.json)가 "재사용 가능한 정상 캐시"인지 판정.
+ *   silent-green 재발 방지: 이전 실패 런(예: 401)이 남긴 0아이템/에러/손상 캐시를
+ *   "이미 처리됨"으로 스킵하면 그 메일이 통째로 누락된다(정보누락 제로 위반).
+ *   → 1개 이상 아이템이 든 정상 캐시만 true. 그 외(없음/빈배열/에러마커/파싱실패)는
+ *     false를 반환해 호출부가 재처리하도록 한다.
+ * @param {string} itemsPath
+ * @returns {boolean}
+ */
+function isValidItemsCache(itemsPath) {
+  try {
+    if (!fs.existsSync(itemsPath)) return false;
+    const data = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+    if (!data || data.error) return false;           // 에러 마커가 박힌 캐시는 무효
+    return Array.isArray(data.items) && data.items.length > 0;
+  } catch (e) {
+    return false;                                     // 손상/파싱 실패 → 무효(재처리)
+  }
+}
+
+/**
+ * 런 헬스 점검 — 0건/부분 발행 차단 판정.
+ *   대량 실패(추출 전량 실패·고실패율·라벨 예외)와 "정상 0건"(그날 새 메일 없음)을 구분한다.
+ *   판정은 라벨 단위가 아니라 전체 파이프라인 집계로 한다 → 항상 비어있는 게 정상인 라벨
+ *   (NYT_경제·NYT_라이프·글로벌_경제 등)을 실패로 오인하지 않는다.
+ * @param {Array} results - processLabel 결과 배열
+ * @returns {{healthy:boolean, empty:boolean, reason:string}}
+ */
+function assessRunHealth(results) {
+  const list = Array.isArray(results) ? results : [];
+  const labelErrors = list.filter(r => r && r.success === false);
+  const totalMessages = list.reduce((s, r) => s + ((r && r.messageCount) || 0), 0);
+  const totalItems = list.reduce((s, r) => s + ((r && r.itemCount) || 0), 0);
+  const extractFail = list.reduce((s, r) => s + ((r && r.extractFail) || 0), 0);
+  const extractAttempted = list.reduce((s, r) => s + ((r && r.extractAttempted) || 0), 0);
+
+  // 라벨 처리 자체가 예외로 떨어진 경우(인증 등) = 비정상 → 발행 차단.
+  // (정상적으로 메일이 없는 라벨은 success:true, messageCount:0으로 돌아오므로 여기 안 걸림.)
+  if (labelErrors.length > 0) {
+    return {
+      healthy: false, empty: false,
+      reason: `라벨 처리 예외 ${labelErrors.length}건: ${labelErrors.map(r => `${r.label}(${r.error})`).join(', ')}`
+    };
+  }
+  // 수집된 메일이 0건 = 그날 새 메일이 진짜 없음 → 정상 0건.
+  if (totalMessages === 0) {
+    return { healthy: true, empty: true, reason: '수집된 메일 0건(정상 0건)' };
+  }
+  // 메일은 가져왔는데 최종 아이템이 0건 = 추출/병합 전량 실패 의심.
+  if (totalItems === 0) {
+    return {
+      healthy: false, empty: false,
+      reason: `메일 ${totalMessages}건 수집됐으나 최종 아이템 0건(추출 전량 실패 의심)`
+    };
+  }
+  // LLM 추출 실패율 50%+ = 대량 실패.
+  if (extractAttempted > 0 && extractFail / extractAttempted >= 0.5) {
+    return {
+      healthy: false, empty: false,
+      reason: `LLM 추출 실패율 ${Math.round((extractFail / extractAttempted) * 100)}% (${extractFail}/${extractAttempted})`
+    };
+  }
+  return { healthy: true, empty: false, reason: `정상(메일 ${totalMessages}건, 아이템 ${totalItems}건)` };
+}
+
+/**
  * 임시 폴더 정리 (성공 시)
  */
 function cleanupTempDir(tempDir) {
@@ -723,6 +788,19 @@ async function main() {
     // 7. 메일 정리 실행
     const results = await processAllLabels(labels, timeRange, tempDir, progressManager, failedBatchManager, adaptiveLearning);
 
+    // 7-a. 런 헬스 점검: 대량 실패면 0건/부분 발행을 차단(비정상 종료).
+    //   정상 0건(수집 메일 0)과 구분해 silent-green 재발을 막는다.
+    //   비정상 종료 시 run_digest.sh가 exit≠0을 감지 → 발행(gh-pages/Drive) 스킵 + Telegram 에러 알림.
+    const health = assessRunHealth(results);
+    if (!health.healthy) {
+      console.error(`\n[대량 실패 감지] ${health.reason}`);
+      console.error('  → 0건/부분 발행을 차단합니다(비정상 종료). 임시 폴더는 디버깅용으로 보존됩니다.');
+      printSummary(results);
+      process.exitCode = 2;     // run_digest.sh가 ≠0 감지 → 발행 차단 + 에러 알림(trap)
+      return;                   // finally로 진입(success=false → 임시 폴더 보존)
+    }
+    console.log(`\n[헬스] ${health.reason}`);
+
     const mergedDir = path.join(tempDir, 'merged');
     const finalDir = path.join(tempDir, 'final');
 
@@ -871,6 +949,8 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       success: true,
       messageCount: 0,
       itemCount: 0,
+      extractFail: 0,
+      extractAttempted: 0,
       newNewsletters: newNewsletters.newsletters
     };
   }
@@ -891,6 +971,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
   let successCount = 0;
   let failCount = 0;
   let newSkillCount = 0;
+  let extractAttempted = 0;   // 이번 런에서 실제 LLM 추출을 시도한 메일 수(캐시 스킵 제외) → 실패율 산정
 
   if (!progressManager.isStepCompleted(label.name, 'llm_extract')) {
     console.log('  아이템 추출 중 (LLM)...');
@@ -908,10 +989,13 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
       console.log(`    [${idx + 1}/${cleanFiles.length}] ${messageId.substring(0, 12)}...`);
 
       // 이미 처리된 파일 건너뛰기 (증분 처리)
-      if (fs.existsSync(itemsPath)) {
+      // 단, 0아이템/에러/손상 캐시는 무효로 보고 재처리(silent-green 재발 방지).
+      if (isValidItemsCache(itemsPath)) {
         console.log(`      → 이미 처리됨 (건너뜀)`);
         successCount++;
         continue;
+      } else if (fs.existsSync(itemsPath)) {
+        console.warn(`      → 기존 캐시 무효(0아이템/손상), 재처리`);
       }
 
       // 발신자 정보 확인
@@ -950,6 +1034,7 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
 
       try {
         let result;
+        extractAttempted++;   // 캐시 스킵을 통과해 실제 추출을 시도하는 메일
 
         if (isNewSender) {
           // 새 발신자: 구조 분석 + 아이템 추출 동시 수행
@@ -1189,6 +1274,8 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
     success: true,
     messageCount: msgFiles.length,
     itemCount: allItems.length,
+    extractFail: failCount,
+    extractAttempted,
     newNewsletters: newNewsletters.newsletters
   };
 }
@@ -1614,6 +1701,8 @@ module.exports = {
     classifyTier,
     cleanItemLink,
     clusterItemsByKeyword,
+    isValidItemsCache,
+    assessRunHealth,
     parseArgs,
     calculateTimeRange,
     getLabels,

@@ -837,9 +837,34 @@ ${agentContent}`;
     try {
       let content;
 
-      content = this.backend === 'claude'
-        ? await this.callClaudeCLI(prompt, taskConfig, controller)
-        : await this.callOpenRouter(prompt, taskConfig, controller, fetch);
+      if (this.backend === 'claude') {
+        try {
+          content = await this.callClaudeCLI(prompt, taskConfig, controller);
+        } catch (err) {
+          // 인증 실패(401/토큰 무효/로그인 풀림)는 재시도해도 무의미 → 즉시 폴백 또는 명확 에러.
+          // (단순 5xx/429 등은 여기서 폴백하지 않고 rethrow → callLLMWithRetry가 기존대로 재시도)
+          if (!err.isAuthFailure) throw err;
+
+          const orKey = this.apiKey || process.env.OPENROUTER_API_KEY;
+          if (orKey) {
+            // OpenRouter로 폴백. 이후 호출도 폴백 유지(반복 인증 실패 방지) + 1회 경고 표면화.
+            if (!this._authFallbackNotified) {
+              this._authFallbackNotified = true;
+              console.warn('[경고] Claude 백엔드 인증 실패 → OpenRouter로 폴백합니다. CLAUDE 토큰/로그인 점검 필요.');
+            }
+            this.log(`claude 인증 실패 → OpenRouter 폴백: ${err.message}`, 'warn');
+            this.backend = 'openrouter';
+            if (!this.apiKey) this.apiKey = orKey;
+            content = await this.callOpenRouter(prompt, taskConfig, controller, fetch);
+          } else {
+            // 폴백 불가 → 명확한 에러를 던져 상위(0건 발행 차단)가 작동하게 한다.
+            err.message = `Claude 인증 실패 + OpenRouter 폴백 불가(OPENROUTER_API_KEY 없음): ${err.message}`;
+            throw err;
+          }
+        }
+      } else {
+        content = await this.callOpenRouter(prompt, taskConfig, controller, fetch);
+      }
 
       clearTimeout(timeoutId);
 

@@ -55,6 +55,15 @@ npm install --no-audit --no-fund
 MODE="${1:-schedule}"
 log "orchestrator 실행 (mode=$MODE)"
 node scripts/orchestrator.js --mode "$MODE"
+ORCH_RC=$?
+
+# 대량 실패(추출 전량 실패/고실패율/라벨 예외) 시 orchestrator가 exit≠0으로 종료한다.
+# 이 경우 0건/부분 발행을 막기 위해 발행 단계를 건너뛰고 즉시 종료 → trap이 Telegram 에러 알림.
+# (정상 0건은 orchestrator가 exit 0으로 끝내므로 여기 안 걸리고, 아래 "처리 0건" 정상 흐름을 탄다.)
+if [ "$ORCH_RC" -ne 0 ]; then
+  log "orchestrator 비정상 종료(exit $ORCH_RC) → 발행 차단"
+  exit "$ORCH_RC"
+fi
 
 # --- 4) SKILL/카탈로그 자동 변경 커밋 (main) ---------------------------------
 if [ -n "$(git status --porcelain skills/newsletters/ config/newsletters.json 2>/dev/null)" ]; then
