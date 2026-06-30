@@ -97,6 +97,17 @@
 
 수정 항목·순서·기대효과·테스트 프로토콜은 **[docs/보완계획.md](docs/보완계획.md)** 참조 (A: 런무관 확정수정 / B: 코드 RC / C: 런분석 기반 / D: Haiku 하루치 2회 검증 → 풀런).
 
+## 방향 전환: 크롤링 제거 + tier 2단 (2026-07-01)
+
+전수 품질대조 결론(추출 205개 중 65% 중복/과추출, 원인이 ①티저+전문 이중추출 ②크롤러의 아카이브 과추출 ③크롤 보강분에서만 발생한 할루)에 따라 **원문 크롤링을 제거**하고 본문만으로 추출하는 방향으로 전환. 깊이는 "충실 요약 + 원문 링크 위임"으로 분리.
+
+- **크롤링 비활성**: `orchestrator.convertHtmlToText`의 `enrichWithArticles` 호출을 `ENABLE_CRAWL=1`일 때만 실행(기본 off). `fetch_articles.js` 함수 자체는 보존. `=== 원문 기사 전문 ===` append가 더는 안 일어남. crawl off 시 `PARALLEL_LIMIT` 3→6.
+- **tier 분류**: `classifyTier(item)` 신설 — summary 길이 단일 기준(`MAJOR_TIER_MIN_CHARS=140`), 결정적·LLM 비의존·병합 후 재계산 가능. 추출 enrich 단계에서 각 아이템에 `tier:'major'|'brief'` 기록. 동시에 `cleanItemLink`(=`html_to_text.cleanTrackingParams` 재사용, 오프라인 lp=/utm 언래핑, 네트워크 X)로 link 정리.
+- **렌더 2단**: `render_report.renderLabelSection`(production HTML)이 major→카드 위, brief→"간단 소식" 목록(주요기사 0개면 펼침)으로 분리. MD(`generateMarkdown`/`generateCombinedMarkdown`의 `renderItemsByTierMd`)·`generate_html.renderLabelTab`도 동일 2단. 기존 message_id 기반 "KDI류" 목록감지 로직은 tier 분리로 대체.
+- **추출 프롬프트**: `agent_runner` extract systemPrompt에서 stale한 "원문 기사 전문" 규칙 제거, 충실기사=200~500자/티저=50~140자+link필수 지침 추가, 회피표현 금지는 충실기사에만 적용(티저는 link 위임 허용)·할루 금지는 동일 유지.
+- 테스트: `test_orchestrator_utils`의 MD 포맷 단언을 신포맷으로 수정 + `classifyTier`/`cleanItemLink` 단위테스트 추가. 전체 603 통과. (`test_fetch_articles`는 함수 보존으로 그대로 통과.)
+- **다음 검증**: 5/1 IT 재실측 시 기대 — 크롤 없음, 아이템 ~72개로 수렴, 리포트 tier 2단 분리.
+
 ## 진행 중 결정 (2026-06-25)
 
 - **개인화 제거 확정**: `{{USER_CONTEXT}}`(user_profile.json — 이미 삭제돼 노이즈 주입 중) + `{{FOCUS_TOPICS}}`(labels.json focus_topics, "우선 추출"이 누락제로와 충돌). 21개 라벨 문서 placeholder + `loadUserContext`/`loadFocusTopics` 코드 제거 예정. (런 종료 후 적용 — 런 중 편집 시 분석 오염)

@@ -9,7 +9,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { clusterItemsByKeyword } = require('./orchestrator')._test;
+const { classifyTier } = require('./orchestrator')._test;
 
 const LABEL_COLORS = {
   'IT': '#3b82f6', '경제': '#10b981', '투자': '#8b5cf6', '시사': '#ef4444',
@@ -121,25 +121,20 @@ function renderLabelSection(data, idx) {
   const color = getLabelColor(label);
   const safe = safeId(label);
   const dupRemoved = data.stats && data.stats.duplicates_removed ? data.stats.duplicates_removed : 0;
-  const statLine = `<div class="sec-stat"><span>📰 ${items.length}개</span>${dupRemoved ? `<span class="dim">· 중복 ${dupRemoved} 제거</span>` : ''}</div>`;
 
-  // 메일(message_id)별 그룹 → "KDI류"(한 메일이 짧은 항목 다수)만 목록형으로.
-  // 긴 기사형 뉴스레터는 항목 수가 많아도 카드로 유지.
-  const groups = {};
-  for (const it of items) { const m = it.message_id || '_'; (groups[m] = groups[m] || []).push(it); }
-  const listMsgIds = new Set();
-  for (const m of Object.keys(groups)) {
-    const g = groups[m];
-    const avg = g.reduce((s, i) => s + (i.summary || '').length, 0) / g.length;
-    if (g.length >= 25 && avg < 110) listMsgIds.add(m);
-  }
-  const cardItems = items.filter(it => !listMsgIds.has(it.message_id || '_'));
-  const listItems = items.filter(it => listMsgIds.has(it.message_id || '_'));
+  // 충실도(tier) 2단 분리: major(주요 기사)=카드 위, brief(간단 소식)=목록 아래.
+  //   본문만으로 추출 → 충실 요약 가능한 것은 카드, 티저 한두 줄은 컴팩트 목록으로 위임.
+  const cardItems = items.filter(it => classifyTier(it) === 'major');
+  const listItems = items.filter(it => classifyTier(it) !== 'major');
+
+  const statLine = `<div class="sec-stat"><span>📰 ${items.length}개</span>${listItems.length ? `<span class="dim">· 주요 ${cardItems.length} · 간단 ${listItems.length}</span>` : ''}${dupRemoved ? `<span class="dim">· 중복 ${dupRemoved} 제거</span>` : ''}</div>`;
 
   const cardsHtml = cardItems.length ? `<div class="cards">${cardItems.map(renderCard).join('')}</div>` : '';
+  // brief는 목록 토글. 주요 기사가 없으면(순수 목록형 라벨) 펼친 상태로 노출.
+  const listOpen = cardItems.length === 0 ? ' open' : '';
   const listHtml = listItems.length
-    ? `<details class="list-toggle">
-        <summary><span class="toggle-label">📋 간추린 소식 ${listItems.length}건</span><span class="toggle-chev">▾</span></summary>
+    ? `<details class="list-toggle"${listOpen}>
+        <summary><span class="toggle-label">📋 간단 소식 ${listItems.length}건</span><span class="toggle-chev">▾</span></summary>
         <ul class="rows">${listItems.map(renderRow).join('')}</ul>
       </details>` : '';
 

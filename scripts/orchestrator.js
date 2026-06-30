@@ -223,6 +223,37 @@ function createLimiter(concurrency) {
   });
 }
 
+// 충실도(tier) 분류 기준: 본문만으로 추출하므로 요약 길이로 깊이를 판정한다.
+//   major = 본문이 충실해 충실 요약 가능(카드, 키워드+링크). brief = 티저 한두 줄(목록, 제목+한줄+링크).
+//   요약 길이 단일 기준 → 결정적·LLM 비의존·병합 후에도 동일하게 재계산 가능.
+const MAJOR_TIER_MIN_CHARS = 140;
+
+/**
+ * 아이템 충실도 분류. summary 길이만으로 결정(결정적). 'major' | 'brief'.
+ * @param {object} item - {summary}
+ * @returns {'major'|'brief'}
+ */
+function classifyTier(item) {
+  const len = (item && typeof item.summary === 'string') ? item.summary.trim().length : 0;
+  return len >= MAJOR_TIER_MIN_CHARS ? 'major' : 'brief';
+}
+
+/**
+ * 아이템 링크의 추적 래퍼를 오프라인 언래핑(html_to_text.cleanTrackingParams 재사용, 네트워크 X).
+ * cleanTrackingParams가 없거나(테스트 mock) 오류 시 원본 유지 → 누락/크래시 방지.
+ * @param {string} link
+ * @returns {string}
+ */
+function cleanItemLink(link) {
+  if (!link || typeof link !== 'string') return '';
+  try {
+    const { cleanTrackingParams } = require('./html_to_text');
+    return typeof cleanTrackingParams === 'function' ? cleanTrackingParams(link) : link;
+  } catch (e) {
+    return link;
+  }
+}
+
 const CONFIG = {
   concurrencyLimit: 3,    // 병렬 3개 처리
 
@@ -950,10 +981,14 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           });
         }
 
-        // 공통: 메타데이터 추가 후 저장 (단일 write)
+        // 공통: 메타데이터 + tier + 링크 언래핑 후 저장 (단일 write)
         if (result && result.items) {
           const enrichedItems = result.items.map(item => ({
             ...item,
+            // 추적 리다이렉트(list-manage/track/click·lp=)를 오프라인 언래핑(네트워크 X) → 클릭 직링크 확보
+            link: cleanItemLink(item.link),
+            // 충실도 분류(요약 길이 기준): brief는 목록형, major는 카드형으로 렌더
+            tier: classifyTier(item),
             source_email: senderEmail,
             message_id: messageId
           }));
@@ -1201,12 +1236,17 @@ async function fetchGmailMessages(label, timeRange, outputDir) {
  */
 async function convertHtmlToText(rawDir, cleanDir) {
   const { htmlToText, cleanNewsletterText } = require('./html_to_text');
-  const { enrichWithArticles } = require('./fetch_articles');
+
+  // 원문 링크 크롤링은 기본 비활성(ENABLE_CRAWL=1로만 활성).
+  //   크롤링은 티저+전문 이중추출·아카이브 과추출·할루시네이션의 근원이라 제거됨(전수 품질대조 결정).
+  //   본문만으로 추출하고, 깊이는 tier(major/brief) + 원문 링크로 위임한다.
+  const crawlEnabled = process.env.ENABLE_CRAWL === '1';
+  const enrichWithArticles = crawlEnabled ? require('./fetch_articles').enrichWithArticles : null;
 
   const msgFiles = fs.readdirSync(rawDir).filter(f => f.startsWith('msg_'));
 
-  // 순차 처리 (원문 크롤링 포함으로 병렬 축소)
-  const PARALLEL_LIMIT = 3;
+  // 크롤링 없으면 입력이 작아 병렬 여유 큼. 크롤링 시에는 외부 부하 고려해 동일 유지.
+  const PARALLEL_LIMIT = crawlEnabled ? 3 : 6;
   for (let i = 0; i < msgFiles.length; i += PARALLEL_LIMIT) {
     const batch = msgFiles.slice(i, i + PARALLEL_LIMIT);
 
@@ -1227,8 +1267,8 @@ async function convertHtmlToText(rawDir, cleanDir) {
         cleanText = cleanNewsletterText(cleanText);
       }
 
-      // 원문 링크 크롤링으로 본문 보강
-      if (cleanText.length > 0) {
+      // 원문 링크 크롤링으로 본문 보강 (ENABLE_CRAWL=1일 때만; 기본 비활성)
+      if (enrichWithArticles && cleanText.length > 0) {
         try {
           cleanText = await enrichWithArticles(cleanText, {
             maxUrls: 15,
@@ -1266,52 +1306,43 @@ function generateMarkdown(merged, date) {
   let md = `# ${merged.label} 메일 정리 (${dateStr})\n\n`;
   md += `> 총 ${merged.items.length}개 아이템\n\n`;
   md += `---\n\n`;
+  md += renderItemsByTierMd(merged.items);
+  return md;
+}
 
-  // 목록형 뉴스레터 감지: 아이템 30개 이상 + 평균 요약 100자 미만
-  const avgSummaryLen = merged.items.length > 0
-    ? merged.items.reduce((s, i) => s + (i.summary?.length || 0), 0) / merged.items.length
-    : 999;
-  const isListType = merged.items.length >= 30 && avgSummaryLen < 100;
+/**
+ * 아이템을 tier 2단으로 MD 렌더: major(주요 기사) 충실 요약 위 → brief(간단 소식) 한 줄 아래.
+ * 라벨 헤더는 호출부에서 처리. 빈 입력은 빈 문자열.
+ * @param {Array} items
+ * @returns {string}
+ */
+function renderItemsByTierMd(items) {
+  const list = items || [];
+  const major = list.filter(it => classifyTier(it) === 'major');
+  const brief = list.filter(it => classifyTier(it) !== 'major');
 
-  if (isListType) {
-    // === 목록형 뉴스레터: 클러스터링 + 토글 ===
-    const clusters = clusterItemsByKeyword(merged.items, 0.15);
+  let md = '';
+  major.forEach((item, i) => {
+    md += `## ${i + 1}. ${item.title}\n\n`;
+    md += `${item.summary}\n\n`;
+    if (item.keywords && item.keywords.length > 0) {
+      md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
+    }
+    if (item.link) {
+      md += `[원문 보기](${item.link})\n\n`;
+    }
+    md += `---\n\n`;
+  });
 
-    md += `이번 호 주요 동향:\n\n`;
-    clusters.forEach(cluster => {
-      md += `**${cluster.representative_title}** 외 ${cluster.items_count - 1}건\n\n`;
-    });
-
-    md += `\n<details>\n<summary>📂 전체 목록 펼치기 (${merged.items.length}건)</summary>\n\n`;
-
-    merged.items.forEach((item, i) => {
-      md += `${i + 1}. **${item.title}**`;
-      if (item.summary && item.summary !== item.title) {
-        md += ` ${item.summary}`;
-      }
-      if (item.link) {
-        md += ` [원문 보기](${item.link})`;
-      }
+  if (brief.length > 0) {
+    md += `## 📋 간단 소식 (${brief.length}건)\n\n`;
+    brief.forEach(item => {
+      md += `- **${item.title}**`;
+      if (item.summary && item.summary !== item.title) md += ` — ${item.summary}`;
+      if (item.link) md += ` [원문](${item.link})`;
       md += `\n`;
     });
-
-    md += `\n</details>\n\n---\n\n`;
-  } else {
-    // === 일반 뉴스레터: 기존 방식 ===
-    merged.items.forEach((item, i) => {
-      md += `## ${i + 1}. ${item.title}\n\n`;
-      md += `${item.summary}\n\n`;
-
-      if (item.keywords && item.keywords.length > 0) {
-        md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
-      }
-
-      if (item.link) {
-        md += `[원문 보기](${item.link})\n\n`;
-      }
-
-      md += `---\n\n`;
-    });
+    md += `\n---\n\n`;
   }
 
   return md;
@@ -1366,21 +1397,7 @@ function generateCombinedMarkdown(mergedDir, date) {
     md += `# ${data.label}\n\n`;
     md += `> ${items.length}개 아이템\n\n`;
 
-    items.forEach((item, i) => {
-      md += `## ${i + 1}. ${item.title}\n\n`;
-      md += `${item.summary}\n\n`;
-
-      if (item.keywords && item.keywords.length > 0) {
-        md += `**키워드**: ${item.keywords.map(k => `#${k}`).join(' ')}\n\n`;
-      }
-
-      // 링크 추가
-      if (item.link) {
-        md += `**링크**: [원문 보기](${item.link})\n\n`;
-      }
-
-      md += `---\n\n`;
-    });
+    md += renderItemsByTierMd(items);
 
     // 라벨 간 구분선 (마지막 라벨 제외)
     if (labelIndex < allLabelsData.length - 1) {
@@ -1586,6 +1603,8 @@ module.exports = {
     FailedBatchManager,
     findMergeCandidates,
     normalizeUrl,
+    classifyTier,
+    cleanItemLink,
     clusterItemsByKeyword,
     parseArgs,
     calculateTimeRange,

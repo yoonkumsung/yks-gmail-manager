@@ -393,7 +393,21 @@ function renderLabelTab(data, idx) {
   const color = getLabelColor(data.label);
   const items = data.items || [];
 
-  const itemsHtml = items.map((item, itemIdx) => renderItemCard(item, itemIdx, data.label, color)).join('\n');
+  // 충실도(tier) 2단: major(주요 기사) 카드 위 → brief(간단 소식) 아래.
+  //   tier 필드(orchestrator classifyTier로 기록)가 없으면 요약 길이로 폴백 판정.
+  const tierOf = (it) => (it && (it.tier === 'major' || it.tier === 'brief'))
+    ? it.tier
+    : ((it && typeof it.summary === 'string' ? it.summary.trim().length : 0) >= 140 ? 'major' : 'brief');
+  const majorItems = items.filter(it => tierOf(it) === 'major');
+  const briefItems = items.filter(it => tierOf(it) !== 'major');
+
+  let idxCounter = 0;
+  const majorHtml = majorItems.map(item => renderItemCard(item, idxCounter++, data.label, color)).join('\n');
+  const briefHtml = briefItems.length
+    ? `<div class="brief-section-header">📋 간단 소식 ${briefItems.length}건</div>`
+      + briefItems.map(item => renderItemCard(item, idxCounter++, data.label, color)).join('\n')
+    : '';
+  const itemsHtml = majorHtml + briefHtml;
 
   const statsLine = `<div class="label-stats-bar">
     <div class="label-stats-left">
@@ -1100,6 +1114,22 @@ function generateStyles(labelColorCss) {
     }
     .items-list > .source-group-header:first-child {
       margin-top: 0;
+    }
+
+    /* ============================================
+       간단 소식(brief) 구분 헤더
+       ============================================ */
+    .brief-section-header {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 0.6rem 0.25rem 0.25rem;
+      margin-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+    }
+    .items-list > .brief-section-header:first-child {
+      margin-top: 0;
+      border-top: none;
     }
 
     /* ============================================

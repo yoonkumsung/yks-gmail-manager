@@ -22,10 +22,45 @@ const {
   extractSenderEmail,
   generateMarkdown,
   generateCombinedMarkdown,
-  checkSetup
+  checkSetup,
+  classifyTier,
+  cleanItemLink
 } = orchestrator._test;
 
 module.exports = async function () {
+
+  await describe('classifyTier (충실도 분류)', async () => {
+    await it('요약 140자 이상 → major', () => {
+      assert.equal(classifyTier({ summary: 'x'.repeat(140) }), 'major');
+      assert.equal(classifyTier({ summary: 'x'.repeat(300) }), 'major');
+    });
+    await it('요약 140자 미만 → brief', () => {
+      assert.equal(classifyTier({ summary: 'x'.repeat(139) }), 'brief');
+      assert.equal(classifyTier({ summary: '한 줄 티저' }), 'brief');
+    });
+    await it('요약 없음/공백 → brief', () => {
+      assert.equal(classifyTier({}), 'brief');
+      assert.equal(classifyTier({ summary: '   ' }), 'brief');
+      assert.equal(classifyTier(null), 'brief');
+    });
+  });
+
+  await describe('cleanItemLink (오프라인 링크 언래핑)', async () => {
+    await it('추적 래퍼(lp=) → 실제 URL 언래핑', () => {
+      const wrapped = 'https://track.example.com/collect?lp=https%3A%2F%2Fnews.com%2Farticle%3Fid%3D5&utm_source=nl';
+      assert.includes(cleanItemLink(wrapped), 'news.com/article');
+    });
+    await it('utm 파라미터 제거', () => {
+      const out = cleanItemLink('https://news.com/a?id=5&utm_source=nl');
+      assert.includes(out, 'id=5');
+      assert.notIncludes(out, 'utm_source');
+    });
+    await it('빈/비문자열 → 빈 문자열', () => {
+      assert.equal(cleanItemLink(''), '');
+      assert.equal(cleanItemLink(null), '');
+      assert.equal(cleanItemLink(undefined), '');
+    });
+  });
 
   await describe('parseArgs', async () => {
     await it('기본값: schedule 모드, date/labels null', () => {
@@ -283,40 +318,49 @@ module.exports = async function () {
       assert.includes(md, '총 0개 아이템');
     });
 
-    await it('일반 뉴스레터 (< 30개) → ## 헤더 + 요약 + 키워드 + 링크', () => {
+    await it('major 아이템(충실 요약) → ## 카드형 헤더 + 요약 + 키워드 + 링크', () => {
       const merged = {
         label: 'IT',
         items: [
-          { title: '제목1', summary: '요약1', keywords: ['k1', 'k2'], link: 'https://x.com/1' }
+          // 140자 이상 → major(카드형)
+          { title: '제목1', summary: '요약1 '.repeat(40).trim(), keywords: ['k1', 'k2'], link: 'https://x.com/1' }
         ]
       };
       const md = generateMarkdown(merged, date);
       assert.includes(md, '## 1. 제목1');
-      assert.includes(md, '요약1');
       assert.includes(md, '#k1 #k2');
       assert.includes(md, '[원문 보기](https://x.com/1)');
     });
 
-    await it('링크 없으면 [원문 보기] 표시 안 함', () => {
+    await it('brief 아이템(티저) → 간단 소식 한 줄 + [원문]', () => {
       const merged = {
         label: 'IT',
-        items: [{ title: 'T', summary: 'S', keywords: [], link: '' }]
+        items: [{ title: '짧은제목', summary: '한 줄 티저', keywords: [], link: 'https://x.com/2' }]
+      };
+      const md = generateMarkdown(merged, date);
+      assert.includes(md, '## 📋 간단 소식 (1건)');
+      assert.includes(md, '- **짧은제목** — 한 줄 티저 [원문](https://x.com/2)');
+    });
+
+    await it('링크 없으면 [원문 보기] 표시 안 함 (major)', () => {
+      const merged = {
+        label: 'IT',
+        items: [{ title: 'T', summary: 'S '.repeat(80).trim(), keywords: [], link: '' }]
       };
       const md = generateMarkdown(merged, date);
       assert.notIncludes(md, '원문 보기');
     });
 
-    await it('목록형 뉴스레터 감지 (30개+, 짧은 요약) → 토글 + 클러스터', () => {
+    await it('티저 다수(30개+, 짧은 요약) → 간단 소식 목록으로 분리', () => {
       const items = Array.from({ length: 35 }, (_, i) => ({
         title: `짧은 뉴스 ${i}`,
-        summary: `${i}자`,  // 매우 짧음
+        summary: `${i}자`,  // 매우 짧음 → brief
         keywords: [`k${i % 5}`],
         link: `https://x.com/${i}`
       }));
       const md = generateMarkdown({ label: '뉴스', items }, date);
-      assert.includes(md, '<details>');
-      assert.includes(md, '전체 목록 펼치기 (35건)');
-      assert.includes(md, '이번 호 주요 동향');
+      assert.includes(md, '## 📋 간단 소식 (35건)');
+      assert.includes(md, '- **짧은 뉴스 0**');
     });
 
     await it('KST 날짜 포맷 적용', () => {
@@ -355,8 +399,9 @@ module.exports = async function () {
       assert.includes(md, '총 2개 아이템');
       assert.includes(md, '# IT');
       assert.includes(md, '# 경제');
-      assert.includes(md, '## 1. A');
-      assert.includes(md, '## 1. B');
+      // 짧은 요약(sA/sB)은 brief → 간단 소식 목록으로 렌더
+      assert.includes(md, '- **A**');
+      assert.includes(md, '- **B**');
     });
 
     await it('손상된 merged 파일 1개는 건너뛰고 나머지 처리', () => {
