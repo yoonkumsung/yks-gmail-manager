@@ -1961,7 +1961,25 @@
       },
       "detected_at": "2026-06-24T17:29:35.604Z",
       "skill_generated": true
+    },
+    {
+      "id": "naver",
+      "sender": "newwordnewattitude@naver.com",
+      "name": "\"사단법인 새말새몸짓\" <newwordnewattitude@naver.com>",
+      "labels": [
+        "소셜포럼"
+      ],
+      "frequency": 1,
+      "skill_file": "skills/newsletters/SKILL_naver.md",
+      "encoding": "utf-8",
+      "encoding_ok": true,
+      "structure": {
+        "type": "single-topic",
+        "item_count_avg": 1
+      },
+      "detected_at": "2026-06-29T01:01:32.452Z",
+      "skill_generated": true
     }
   ],
-  "last_scan": "2026-06-24T17:57:24.416Z"
+  "last_scan": "2026-06-29T01:01:58.860Z"
 }
