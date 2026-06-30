@@ -1,5 +1,5 @@
 /**
- * 백필 prep: 특정 리포트 날짜의 메일을 fetch → 텍스트화 → 원문크롤링하여 clean_*.json 생성.
+ * 백필 prep: 특정 리포트 날짜의 메일을 fetch → 텍스트화하여 clean_*.json 생성(크롤은 옵션 ENABLE_CRAWL, 기본 off).
  * LLM 미사용. 추출은 별도 단계(Haiku 서브에이전트)에서 수행.
  *
  * 윈도우: 스케줄 모드와 동일하게 (D-1) 09:41 ~ D 09:40 KST (연속 날짜 타일링, 중복/누락 방지)
@@ -49,7 +49,7 @@ console.log(`출력: ${baseDir}\n`);
     process.stdout.write(` raw ${raws.length}`);
 
     if (raws.length > 0) {
-      process.stdout.write(` → clean/crawl...`);
+      process.stdout.write(` → clean...`);
       await orch.convertHtmlToText(rawDir, cleanDir);
     }
     const cleans = fs.readdirSync(cleanDir).filter(f => f.startsWith('clean_'));

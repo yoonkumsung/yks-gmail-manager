@@ -46,15 +46,15 @@
 
 1. Identify sections by '##' headings
 2. For each section, extract the heading as title (clean up)
-3. Extract the following paragraphs as summary
-4. Find the first hyperlink that points to a full article (scmp.com) and use as link
-5. Skip 'best of' section items if no body text
+3. Extract the following paragraphs (mail body only) as summary — write as much as the body supports. Substantial body → major tier; short teaser only → one-line summary + link delegation (brief tier)
+4. Find the first hyperlink that points to a full article (scmp.com) and use as link (required)
+5. Do not invent facts/figures/people not present in the mail body
+6. Skip 'best of' section items if no body text
 
 ---
 
 ## 제외 영역
 
-- The appended full articles after '=== 원문 기사 전문 ==='
 - The 'best of' section if only titles and no body text
 
 ---

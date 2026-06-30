@@ -62,7 +62,6 @@ The New York Times <yourplaces-globalupdate-noreply@nytimes.com> 뉴스레터의
 - 'Subscribe to The Times', 'Get The New York Times app' 등 구독 CTA
 - 'Change Your Email', 'Privacy Policy', 'Contact Us', 'California Notices' 등 푸터 링크
 - 'The New York Times Company. 620 Eighth Avenue...' 주소
-- '=== 원문 기사 전문 ===' 이후의 모든 콘텐츠
 
 ---
 

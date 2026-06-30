@@ -322,8 +322,8 @@ function normalizeUrl(rawUrl) {
  * 유사한 아이템만 LLM에 보내고, 유사도 없는 아이템은 바로 통과
  *
  * dedup 핵심: 같은 원문 URL(정규화 link)을 가리키는 아이템은 Jaccard 유사도와
- * 무관하게 무조건 병합 후보로 묶는다. 뉴스레터 본문 티저 요약과 크롤링된 원문 전문이
- * 별개 아이템으로 추출돼도 같은 link를 공유하므로, 청킹/유사도와 무관하게 견고하게 잡힌다.
+ * 무관하게 무조건 병합 후보로 묶는다. 서로 다른 뉴스레터가 같은 기사를 다뤄 같은 link를
+ * 공유하면 청킹/유사도와 무관하게 견고하게 잡힌다.
  * link가 다르면 절대 묶지 않으므로 오병합 위험은 없다.
  */
 function findMergeCandidates(items) {
@@ -1104,6 +1104,9 @@ async function processLabel(label, timeRange, runDir, progressManager, failedBat
           mergedItems.push(...mergeCheckItems);
         }
 
+        // tier 재부여: 병합으로 summary가 길어진 brief→major 승격 반영(코드가 authoritative)
+        mergedItems = mergedItems.map(it => ({ ...it, tier: classifyTier(it) }));
+
         merged = {
           label: label.name,
           merged_at: new Date().toISOString(),
@@ -1339,7 +1342,12 @@ function renderItemsByTierMd(items) {
     brief.forEach(item => {
       md += `- **${item.title}**`;
       if (item.summary && item.summary !== item.title) md += ` — ${item.summary}`;
-      if (item.link) md += ` [원문](${item.link})`;
+      // 정보누락 제로: link 없으면 message_id 기반 Gmail 원본 메일로 폴백
+      if (item.link) {
+        md += ` [원문](${item.link})`;
+      } else if (item.message_id) {
+        md += ` [메일 보기](https://mail.google.com/mail/u/0/#inbox/${item.message_id})`;
+      }
       md += `\n`;
     });
     md += `\n---\n\n`;

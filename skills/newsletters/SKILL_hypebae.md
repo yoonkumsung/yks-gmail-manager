@@ -61,7 +61,6 @@ Hypebae <noreply@hypebae.com> 뉴스레터의 구조 분석 및 추출 규칙입
 - 'Advertisement' lines
 - 'Across the Board' section (no links)
 - Footer with subscription info and copyright
-- Full article text after '=== 원문 기사 전문 ==='
 
 ---
 
