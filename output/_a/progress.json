@@ -1,0 +1,13 @@
+{
+  "labels": {
+    "IT": {
+      "gmail_fetch": "completed",
+      "html_to_text": "completed",
+      "llm_extract": "completed",
+      "merge": "completed"
+    }
+  },
+  "started_at": "2026-06-29T14:47:16.003Z",
+  "updated_at": "2026-06-29T16:33:53.138Z",
+  "completed_at": "2026-06-29T16:33:53.138Z"
+}

@@ -1,0 +1,647 @@
+[2026-06-29T14:48:02.856Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T14:48:02.858Z] [DEBUG] 입력 데이터: 42608자
+[2026-06-29T14:48:02.858Z] [INFO] 입력 데이터가 큼 (42608자), 청크 분할 처리
+[2026-06-29T14:48:02.859Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 10개 청크
+[2026-06-29T14:48:02.859Z] [INFO] 10개 청크로 분할 처리
+[2026-06-29T14:48:02.860Z] [INFO]   청크 1/10 처리 중...
+[2026-06-29T14:48:02.861Z] [DEBUG] API 호출 시작 (프롬프트 8016자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:07.643Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:07.643Z] [WARN]   청크 1 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2581,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"1641225d-78cf-48ed-a22a-a74544cc1587","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"f7460fc7-73e9-4675-9af5-8e889ae562aa"}
+[2026-06-29T14:48:07.643Z] [INFO]   청크 2/10 처리 중...
+[2026-06-29T14:48:07.644Z] [DEBUG] API 호출 시작 (프롬프트 8094자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:12.576Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:12.577Z] [WARN]   청크 2 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2785,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"fda7a132-eb2e-4bfe-a1af-2035b6ce88a7","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"b80163e4-b2ac-41a9-bae6-ae423cfe598b"}
+[2026-06-29T14:48:12.577Z] [INFO]   청크 3/10 처리 중...
+[2026-06-29T14:48:12.578Z] [DEBUG] API 호출 시작 (프롬프트 7848자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:17.402Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:17.403Z] [WARN]   청크 3 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2566,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"44c20799-4d68-4948-8d27-9eb2344013d3","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"21be25f8-98d5-43a2-9d5c-514f7237ad55"}
+[2026-06-29T14:48:17.403Z] [INFO]   청크 4/10 처리 중...
+[2026-06-29T14:48:17.403Z] [DEBUG] API 호출 시작 (프롬프트 7729자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:22.324Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:22.324Z] [WARN]   청크 4 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2756,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"e2bda94e-a35b-4cf3-b033-3d5791b1d12d","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"e5e1a950-989d-4604-8a5b-07093e9f2062"}
+[2026-06-29T14:48:22.324Z] [INFO]   청크 5/10 처리 중...
+[2026-06-29T14:48:22.325Z] [DEBUG] API 호출 시작 (프롬프트 7990자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:27.493Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:27.494Z] [WARN]   청크 5 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":3024,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"71270128-d688-40b3-97a0-6b692c38b6a5","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"5f924d0e-90f8-48fc-9d90-aafad39a6dca"}
+[2026-06-29T14:48:27.494Z] [INFO]   청크 6/10 처리 중...
+[2026-06-29T14:48:27.495Z] [DEBUG] API 호출 시작 (프롬프트 7967자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:29.967Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:29.968Z] [WARN]   청크 6 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2756,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"faab5200-9b8e-4b2a-bc4e-373f0b77c08d","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"5de22a6f-bc98-4283-9bca-47369066fb14"}
+[2026-06-29T14:48:29.968Z] [INFO]   청크 7/10 처리 중...
+[2026-06-29T14:48:29.968Z] [DEBUG] API 호출 시작 (프롬프트 7928자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:42.358Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:42.359Z] [WARN]   청크 7 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":9669,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"294abb6c-3d5f-4a18-a58c-7e02d6c23077","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"ff0ae0c2-b85e-4a82-8932-3949acb253dd"}
+[2026-06-29T14:48:42.359Z] [INFO]   청크 8/10 처리 중...
+[2026-06-29T14:48:42.359Z] [DEBUG] API 호출 시작 (프롬프트 8171자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:47.299Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:47.300Z] [WARN]   청크 8 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2752,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"51dcf3aa-230c-4467-8d39-73484d50e912","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"8ed06170-2b20-45e4-857b-2ca2c04ef9f7"}
+[2026-06-29T14:48:47.300Z] [INFO]   청크 9/10 처리 중...
+[2026-06-29T14:48:47.300Z] [DEBUG] API 호출 시작 (프롬프트 8063자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:51.894Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:51.895Z] [WARN]   청크 9 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2456,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"54f0e1a7-81da-45f7-bb05-617c6d984180","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"53dc0ffa-23da-4f96-a616-ff6ee7bcaca5"}
+[2026-06-29T14:48:51.895Z] [INFO]   청크 10/10 처리 중...
+[2026-06-29T14:48:51.895Z] [DEBUG] API 호출 시작 (프롬프트 5698자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:56.543Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:56.544Z] [WARN]   청크 10 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2538,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"a63893e9-bd7d-40d8-9537-9c2859ed3f69","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"97e76a24-39df-4da1-8f6a-2faaf0d23efb"}
+[2026-06-29T14:48:56.544Z] [INFO] 청크 처리 완료: 성공 0, 실패 10
+[2026-06-29T14:48:56.545Z] [INFO] [완료] 총 0개 아이템 추출
+[2026-06-29T14:48:56.547Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T14:48:56.549Z] [DEBUG] 입력 데이터: 15326자
+[2026-06-29T14:48:56.549Z] [INFO] 입력 데이터가 큼 (15326자), 청크 분할 처리
+[2026-06-29T14:48:56.549Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 3개 청크
+[2026-06-29T14:48:56.549Z] [INFO] 3개 청크로 분할 처리
+[2026-06-29T14:48:56.549Z] [INFO]   청크 1/3 처리 중...
+[2026-06-29T14:48:56.549Z] [DEBUG] API 호출 시작 (프롬프트 8171자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:48:58.754Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:48:58.755Z] [INFO]   청크 2/3 처리 중...
+[2026-06-29T14:48:58.755Z] [WARN]   청크 1 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2646,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"cd49a5b8-9453-41ad-92e0-7263528a76a3","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"0e46b023-5605-414f-b52e-3d5cf6336b5a"}
+[2026-06-29T14:48:58.755Z] [DEBUG] API 호출 시작 (프롬프트 8164자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:06.455Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:06.456Z] [WARN]   청크 2 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":5437,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"96f4f38b-ff68-4803-9c2a-1feb69bf69bd","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"bd2336c1-781e-4fc0-bade-a110e4616e1b"}
+[2026-06-29T14:49:06.456Z] [INFO]   청크 3/3 처리 중...
+[2026-06-29T14:49:06.456Z] [DEBUG] API 호출 시작 (프롬프트 7936자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:11.222Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:11.223Z] [WARN]   청크 3 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2671,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"26c164d6-e438-4657-ad1d-f01a841dd142","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a3eaeeea-57bf-471f-97f7-c1a6eda446c0"}
+[2026-06-29T14:49:11.223Z] [INFO] 청크 처리 완료: 성공 0, 실패 3
+[2026-06-29T14:49:11.223Z] [INFO] [완료] 총 0개 아이템 추출
+[2026-06-29T14:49:11.236Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T14:49:11.236Z] [DEBUG] 입력 데이터: 47782자
+[2026-06-29T14:49:11.236Z] [INFO] 입력 데이터가 큼 (47782자), 청크 분할 처리
+[2026-06-29T14:49:11.237Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 11개 청크
+[2026-06-29T14:49:11.237Z] [INFO] 11개 청크로 분할 처리
+[2026-06-29T14:49:11.237Z] [INFO]   청크 1/11 처리 중...
+[2026-06-29T14:49:11.237Z] [DEBUG] API 호출 시작 (프롬프트 7939자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:16.061Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:16.061Z] [WARN]   청크 1 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2637,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"d0d124ff-562c-478b-aa1e-d232f4f320f5","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"f86def4e-73e0-4fd1-8eac-e54300a604f4"}
+[2026-06-29T14:49:16.061Z] [INFO]   청크 2/11 처리 중...
+[2026-06-29T14:49:16.062Z] [DEBUG] API 호출 시작 (프롬프트 7892자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:21.065Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:21.066Z] [WARN]   청크 2 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2759,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"a36cdeed-d131-44e8-96f6-bd2a6bd43c52","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"840477cb-9a3c-4a22-856b-c90d147baa46"}
+[2026-06-29T14:49:21.066Z] [INFO]   청크 3/11 처리 중...
+[2026-06-29T14:49:21.066Z] [DEBUG] API 호출 시작 (프롬프트 8088자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:26.135Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:26.135Z] [WARN]   청크 3 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2857,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"3adedeec-fe5e-49fd-b0fb-754bbb016b5d","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"55008322-f52d-4083-af60-ebc4319eccd4"}
+[2026-06-29T14:49:26.135Z] [INFO]   청크 4/11 처리 중...
+[2026-06-29T14:49:26.136Z] [DEBUG] API 호출 시작 (프롬프트 7378자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:28.657Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:28.657Z] [WARN]   청크 4 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2767,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"94d1c857-6b91-4996-965f-698ab3177633","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"1f004b3f-e812-411a-a811-a649799d9469"}
+[2026-06-29T14:49:28.658Z] [INFO]   청크 5/11 처리 중...
+[2026-06-29T14:49:28.658Z] [DEBUG] API 호출 시작 (프롬프트 8122자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:33.708Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:33.709Z] [WARN]   청크 5 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2778,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"e010b853-e042-4c9d-a8f3-350045479b5f","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a431b3e0-7a1d-4b78-8c95-f40be77f87cf"}
+[2026-06-29T14:49:33.709Z] [INFO]   청크 6/11 처리 중...
+[2026-06-29T14:49:33.709Z] [DEBUG] API 호출 시작 (프롬프트 7132자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:38.868Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:38.869Z] [WARN]   청크 6 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2924,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()","stop_reason":"stop_sequence","session_id":"0050f69b-895f-4796-885b-7ef432fe17b8","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"comple
+[2026-06-29T14:49:38.869Z] [INFO]   청크 7/11 처리 중...
+[2026-06-29T14:49:38.869Z] [DEBUG] API 호출 시작 (프롬프트 8175자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T14:49:43.743Z] [DEBUG] claude CLI 종료 (code 1, 모델 haiku)
+[2026-06-29T14:49:43.743Z] [WARN]   청크 7 실패: claude CLI 실패 (code 1): {"type":"result","subtype":"success","is_error":true,"api_error_status":401,"duration_ms":2732,"duration_api_ms":0,"num_turns":1,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials","stop_reason":"stop_sequence","session_id":"f59ed057-5fb3-41b4-ad83-40326d350630","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"41e3e3b0-bedc-4f7f-a124-55f2effb4a00"}
+[2026-06-29T14:49:43.744Z] [INFO]   청크 8/11 처리 중...
+[2026-06-29T14:49:43.744Z] [DEBUG] API 호출 시작 (프롬프트 7859자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:21:39.016Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:21:39.017Z] [DEBUG] 입력 데이터: 47782자
+[2026-06-29T15:21:39.017Z] [INFO] 입력 데이터가 큼 (47782자), 청크 분할 처리
+[2026-06-29T15:21:39.018Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 11개 청크
+[2026-06-29T15:21:39.018Z] [INFO] 11개 청크로 분할 처리
+[2026-06-29T15:21:39.018Z] [INFO]   청크 1/11 처리 중...
+[2026-06-29T15:21:39.019Z] [DEBUG] API 호출 시작 (프롬프트 7939자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:22:54.582Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:22:54.584Z] [INFO] [완료]
+[2026-06-29T15:22:54.584Z] [DEBUG]   청크 1 저장: _chunk_1_of_11_1782746499018.json
+[2026-06-29T15:22:54.584Z] [INFO]   청크 2/11 처리 중...
+[2026-06-29T15:22:54.585Z] [DEBUG] API 호출 시작 (프롬프트 7892자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:24:01.357Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:24:01.358Z] [INFO] [완료]
+[2026-06-29T15:24:01.358Z] [DEBUG]   청크 2 저장: _chunk_2_of_11_1782746574585.json
+[2026-06-29T15:24:01.358Z] [INFO]   청크 3/11 처리 중...
+[2026-06-29T15:24:01.358Z] [DEBUG] API 호출 시작 (프롬프트 8088자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:24:27.645Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:24:27.645Z] [INFO] [완료]
+[2026-06-29T15:24:27.645Z] [DEBUG]   청크 3 저장: _chunk_3_of_11_1782746641358.json
+[2026-06-29T15:24:27.646Z] [INFO]   청크 4/11 처리 중...
+[2026-06-29T15:24:27.646Z] [DEBUG] API 호출 시작 (프롬프트 7378자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:25:13.740Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:25:13.740Z] [INFO] [완료]
+[2026-06-29T15:25:13.740Z] [DEBUG]   청크 4 저장: _chunk_4_of_11_1782746667646.json
+[2026-06-29T15:25:13.740Z] [INFO]   청크 5/11 처리 중...
+[2026-06-29T15:25:13.741Z] [DEBUG] API 호출 시작 (프롬프트 8122자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:25:47.103Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:25:47.104Z] [INFO] [완료]
+[2026-06-29T15:25:47.104Z] [DEBUG]   청크 5 저장: _chunk_5_of_11_1782746713741.json
+[2026-06-29T15:25:47.104Z] [INFO]   청크 6/11 처리 중...
+[2026-06-29T15:25:47.104Z] [DEBUG] API 호출 시작 (프롬프트 7132자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:26:30.625Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:26:30.626Z] [INFO] [완료]
+[2026-06-29T15:26:30.626Z] [DEBUG]   청크 6 저장: _chunk_6_of_11_1782746747104.json
+[2026-06-29T15:26:30.626Z] [INFO]   청크 7/11 처리 중...
+[2026-06-29T15:26:30.626Z] [DEBUG] API 호출 시작 (프롬프트 8175자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:26:40.547Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:26:40.547Z] [DEBUG]   청크 7 저장: _chunk_7_of_11_1782746790626.json
+[2026-06-29T15:26:40.547Z] [INFO] [완료]
+[2026-06-29T15:26:40.548Z] [INFO]   청크 8/11 처리 중...
+[2026-06-29T15:26:40.548Z] [DEBUG] API 호출 시작 (프롬프트 7859자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:27:04.963Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:27:04.963Z] [INFO] [완료]
+[2026-06-29T15:27:04.963Z] [DEBUG]   청크 8 저장: _chunk_8_of_11_1782746800548.json
+[2026-06-29T15:27:04.964Z] [INFO]   청크 9/11 처리 중...
+[2026-06-29T15:27:04.966Z] [DEBUG] API 호출 시작 (프롬프트 8057자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:27:38.615Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:27:38.616Z] [DEBUG]   청크 9 저장: _chunk_9_of_11_1782746824964.json
+[2026-06-29T15:27:38.616Z] [INFO] [완료]
+[2026-06-29T15:27:38.617Z] [INFO]   청크 10/11 처리 중...
+[2026-06-29T15:27:38.617Z] [DEBUG] API 호출 시작 (프롬프트 8114자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:29:13.741Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:29:13.741Z] [INFO] [완료]
+[2026-06-29T15:29:13.741Z] [DEBUG]   청크 10 저장: _chunk_10_of_11_1782746858617.json
+[2026-06-29T15:29:13.741Z] [INFO]   청크 11/11 처리 중...
+[2026-06-29T15:29:13.742Z] [DEBUG] API 호출 시작 (프롬프트 7408자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:30:23.512Z] [INFO] [완료]
+[2026-06-29T15:30:23.510Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:30:23.512Z] [DEBUG]   청크 11 저장: _chunk_11_of_11_1782746953742.json
+[2026-06-29T15:30:23.512Z] [INFO] 청크 처리 완료: 성공 11, 실패 0
+[2026-06-29T15:30:23.524Z] [INFO] [완료] 총 24개 아이템 추출
+[2026-06-29T15:30:23.525Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:30:23.526Z] [DEBUG] 입력 데이터: 34118자
+[2026-06-29T15:30:23.527Z] [INFO] 입력 데이터가 큼 (34118자), 청크 분할 처리
+[2026-06-29T15:30:23.527Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 8개 청크
+[2026-06-29T15:30:23.527Z] [INFO] 8개 청크로 분할 처리
+[2026-06-29T15:30:23.527Z] [INFO]   청크 1/8 처리 중...
+[2026-06-29T15:30:23.528Z] [DEBUG] API 호출 시작 (프롬프트 8170자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:31:23.644Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:31:23.644Z] [INFO] [완료]
+[2026-06-29T15:31:23.644Z] [DEBUG]   청크 1 저장: _chunk_1_of_8_1782747023527.json
+[2026-06-29T15:31:23.645Z] [INFO]   청크 2/8 처리 중...
+[2026-06-29T15:31:23.645Z] [DEBUG] API 호출 시작 (프롬프트 8037자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:31:59.879Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:31:59.880Z] [INFO] [완료]
+[2026-06-29T15:31:59.880Z] [DEBUG]   청크 2 저장: _chunk_2_of_8_1782747083645.json
+[2026-06-29T15:31:59.880Z] [INFO]   청크 3/8 처리 중...
+[2026-06-29T15:31:59.881Z] [DEBUG] API 호출 시작 (프롬프트 7684자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:32:37.782Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:32:37.782Z] [INFO] [완료]
+[2026-06-29T15:32:37.783Z] [DEBUG]   청크 3 저장: _chunk_3_of_8_1782747119881.json
+[2026-06-29T15:32:37.783Z] [INFO]   청크 4/8 처리 중...
+[2026-06-29T15:32:37.783Z] [DEBUG] API 호출 시작 (프롬프트 8097자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:33:55.594Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:33:55.595Z] [INFO] [완료]
+[2026-06-29T15:33:55.595Z] [DEBUG]   청크 4 저장: _chunk_4_of_8_1782747157783.json
+[2026-06-29T15:33:55.595Z] [INFO]   청크 5/8 처리 중...
+[2026-06-29T15:33:55.595Z] [DEBUG] API 호출 시작 (프롬프트 8139자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:34:50.571Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:34:50.572Z] [INFO] [완료]
+[2026-06-29T15:34:50.572Z] [DEBUG]   청크 5 저장: _chunk_5_of_8_1782747235595.json
+[2026-06-29T15:34:50.572Z] [INFO]   청크 6/8 처리 중...
+[2026-06-29T15:34:50.572Z] [DEBUG] API 호출 시작 (프롬프트 8158자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:35:31.044Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:35:31.046Z] [INFO] [완료]
+[2026-06-29T15:35:31.046Z] [DEBUG]   청크 6 저장: _chunk_6_of_8_1782747290572.json
+[2026-06-29T15:35:31.046Z] [INFO]   청크 7/8 처리 중...
+[2026-06-29T15:35:31.047Z] [DEBUG] API 호출 시작 (프롬프트 7769자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:35:48.133Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:35:48.133Z] [INFO] [완료]
+[2026-06-29T15:35:48.133Z] [DEBUG]   청크 7 저장: _chunk_7_of_8_1782747331046.json
+[2026-06-29T15:35:48.134Z] [INFO]   청크 8/8 처리 중...
+[2026-06-29T15:35:48.134Z] [DEBUG] API 호출 시작 (프롬프트 3932자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:36:05.667Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:36:05.668Z] [INFO] [완료]
+[2026-06-29T15:36:05.668Z] [DEBUG]   청크 8 저장: _chunk_8_of_8_1782747348134.json
+[2026-06-29T15:36:05.669Z] [INFO] 청크 처리 완료: 성공 8, 실패 0
+[2026-06-29T15:36:05.673Z] [INFO] [완료] 총 21개 아이템 추출
+[2026-06-29T15:36:05.675Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:36:05.677Z] [DEBUG] 입력 데이터: 38558자
+[2026-06-29T15:36:05.677Z] [INFO] 입력 데이터가 큼 (38558자), 청크 분할 처리
+[2026-06-29T15:36:05.677Z] [INFO]   청크 1/8 처리 중...
+[2026-06-29T15:36:05.677Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 8개 청크
+[2026-06-29T15:36:05.677Z] [INFO] 8개 청크로 분할 처리
+[2026-06-29T15:36:05.678Z] [DEBUG] API 호출 시작 (프롬프트 8141자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:36:59.800Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:36:59.801Z] [INFO] [완료]
+[2026-06-29T15:36:59.801Z] [DEBUG]   청크 1 저장: _chunk_1_of_8_1782747365678.json
+[2026-06-29T15:36:59.802Z] [INFO]   청크 2/8 처리 중...
+[2026-06-29T15:36:59.802Z] [DEBUG] API 호출 시작 (프롬프트 7594자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:37:27.417Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:37:27.417Z] [INFO] [완료]
+[2026-06-29T15:37:27.417Z] [DEBUG]   청크 2 저장: _chunk_2_of_8_1782747419802.json
+[2026-06-29T15:37:27.417Z] [INFO]   청크 3/8 처리 중...
+[2026-06-29T15:37:27.418Z] [DEBUG] API 호출 시작 (프롬프트 8021자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:37:57.197Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:37:57.197Z] [DEBUG]   청크 3 저장: _chunk_3_of_8_1782747447417.json
+[2026-06-29T15:37:57.197Z] [INFO] [완료]
+[2026-06-29T15:37:57.197Z] [INFO]   청크 4/8 처리 중...
+[2026-06-29T15:37:57.198Z] [DEBUG] API 호출 시작 (프롬프트 8122자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:38:36.498Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:38:36.499Z] [INFO] [완료]
+[2026-06-29T15:38:36.499Z] [DEBUG]   청크 4 저장: _chunk_4_of_8_1782747477198.json
+[2026-06-29T15:38:36.499Z] [INFO]   청크 5/8 처리 중...
+[2026-06-29T15:38:36.499Z] [DEBUG] API 호출 시작 (프롬프트 8162자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:39:39.972Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:39:39.973Z] [INFO] [완료]
+[2026-06-29T15:39:39.974Z] [DEBUG]   청크 5 저장: _chunk_5_of_8_1782747516499.json
+[2026-06-29T15:39:39.974Z] [INFO]   청크 6/8 처리 중...
+[2026-06-29T15:39:39.974Z] [DEBUG] API 호출 시작 (프롬프트 8171자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:40:53.392Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:40:53.393Z] [INFO] [완료]
+[2026-06-29T15:40:53.393Z] [DEBUG]   청크 6 저장: _chunk_6_of_8_1782747579974.json
+[2026-06-29T15:40:53.393Z] [INFO]   청크 7/8 처리 중...
+[2026-06-29T15:40:53.393Z] [DEBUG] API 호출 시작 (프롬프트 8141자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:41:31.745Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:41:31.746Z] [DEBUG]   청크 7 저장: _chunk_7_of_8_1782747653393.json
+[2026-06-29T15:41:31.745Z] [INFO] [완료]
+[2026-06-29T15:41:31.746Z] [INFO]   청크 8/8 처리 중...
+[2026-06-29T15:41:31.746Z] [DEBUG] API 호출 시작 (프롬프트 7417자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:42:21.545Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:42:21.546Z] [INFO] [완료]
+[2026-06-29T15:42:21.546Z] [DEBUG]   청크 8 저장: _chunk_8_of_8_1782747691746.json
+[2026-06-29T15:42:21.547Z] [INFO] 청크 처리 완료: 성공 8, 실패 0
+[2026-06-29T15:42:21.552Z] [INFO] [완료] 총 25개 아이템 추출
+[2026-06-29T15:42:21.554Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:42:21.555Z] [DEBUG] 입력 데이터: 19352자
+[2026-06-29T15:42:21.555Z] [INFO] 입력 데이터가 큼 (19352자), 청크 분할 처리
+[2026-06-29T15:42:21.556Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 5개 청크
+[2026-06-29T15:42:21.556Z] [INFO] 5개 청크로 분할 처리
+[2026-06-29T15:42:21.556Z] [DEBUG] API 호출 시작 (프롬프트 7726자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:42:21.556Z] [INFO]   청크 1/5 처리 중...
+[2026-06-29T15:43:09.409Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:43:09.409Z] [INFO] [완료]
+[2026-06-29T15:43:09.409Z] [DEBUG]   청크 1 저장: _chunk_1_of_5_1782747741556.json
+[2026-06-29T15:43:09.409Z] [INFO]   청크 2/5 처리 중...
+[2026-06-29T15:43:09.409Z] [DEBUG] API 호출 시작 (프롬프트 7939자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:44:09.368Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:44:09.369Z] [INFO] [완료]
+[2026-06-29T15:44:09.369Z] [DEBUG]   청크 2 저장: _chunk_2_of_5_1782747789409.json
+[2026-06-29T15:44:09.369Z] [INFO]   청크 3/5 처리 중...
+[2026-06-29T15:44:09.370Z] [DEBUG] API 호출 시작 (프롬프트 8171자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:44:28.046Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:44:28.047Z] [INFO] [완료]
+[2026-06-29T15:44:28.047Z] [DEBUG]   청크 3 저장: _chunk_3_of_5_1782747849369.json
+[2026-06-29T15:44:28.047Z] [INFO]   청크 4/5 처리 중...
+[2026-06-29T15:44:28.047Z] [DEBUG] API 호출 시작 (프롬프트 8175자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:45:08.076Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:45:08.076Z] [INFO] [완료]
+[2026-06-29T15:45:08.077Z] [DEBUG]   청크 4 저장: _chunk_4_of_5_1782747868047.json
+[2026-06-29T15:45:08.077Z] [INFO]   청크 5/5 처리 중...
+[2026-06-29T15:45:08.077Z] [DEBUG] API 호출 시작 (프롬프트 4965자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:45:20.959Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:45:20.959Z] [INFO] [완료]
+[2026-06-29T15:45:20.959Z] [DEBUG]   청크 5 저장: _chunk_5_of_5_1782747908077.json
+[2026-06-29T15:45:20.959Z] [INFO] 청크 처리 완료: 성공 5, 실패 0
+[2026-06-29T15:45:20.972Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:45:20.960Z] [INFO] [완료] 총 4개 아이템 추출
+[2026-06-29T15:45:20.973Z] [DEBUG] 입력 데이터: 7203자
+[2026-06-29T15:45:20.973Z] [INFO] 입력 데이터가 큼 (7203자), 청크 분할 처리
+[2026-06-29T15:45:20.973Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T15:45:20.973Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T15:45:20.973Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T15:45:20.973Z] [DEBUG] API 호출 시작 (프롬프트 7752자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:46:29.132Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:46:29.133Z] [INFO] [완료]
+[2026-06-29T15:46:29.133Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782747920973.json
+[2026-06-29T15:46:29.133Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T15:46:29.134Z] [DEBUG] API 호출 시작 (프롬프트 5731자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:47:00.498Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:47:00.498Z] [INFO] [완료]
+[2026-06-29T15:47:00.498Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782747989134.json
+[2026-06-29T15:47:00.498Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T15:47:00.499Z] [INFO] [완료] 총 3개 아이템 추출
+[2026-06-29T15:47:00.501Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:47:00.501Z] [DEBUG] 입력 데이터: 19666자
+[2026-06-29T15:47:00.501Z] [INFO] 입력 데이터가 큼 (19666자), 청크 분할 처리
+[2026-06-29T15:47:00.502Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 5개 청크
+[2026-06-29T15:47:00.502Z] [INFO] 5개 청크로 분할 처리
+[2026-06-29T15:47:00.502Z] [INFO]   청크 1/5 처리 중...
+[2026-06-29T15:47:00.502Z] [DEBUG] API 호출 시작 (프롬프트 7835자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:47:55.799Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:47:55.800Z] [DEBUG]   청크 1 저장: _chunk_1_of_5_1782748020502.json
+[2026-06-29T15:47:55.799Z] [INFO] [완료]
+[2026-06-29T15:47:55.800Z] [INFO]   청크 2/5 처리 중...
+[2026-06-29T15:47:55.800Z] [DEBUG] API 호출 시작 (프롬프트 8157자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:49:14.753Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:49:14.754Z] [INFO] [완료]
+[2026-06-29T15:49:14.754Z] [DEBUG]   청크 2 저장: _chunk_2_of_5_1782748075800.json
+[2026-06-29T15:49:14.754Z] [INFO]   청크 3/5 처리 중...
+[2026-06-29T15:49:14.754Z] [DEBUG] API 호출 시작 (프롬프트 8051자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:51:03.634Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:51:03.635Z] [INFO] [완료]
+[2026-06-29T15:51:03.635Z] [DEBUG]   청크 3 저장: _chunk_3_of_5_1782748154754.json
+[2026-06-29T15:51:03.635Z] [INFO]   청크 4/5 처리 중...
+[2026-06-29T15:51:03.635Z] [DEBUG] API 호출 시작 (프롬프트 8083자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:51:56.793Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:51:56.794Z] [INFO] [완료]
+[2026-06-29T15:51:56.794Z] [DEBUG]   청크 4 저장: _chunk_4_of_5_1782748263635.json
+[2026-06-29T15:51:56.794Z] [INFO]   청크 5/5 처리 중...
+[2026-06-29T15:51:56.794Z] [DEBUG] API 호출 시작 (프롬프트 3237자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:52:07.951Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:52:07.951Z] [INFO] [완료]
+[2026-06-29T15:52:07.951Z] [DEBUG]   청크 5 저장: _chunk_5_of_5_1782748316794.json
+[2026-06-29T15:52:07.951Z] [INFO] 청크 처리 완료: 성공 5, 실패 0
+[2026-06-29T15:52:07.952Z] [INFO] [완료] 총 13개 아이템 추출
+[2026-06-29T15:52:07.955Z] [DEBUG] 입력 데이터: 39231자
+[2026-06-29T15:52:07.956Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 9개 청크
+[2026-06-29T15:52:07.955Z] [INFO] 입력 데이터가 큼 (39231자), 청크 분할 처리
+[2026-06-29T15:52:07.955Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:52:07.956Z] [INFO] 9개 청크로 분할 처리
+[2026-06-29T15:52:07.956Z] [INFO]   청크 1/9 처리 중...
+[2026-06-29T15:52:07.956Z] [DEBUG] API 호출 시작 (프롬프트 7979자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:53:11.927Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:53:11.928Z] [INFO] [완료]
+[2026-06-29T15:53:11.929Z] [DEBUG]   청크 1 저장: _chunk_1_of_9_1782748327956.json
+[2026-06-29T15:53:11.929Z] [INFO]   청크 2/9 처리 중...
+[2026-06-29T15:53:11.929Z] [DEBUG] API 호출 시작 (프롬프트 8028자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:54:08.109Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:54:08.109Z] [INFO] [완료]
+[2026-06-29T15:54:08.109Z] [DEBUG]   청크 2 저장: _chunk_2_of_9_1782748391929.json
+[2026-06-29T15:54:08.109Z] [INFO]   청크 3/9 처리 중...
+[2026-06-29T15:54:08.110Z] [DEBUG] API 호출 시작 (프롬프트 7854자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:54:38.084Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:54:38.084Z] [INFO] [완료]
+[2026-06-29T15:54:38.085Z] [DEBUG]   청크 3 저장: _chunk_3_of_9_1782748448110.json
+[2026-06-29T15:54:38.085Z] [INFO]   청크 4/9 처리 중...
+[2026-06-29T15:54:38.085Z] [DEBUG] API 호출 시작 (프롬프트 8014자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:55:04.028Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:55:04.028Z] [INFO] [완료]
+[2026-06-29T15:55:04.028Z] [INFO]   청크 5/9 처리 중...
+[2026-06-29T15:55:04.028Z] [DEBUG]   청크 4 저장: _chunk_4_of_9_1782748478085.json
+[2026-06-29T15:55:04.028Z] [DEBUG] API 호출 시작 (프롬프트 7985자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:55:26.141Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:55:26.141Z] [INFO] [완료]
+[2026-06-29T15:55:26.142Z] [DEBUG]   청크 5 저장: _chunk_5_of_9_1782748504028.json
+[2026-06-29T15:55:26.142Z] [INFO]   청크 6/9 처리 중...
+[2026-06-29T15:55:26.142Z] [DEBUG] API 호출 시작 (프롬프트 8092자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:56:03.247Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:56:03.247Z] [INFO] [완료]
+[2026-06-29T15:56:03.247Z] [INFO]   청크 7/9 처리 중...
+[2026-06-29T15:56:03.247Z] [DEBUG]   청크 6 저장: _chunk_6_of_9_1782748526142.json
+[2026-06-29T15:56:03.247Z] [DEBUG] API 호출 시작 (프롬프트 7429자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:56:42.544Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:56:42.545Z] [INFO] [완료]
+[2026-06-29T15:56:42.545Z] [DEBUG]   청크 7 저장: _chunk_7_of_9_1782748563247.json
+[2026-06-29T15:56:42.545Z] [DEBUG] API 호출 시작 (프롬프트 8106자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:56:42.545Z] [INFO]   청크 8/9 처리 중...
+[2026-06-29T15:57:22.333Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:57:22.334Z] [INFO] [완료]
+[2026-06-29T15:57:22.334Z] [DEBUG]   청크 8 저장: _chunk_8_of_9_1782748602545.json
+[2026-06-29T15:57:22.334Z] [INFO]   청크 9/9 처리 중...
+[2026-06-29T15:57:22.334Z] [DEBUG] API 호출 시작 (프롬프트 7149자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:57:59.572Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:57:59.573Z] [INFO] [완료]
+[2026-06-29T15:57:59.573Z] [DEBUG]   청크 9 저장: _chunk_9_of_9_1782748642334.json
+[2026-06-29T15:57:59.573Z] [INFO] 청크 처리 완료: 성공 9, 실패 0
+[2026-06-29T15:57:59.577Z] [INFO] [완료] 총 21개 아이템 추출
+[2026-06-29T15:57:59.579Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T15:57:59.580Z] [DEBUG] 입력 데이터: 42026자
+[2026-06-29T15:57:59.580Z] [INFO] 입력 데이터가 큼 (42026자), 청크 분할 처리
+[2026-06-29T15:57:59.580Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 9개 청크
+[2026-06-29T15:57:59.580Z] [INFO] 9개 청크로 분할 처리
+[2026-06-29T15:57:59.580Z] [INFO]   청크 1/9 처리 중...
+[2026-06-29T15:57:59.581Z] [DEBUG] API 호출 시작 (프롬프트 8110자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:58:40.579Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:58:40.579Z] [INFO] [완료]
+[2026-06-29T15:58:40.579Z] [DEBUG]   청크 1 저장: _chunk_1_of_9_1782748679581.json
+[2026-06-29T15:58:40.579Z] [INFO]   청크 2/9 처리 중...
+[2026-06-29T15:58:40.580Z] [DEBUG] API 호출 시작 (프롬프트 8059자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T15:59:37.356Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T15:59:37.357Z] [INFO] [완료]
+[2026-06-29T15:59:37.357Z] [DEBUG]   청크 2 저장: _chunk_2_of_9_1782748720580.json
+[2026-06-29T15:59:37.357Z] [INFO]   청크 3/9 처리 중...
+[2026-06-29T15:59:37.357Z] [DEBUG] API 호출 시작 (프롬프트 8041자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:00:40.741Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:00:40.742Z] [INFO] [완료]
+[2026-06-29T16:00:40.742Z] [DEBUG]   청크 3 저장: _chunk_3_of_9_1782748777357.json
+[2026-06-29T16:00:40.743Z] [INFO]   청크 4/9 처리 중...
+[2026-06-29T16:00:40.743Z] [DEBUG] API 호출 시작 (프롬프트 7462자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:01:30.806Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:01:30.806Z] [INFO] [완료]
+[2026-06-29T16:01:30.807Z] [DEBUG]   청크 4 저장: _chunk_4_of_9_1782748840743.json
+[2026-06-29T16:01:30.807Z] [INFO]   청크 5/9 처리 중...
+[2026-06-29T16:01:30.807Z] [DEBUG] API 호출 시작 (프롬프트 8162자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:02:44.003Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:02:44.004Z] [INFO] [완료]
+[2026-06-29T16:02:44.004Z] [DEBUG]   청크 5 저장: _chunk_5_of_9_1782748890807.json
+[2026-06-29T16:02:44.004Z] [INFO]   청크 6/9 처리 중...
+[2026-06-29T16:02:44.004Z] [DEBUG] API 호출 시작 (프롬프트 8147자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:03:52.920Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:03:52.921Z] [INFO] [완료]
+[2026-06-29T16:03:52.922Z] [DEBUG]   청크 6 저장: _chunk_6_of_9_1782748964004.json
+[2026-06-29T16:03:52.922Z] [INFO]   청크 7/9 처리 중...
+[2026-06-29T16:03:52.922Z] [DEBUG] API 호출 시작 (프롬프트 8161자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:04:42.172Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:04:42.173Z] [INFO] [완료]
+[2026-06-29T16:04:42.173Z] [DEBUG]   청크 7 저장: _chunk_7_of_9_1782749032922.json
+[2026-06-29T16:04:42.173Z] [INFO]   청크 8/9 처리 중...
+[2026-06-29T16:04:42.173Z] [DEBUG] API 호출 시작 (프롬프트 8151자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:05:01.691Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:05:01.691Z] [INFO] [완료]
+[2026-06-29T16:05:01.692Z] [DEBUG]   청크 8 저장: _chunk_8_of_9_1782749082173.json
+[2026-06-29T16:05:01.692Z] [INFO]   청크 9/9 처리 중...
+[2026-06-29T16:05:01.692Z] [DEBUG] API 호출 시작 (프롬프트 4565자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:05:18.990Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:05:18.991Z] [DEBUG]   청크 9 저장: _chunk_9_of_9_1782749101692.json
+[2026-06-29T16:05:18.991Z] [INFO] [완료]
+[2026-06-29T16:05:18.991Z] [INFO] 청크 처리 완료: 성공 9, 실패 0
+[2026-06-29T16:05:18.996Z] [INFO] [완료] 총 29개 아이템 추출
+[2026-06-29T16:05:18.997Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T16:05:18.998Z] [DEBUG] 입력 데이터: 47618자
+[2026-06-29T16:05:18.998Z] [INFO] 입력 데이터가 큼 (47618자), 청크 분할 처리
+[2026-06-29T16:05:18.999Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 11개 청크
+[2026-06-29T16:05:18.999Z] [INFO] 11개 청크로 분할 처리
+[2026-06-29T16:05:18.999Z] [INFO]   청크 1/11 처리 중...
+[2026-06-29T16:05:18.999Z] [DEBUG] API 호출 시작 (프롬프트 7863자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:05:51.411Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:05:51.412Z] [INFO] [완료]
+[2026-06-29T16:05:51.412Z] [DEBUG]   청크 1 저장: _chunk_1_of_11_1782749118999.json
+[2026-06-29T16:05:51.412Z] [INFO]   청크 2/11 처리 중...
+[2026-06-29T16:05:51.413Z] [DEBUG] API 호출 시작 (프롬프트 7880자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:06:47.017Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:06:47.018Z] [INFO] [완료]
+[2026-06-29T16:06:47.018Z] [DEBUG]   청크 2 저장: _chunk_2_of_11_1782749151412.json
+[2026-06-29T16:06:47.018Z] [INFO]   청크 3/11 처리 중...
+[2026-06-29T16:06:47.019Z] [DEBUG] API 호출 시작 (프롬프트 8090자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:07:47.916Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:07:47.917Z] [INFO] [완료]
+[2026-06-29T16:07:47.917Z] [DEBUG]   청크 3 저장: _chunk_3_of_11_1782749207019.json
+[2026-06-29T16:07:47.918Z] [INFO]   청크 4/11 처리 중...
+[2026-06-29T16:07:47.918Z] [DEBUG] API 호출 시작 (프롬프트 7775자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:09:10.588Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:09:10.588Z] [INFO] [완료]
+[2026-06-29T16:09:10.590Z] [INFO]   청크 5/11 처리 중...
+[2026-06-29T16:09:10.588Z] [DEBUG]   청크 4 저장: _chunk_4_of_11_1782749267918.json
+[2026-06-29T16:09:10.591Z] [DEBUG] API 호출 시작 (프롬프트 8113자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:09:44.658Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:09:44.658Z] [INFO] [완료]
+[2026-06-29T16:09:44.658Z] [DEBUG]   청크 5 저장: _chunk_5_of_11_1782749350590.json
+[2026-06-29T16:09:44.658Z] [INFO]   청크 6/11 처리 중...
+[2026-06-29T16:09:44.658Z] [DEBUG] API 호출 시작 (프롬프트 8175자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:09:55.372Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:09:55.373Z] [INFO] [완료]
+[2026-06-29T16:09:55.373Z] [DEBUG]   청크 6 저장: _chunk_6_of_11_1782749384658.json
+[2026-06-29T16:09:55.373Z] [INFO]   청크 7/11 처리 중...
+[2026-06-29T16:09:55.374Z] [DEBUG] API 호출 시작 (프롬프트 7664자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:10:07.966Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:10:07.966Z] [INFO] [완료]
+[2026-06-29T16:10:07.967Z] [INFO]   청크 8/11 처리 중...
+[2026-06-29T16:10:07.967Z] [DEBUG]   청크 7 저장: _chunk_7_of_11_1782749395373.json
+[2026-06-29T16:10:07.967Z] [DEBUG] API 호출 시작 (프롬프트 8084자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:10:34.625Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:10:34.625Z] [DEBUG]   청크 8 저장: _chunk_8_of_11_1782749407967.json
+[2026-06-29T16:10:34.625Z] [INFO] [완료]
+[2026-06-29T16:10:34.625Z] [INFO]   청크 9/11 처리 중...
+[2026-06-29T16:10:34.626Z] [DEBUG] API 호출 시작 (프롬프트 6908자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:11:07.116Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:11:07.117Z] [DEBUG]   청크 9 저장: _chunk_9_of_11_1782749434626.json
+[2026-06-29T16:11:07.117Z] [INFO] [완료]
+[2026-06-29T16:11:07.117Z] [INFO]   청크 10/11 처리 중...
+[2026-06-29T16:11:07.117Z] [DEBUG] API 호출 시작 (프롬프트 8094자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:11:52.946Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:11:52.947Z] [INFO] [완료]
+[2026-06-29T16:11:52.947Z] [DEBUG]   청크 10 저장: _chunk_10_of_11_1782749467117.json
+[2026-06-29T16:11:52.947Z] [DEBUG] API 호출 시작 (프롬프트 7354자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:11:52.947Z] [INFO]   청크 11/11 처리 중...
+[2026-06-29T16:12:42.204Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:12:42.204Z] [INFO] [완료]
+[2026-06-29T16:12:42.205Z] [DEBUG]   청크 11 저장: _chunk_11_of_11_1782749512947.json
+[2026-06-29T16:12:42.205Z] [INFO] 청크 처리 완료: 성공 11, 실패 0
+[2026-06-29T16:12:42.209Z] [INFO] [완료] 총 23개 아이템 추출
+[2026-06-29T16:12:42.211Z] [INFO] 
+=== IT 에이전트 실행 (extract) ===
+[2026-06-29T16:12:42.211Z] [DEBUG] 입력 데이터: 11396자
+[2026-06-29T16:12:42.212Z] [INFO] 입력 데이터가 큼 (11396자), 청크 분할 처리
+[2026-06-29T16:12:42.212Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 3개 청크
+[2026-06-29T16:12:42.212Z] [INFO] 3개 청크로 분할 처리
+[2026-06-29T16:12:42.212Z] [DEBUG] API 호출 시작 (프롬프트 8118자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:12:42.212Z] [INFO]   청크 1/3 처리 중...
+[2026-06-29T16:13:28.797Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:13:28.797Z] [INFO] [완료]
+[2026-06-29T16:13:28.798Z] [DEBUG]   청크 1 저장: _chunk_1_of_3_1782749562212.json
+[2026-06-29T16:13:28.798Z] [INFO]   청크 2/3 처리 중...
+[2026-06-29T16:13:28.798Z] [DEBUG] API 호출 시작 (프롬프트 8015자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:14:12.167Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:14:12.168Z] [INFO] [완료]
+[2026-06-29T16:14:12.168Z] [DEBUG]   청크 2 저장: _chunk_2_of_3_1782749608798.json
+[2026-06-29T16:14:12.168Z] [INFO]   청크 3/3 처리 중...
+[2026-06-29T16:14:12.168Z] [DEBUG] API 호출 시작 (프롬프트 5477자, 모델: deepseek/deepseek-v4-pro, 작업: extract)
+[2026-06-29T16:15:02.422Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:15:02.423Z] [INFO] [완료]
+[2026-06-29T16:15:02.423Z] [DEBUG]   청크 3 저장: _chunk_3_of_3_1782749652168.json
+[2026-06-29T16:15:02.423Z] [INFO] 청크 처리 완료: 성공 3, 실패 0
+[2026-06-29T16:15:02.423Z] [INFO] [완료] 총 6개 아이템 추출
+[2026-06-29T16:15:02.493Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:15:02.494Z] [DEBUG] 입력 데이터: 10223자
+[2026-06-29T16:15:02.495Z] [INFO] 입력 데이터가 큼 (10223자), 청크 분할 처리
+[2026-06-29T16:15:02.495Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:15:02.495Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:15:02.496Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:15:02.496Z] [DEBUG] API 호출 시작 (프롬프트 7673자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:16:16.782Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:16:16.783Z] [INFO] [완료]
+[2026-06-29T16:16:16.783Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782749702496.json
+[2026-06-29T16:16:16.783Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:16:16.784Z] [DEBUG] API 호출 시작 (프롬프트 6277자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:17:39.772Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:17:39.772Z] [INFO] [완료]
+[2026-06-29T16:17:39.773Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782749776784.json
+[2026-06-29T16:17:39.773Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:17:39.774Z] [INFO] [완료] 총 11개 아이템 추출
+[2026-06-29T16:17:39.774Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:17:39.775Z] [DEBUG] 입력 데이터: 10455자
+[2026-06-29T16:17:39.775Z] [INFO] 입력 데이터가 큼 (10455자), 청크 분할 처리
+[2026-06-29T16:17:39.775Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:17:39.775Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:17:39.775Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:17:39.776Z] [DEBUG] API 호출 시작 (프롬프트 8031자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:19:14.857Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:19:14.858Z] [INFO] [완료]
+[2026-06-29T16:19:14.858Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782749859776.json
+[2026-06-29T16:19:14.858Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:19:14.858Z] [DEBUG] API 호출 시작 (프롬프트 6151자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:21:42.871Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:21:42.872Z] [INFO] [완료]
+[2026-06-29T16:21:42.872Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782749954858.json
+[2026-06-29T16:21:42.872Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:21:42.873Z] [INFO] [완료] 총 9개 아이템 추출
+[2026-06-29T16:21:42.873Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:21:42.874Z] [DEBUG] 입력 데이터: 9815자
+[2026-06-29T16:21:42.874Z] [INFO] 입력 데이터가 큼 (9815자), 청크 분할 처리
+[2026-06-29T16:21:42.874Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:21:42.874Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:21:42.874Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:21:42.874Z] [DEBUG] API 호출 시작 (프롬프트 7744자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:23:43.308Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:23:43.310Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782750102874.json
+[2026-06-29T16:23:43.309Z] [INFO] [완료]
+[2026-06-29T16:23:43.310Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:23:43.311Z] [DEBUG] API 호출 시작 (프롬프트 5798자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:24:51.078Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:24:51.078Z] [INFO] [완료]
+[2026-06-29T16:24:51.079Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782750223311.json
+[2026-06-29T16:24:51.079Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:24:51.082Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:24:51.082Z] [INFO] [완료] 총 11개 아이템 추출
+[2026-06-29T16:24:51.082Z] [DEBUG] 입력 데이터: 9315자
+[2026-06-29T16:24:51.082Z] [INFO] 입력 데이터가 큼 (9315자), 청크 분할 처리
+[2026-06-29T16:24:51.083Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:24:51.083Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:24:51.083Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:24:51.083Z] [DEBUG] API 호출 시작 (프롬프트 7996자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:26:29.188Z] [INFO] [완료]
+[2026-06-29T16:26:29.187Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:26:29.189Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782750291083.json
+[2026-06-29T16:26:29.189Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:26:29.189Z] [DEBUG] API 호출 시작 (프롬프트 5046자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:27:43.035Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:27:43.036Z] [INFO] [완료]
+[2026-06-29T16:27:43.037Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782750389189.json
+[2026-06-29T16:27:43.037Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:27:43.038Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:27:43.038Z] [DEBUG] 입력 데이터: 9842자
+[2026-06-29T16:27:43.039Z] [INFO] 입력 데이터가 큼 (9842자), 청크 분할 처리
+[2026-06-29T16:27:43.038Z] [INFO] [완료] 총 10개 아이템 추출
+[2026-06-29T16:27:43.039Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:27:43.039Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:27:43.039Z] [DEBUG] API 호출 시작 (프롬프트 7849자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:27:43.039Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:30:48.527Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:30:48.528Z] [INFO] [완료]
+[2026-06-29T16:30:48.528Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782750463039.json
+[2026-06-29T16:30:48.528Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:30:48.529Z] [DEBUG] API 호출 시작 (프롬프트 5720자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:32:05.406Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:32:05.407Z] [INFO] [완료]
+[2026-06-29T16:32:05.407Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782750648529.json
+[2026-06-29T16:32:05.407Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:32:05.409Z] [INFO] [완료] 총 14개 아이템 추출
+[2026-06-29T16:32:05.409Z] [INFO] 
+=== 병합 에이전트 실행 (merge) ===
+[2026-06-29T16:32:05.409Z] [DEBUG] 입력 데이터: 8863자
+[2026-06-29T16:32:05.410Z] [INFO] 입력 데이터가 큼 (8863자), 청크 분할 처리
+[2026-06-29T16:32:05.410Z] [DEBUG] 섹션 기반 분할: 1개 섹션 → 2개 청크
+[2026-06-29T16:32:05.410Z] [INFO] 2개 청크로 분할 처리
+[2026-06-29T16:32:05.410Z] [INFO]   청크 1/2 처리 중...
+[2026-06-29T16:32:05.410Z] [DEBUG] API 호출 시작 (프롬프트 7882자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:33:04.904Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:33:04.904Z] [INFO] [완료]
+[2026-06-29T16:33:04.905Z] [DEBUG]   청크 1 저장: _chunk_1_of_2_1782750725410.json
+[2026-06-29T16:33:04.905Z] [INFO]   청크 2/2 처리 중...
+[2026-06-29T16:33:04.905Z] [DEBUG] API 호출 시작 (프롬프트 4708자, 모델: deepseek/deepseek-v4-pro, 작업: merge)
+[2026-06-29T16:33:46.517Z] [DEBUG] claude CLI 종료 (code 0, 모델 haiku)
+[2026-06-29T16:33:46.519Z] [DEBUG]   청크 2 저장: _chunk_2_of_2_1782750784905.json
+[2026-06-29T16:33:46.519Z] [INFO] 청크 처리 완료: 성공 2, 실패 0
+[2026-06-29T16:33:46.520Z] [INFO] [완료] 총 9개 아이템 추출
+[2026-06-29T16:33:46.518Z] [INFO] [완료]

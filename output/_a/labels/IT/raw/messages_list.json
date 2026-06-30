@@ -1,0 +1,88 @@
+{
+  "label": "IT",
+  "date_start": "2026/04/29",
+  "date_end": "2026/05/02",
+  "target_date": null,
+  "total_fetched": 18,
+  "total_count": 12,
+  "skipped_by_date": 5,
+  "duplicates_count": 1,
+  "duplicates": [
+    "19de111a4c094b82"
+  ],
+  "messages": [
+    {
+      "id": "19de11278a8f4cb9"
+    },
+    {
+      "id": "19de068cf961958d"
+    },
+    {
+      "id": "19de031f200ac228"
+    },
+    {
+      "id": "19ddee95f64e7a63"
+    },
+    {
+      "id": "19ddd8e6f8d91829"
+    },
+    {
+      "id": "19ddd4dce5af6c1d"
+    },
+    {
+      "id": "19ddd07714e7cf7e"
+    },
+    {
+      "id": "19ddb7d8bcb536fe"
+    },
+    {
+      "id": "19ddb78c57911266"
+    },
+    {
+      "id": "19ddb41f5b371280"
+    },
+    {
+      "id": "19ddb0ac35d448d9"
+    },
+    {
+      "id": "19dd9c2972a88ca4"
+    }
+  ],
+  "senders": [
+    {
+      "email": "viewsletter@themiilk.com",
+      "name": "\"더밀크 김도현\" <viewsletter@themiilk.com>",
+      "count": 1
+    },
+    {
+      "email": "newsletters@techcrunch.com",
+      "name": "TechCrunch Daily News <newsletters@techcrunch.com>",
+      "count": 4
+    },
+    {
+      "email": "ai-korea-community@ghost.io",
+      "name": "\"AI 코리아 커뮤니티 뉴스레터 팀\" <ai-korea-community@ghost.io>",
+      "count": 2
+    },
+    {
+      "email": "yozm_help@wishket.com",
+      "name": "\"요즘IT\" <yozm_help@wishket.com>",
+      "count": 2
+    },
+    {
+      "email": "newsletter@gpters.org",
+      "name": "\"지피터스 뉴스레터\" <newsletter@gpters.org>",
+      "count": 1
+    },
+    {
+      "email": "byline@byline.network",
+      "name": "\"바이라인네트워크\" <byline@byline.network>",
+      "count": 1
+    },
+    {
+      "email": "catchpaper@mail.beehiiv.com",
+      "name": "Catch Paper <catchpaper@mail.beehiiv.com>",
+      "count": 1
+    }
+  ]
+}

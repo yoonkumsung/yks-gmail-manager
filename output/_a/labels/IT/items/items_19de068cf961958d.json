@@ -1,0 +1,342 @@
+{
+  "items": [
+    {
+      "title": "엘론 머스크, xAI의 그로크 모델이 OpenAI 기반으로 훈련되었음을 증언",
+      "summary": "엘론 머스크는 xAI의 그로크(Grok) AI 모델이 OpenAI의 모델을 기반으로 훈련되었다고 법정에서 증언했습니다. 이는 프론티어 연구소들이 더 작은 경쟁사들로부터 자신들의 모델 복제를 방지하려는 '증류(Distillation)' 기술이 업계의 핫 이슈로 떠오르면서 주목받고 있습니다.",
+      "keywords": [
+        "xAI",
+        "그로크",
+        "OpenAI",
+        "증류",
+        "AI 모델"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/elon-musk-testifies-that-xai-trained-grok-on-openai-models/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Google 젬리니 AI, 수백만 대 자동차에 탑재 시작",
+      "summary": "Google이 Gemini AI 어시스턴트를 수백만 대의 자동차에 탑재하기 시작했습니다. 이는 Google이 자동차 운전 경험에 더욱 고급 대화형 AI를 통합하려는 전략의 일환입니다.",
+      "keywords": [
+        "Google",
+        "Gemini",
+        "자동차",
+        "AI 어시스턴트",
+        "운전"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/googles-gemini-ai-assistant-is-hitting-the-road-in-millions-of-vehicles/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Stripe, AI 에이전트도 사용 가능한 디지털 지갑 Link 출시",
+      "summary": "Stripe가 자율 AI 에이전트도 사용 가능한 디지털 지갑 Link를 출시했습니다. 사용자는 카드, 은행 계좌, 구독을 연결한 후 승인 흐름을 통해 AI 에이전트가 안전하게 결제할 수 있도록 권한을 부여할 수 있습니다.",
+      "keywords": [
+        "Stripe",
+        "Link",
+        "디지털 지갑",
+        "AI 에이전트",
+        "결제"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/stripe-link-digital-wallet-ai-agents-shopping/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "법률 AI 스타트업 Legora, 56억 달러 기업 가치 평가 달성",
+      "summary": "법률 AI 스타트업 Legora가 56억 달러의 기업 가치 평가를 달성했습니다. Harvey와의 경쟁이 심화되고 있으며, 두 회사 모두 막대한 자금을 조달하고 서로의 시장에 진출하면서 대항 광고 캠페인을 펼치고 있습니다.",
+      "keywords": [
+        "Legora",
+        "Harvey",
+        "법률 AI",
+        "기업 가치",
+        "스타트업"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/legal-ai-startup-legora-hits-5-6-valuation-and-its-battle-with-harvey-just-got-hotter/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "BioticsAI 창업자가 말하는 헬스케어 사업의 현실: FDA 승인과 자금 조달",
+      "summary": "BioticsAI CEO Robhy Bustami가 Build Mode 팟캐스트 Isabelle Johannessen과의 인터뷰에서 규제가 엄격한 헬스케어 산업에서의 회사 운영, FDA 승인 절차, 자금 조달, 그리고 복잡한 규제를 헤쳐나가면서 팀의 동기를 유지하는 방법에 대해 논의했습니다.",
+      "keywords": [
+        "BioticsAI",
+        "FDA",
+        "헬스케어",
+        "자금 조달",
+        "규제"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "수백만 웹사이트 사용하는 cPanel 버그, 해킹 집단이 적극 악용 중",
+      "summary": "웹 호스팅 제어판인 cPanel의 보안 취약점을 해킹 집단이 적극적으로 공격하고 있습니다. 웹 호스트 업체들이 활발한 공격 상황 속에서 버그 수정에 나서고 있으며, 일부 업체에 따르면 해킹 집단이 이미 수개월간 이 취약점을 악용해온 것으로 파악되었습니다.",
+      "keywords": [
+        "cPanel",
+        "보안 취약점",
+        "해킹 공격",
+        "웹 호스팅"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/hackers-are-actively-exploiting-a-bug-in-cpanel-used-by-millions-of-websites/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Rivian, 조지아 신규 공장 건설 정부 대출금 66억 달러에서 45억 달러로 축소",
+      "summary": "전기자동차 제조사 Rivian이 미국 에너지부(DOE)와의 대출 계약을 재협상하여, 조지아주에 신축할 생산 공장을 위한 차용금을 66억 달러에서 45억 달러로 감액했습니다. 대출금이 줄어드는 대신 공장의 생산 능력은 더욱 증대될 예정입니다.",
+      "keywords": [
+        "Rivian",
+        "DOE 대출",
+        "생산 공장",
+        "조지아"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/rivian-downsizes-doe-loan-to-4-5b-while-boosting-capacity-of-georgia-factory/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "OpenAI, Anthropic의 Mythos 제한 비판 후 자사 Cyber 도구도 접근 제한",
+      "summary": "OpenAI가 자체 사이버보안 테스트 도구인 GPT-5.5 Cyber의 접근을 제한하기로 결정했습니다. 이 도구는 초기 단계에서 '중요 사이버 방어 담당자'에게만 제공될 예정이며, 이는 앞서 Anthropic의 Mythos 접근 제한을 비판한 OpenAI가 유사한 제한 조치를 취하게 된 것입니다.",
+      "keywords": [
+        "OpenAI",
+        "GPT-5.5",
+        "사이버보안",
+        "접근 제한"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/after-dissing-anthropic-for-limiting-mythos-openai-restricts-access-to-cyber-too/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Instagram, 콘텐츠 무단 재업로드 계정에 강경 조치",
+      "summary": "Instagram이 다른 사용자의 게시물을 오리지널 콘텐츠 없이 단순히 재업로드하는 콘텐츠 수집 계정을 대상으로 새로운 제한 조치를 시행합니다. 이번 업데이트는 오리지널 콘텐츠를 생성하지 않으면서 타인의 게시물만 재업로드하는 계정들의 도달 범위를 제한합니다.",
+      "keywords": [
+        "Instagram",
+        "콘텐츠 수집",
+        "재업로드 금지",
+        "도달 범위"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/instagram-restricts-reach-of-content-aggregators-in-new-crackdown/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "엘론 머스크, xAI가 OpenAI 모델로 Grok을 훈련했다고 증언",
+      "summary": "OpenAI와 Anthropic이 최근 '증류(distillation)' 기법을 통한 AI 모델 복제에 맞서고 있다. 이 기법은 공개된 챗봇이나 API를 활용해 새로운 AI 모델을 훈련하는 방식으로, 제3자가 최첨단 모델의 기능을 복제할 수 있게 한다. 특히 중국의 여러 AI 연구소들이 이 기법을 통해 미국 기업 제품과 거의 동등한 성능의 오픈 웨이트 모델을 훨씬 저렴한 가격에 제공하고 있어 글로벌 AI 시장에 영향을 주고 있다. 엘론 머스크가 설립한 xAI도 이 논쟁의 중심에 있으며, 머스크는 법정 증언에서 Grok이 OpenAI 모델을 기반으로 훈련되었다고 밝혔다.",
+      "keywords": [
+        "AI 모델",
+        "증류",
+        "OpenAI",
+        "xAI",
+        "Grok"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/elon-musk-testifies-that-xai-trained-grok-on-openai-models/?utm_campaign=daily_pm",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "구글 Gemini AI, 수백만 대 차량에 탑재",
+      "summary": "구글이 Gemini AI 어시스턴트를 수백만 대의 차량에 탑재한다. 이는 자동차 운전 경험에 고도의 대화형 AI를 도입하려는 구글의 전략을 보여준다.",
+      "keywords": [
+        "구글",
+        "Gemini",
+        "AI",
+        "자동차"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/googles-gemini-ai-assistant-is-hitting-the-road-in-millions-of-vehicles/?utm_campaign=daily_pm",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "머스크, xAI의 OpenAI 모델 증류 사용 인정",
+      "summary": "엘론 머스크가 캘리포니아 연방법원 증언에서 xAI가 Grok 훈련을 위해 OpenAI 모델에 증류(distillation) 기술을 사용했다고 인정했다. 머스크는 이것이 AI 기업들 사이의 일반적인 관행이라고 주장했다. 증류는 AI 대기업들이 막대한 컴퓨팅 인프라 투자로 구축한 경쟁력을 훼손하며, 다른 기업들이 저렴한 비용으로 동등한 성능의 모델을 개발할 수 있게 한다. 머스크는 현재 OpenAI, CEO 샘 알트만, 그렉 브록만을 상대로 소송을 진행 중이며, OpenAI가 비영리 미션을 위반하고 영리 구조로 전환했다고 주장하고 있다. 2023년 설립된 xAI가 업계 리더 OpenAI로부터 학습하려 한 것은 자연스러운 일이다. 증류 행위의 법적 명확성은 불분명하지만 서비스 약관 위반 가능성이 있다. OpenAI, Anthropic, Google은 Frontier Model Forum을 통해 중국의 증류 시도 방어 전략을 공유하고 있다. 추가 증언에서 머스크는 세계 주요 AI 제공업체 순위를 Anthropic(1위), OpenAI(2위), Google(3위), 중국 오픈소스 모델(4위)로 평가했으며, xAI는 직원 수백 명의 작은 규모 회사라고 했다.",
+      "keywords": [
+        "Elon Musk",
+        "xAI",
+        "증류기술",
+        "OpenAI",
+        "AI훈련"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "구글, 수백만 차량에 Gemini AI 탑재 시작",
+      "summary": "구글이 Google 내장 자동차에 Gemini AI 어시스턴트 배포를 시작한다고 발표했다. 현재의 Google Assistant에서 대폭 향상된 업그레이드이다. 일반모터스(GM)는 2022년식 이후 약 400만 대 차량에 Gemini가 탑재된다고 밝혔으며, Cadillac, Chevrolet, Buick, GMC 브랜드를 포함한다. 구글 발표는 특정 자동차 제조사를 명시하지 않아 Gemini가 GM 차량에만 제한되지 않을 것으로 보인다. 미국에서 영어 지원으로 시작하는 배포는 앞으로 수개월에 걸쳐 확대될 예정이다. Gemini는 신차뿐 아니라 소프트웨어 업데이트를 통해 호환되는 기존 차량에도 제공된다. 2020년 출시된 Google 내장 자동차는 이제 더 자연스럽고 대화식의 차량 상호작용을 가능하게 하는 Gemini 업데이트로 운전자가 더 자유롭게 작업을 완료하고 아이디어를 탐색하며 정보를 검색할 수 있다. 예를 들어 운전자는 경로상 야외 좌석이 있는 평가가 높은 레스토랑에서 식사하고 싶다고 음성으로 지시할 수 있다.",
+      "keywords": [
+        "구글",
+        "Gemini",
+        "자동차",
+        "AI어시스턴트",
+        "일반모터스"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/googles-gemini-ai-assistant-is-hitting-the-road-in-millions-of-vehicles/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Google 자동차 Gemini, 음성 명령으로 지도·예약·메시지 제어",
+      "summary": "Google이 자동차에서 Gemini AI를 통합했다. Gemini는 Google Maps 데이터를 활용해 식당 추천, 주차 여부 확인, 메뉴 옵션 및 식이 요구사항 제공. 난방 제어, 음악 추천, 차량 정보 조회, 메시지 요약 및 음성 응답도 가능하다. Gemini Live 베타 버전은 '음성 명령으로 대화'(Hey Google, let's talk)로 활성화되어 더 개방적인 실시간 대화를 지원한다. 음성 명령, 화면 마이크, 스티어링 휠 컨트롤로 접근 가능하며, Google 계정 로그인 사용자에게 업그레이드 옵션을 제공한다. Gmail, Google Calendar, Google Home과의 추가 통합을 향후 계획 중.",
+      "keywords": [
+        "Google",
+        "Gemini",
+        "자동차",
+        "AI",
+        "음성 제어"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Stripe Link, AI 에이전트의 결제를 제어하는 디지털 지갑으로 확대",
+      "summary": "Stripe가 AI 시대를 위한 디지털 지갑 Link를 업그레이드했다. 자율 에이전트(OpenClaw 등)가 쇼핑, 예약 결제, 티켓 구매 등의 작업을 안전하게 수행할 수 있다. 사용자는 OAuth 인증을 통해 에이전트에 Link 지갑 접근 권한을 부여하되, 에이전트에 결제 자격증명을 직접 노출하지 않는다. 에이전트가 지출 요청을 생성하면 사용자가 거래를 검토하고 승인해야 한다. 향후 에이전트별 지출 한도 설정이나 특정 조건에서 자동 승인도 가능할 예정이다. 현재 전통적 결제 수단만 지원하지만 agentic token, 스테이블코인 등도 곧 지원될 계획이다.",
+      "keywords": [
+        "Stripe",
+        "Link",
+        "AI 에이전트",
+        "디지털 지갑",
+        "결제"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/stripe-link-digital-wallet-ai-agents-shopping/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Nvidia, 법률 AI 스타트업 Legora에 투자... Harvey와의 경쟁 심화",
+      "summary": "Nvidia의 기업 VC 펀드 NVentures가 스웨덴 법률 기술 스타트업 Legora에 투자하면서 법률 AI 분야의 경쟁이 심화되고 있다. Atlassian 등 다른 투자자와 함께 Series D 확장 라운드에서 5천만 달러를 조달한 Legora는 이전 Series D에서 5억 5천만 달러를 받은 지 한 달 후의 투자다. Y Combinator 출신 Legora는 최근 연간 반복 수익(ARR) 1억 달러를 넘으면서 평가액이 56억 달러로 올랐다. 18개월 전 출시한 플랫폼은 50개 국가에서 1,000개 이상의 로펌과 법무팀에 사용 중이며, Bird & Bird, Cleary Gottlieb, Linklaters 등 유명 로펌이 고객이다. 경쟁사 Harvey는 110억 달러의 평가액으로 100,000명의 변호사를 1,300개 조직에서 고객으로 보유하고 있어, 두 회사 모두 글로벌 시장 선점을 위해 경쟁 중이다.",
+      "keywords": [
+        "법률 AI",
+        "Legora",
+        "Nvidia",
+        "Series D",
+        "Harvey"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/legal-ai-startup-legora-hits-5-6-valuation-and-its-battle-with-harvey-just-got-hotter/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "의료 분야 창업의 현실: FDA 승인과 규제의 벽",
+      "summary": "BioticsAI의 공동창업자이자 CEO인 Robhy Bustami는 의료 분야에서의 창업 현실을 논의한다. 태아 이상을 감지하는 초음파 AI 코파일럿을 개발 중인 회사는 오진율이 높은 영역에서 의료 규제의 까다로움과 긴 개발 타임라인을 마주하고 있다. 의료 산업은 빠른 개발과 혁신보다 엄격한 규제와 검증을 우선시하는 환경에서 팀의 동기를 유지하며 사업을 진행해야 한다.",
+      "keywords": [
+        "의료 AI",
+        "BioticsAI",
+        "초음파",
+        "FDA",
+        "규제"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/fda-approval-fundraising-and-the-reality-of-building-in-healthcare-according-to-bioticsai-founder/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "의료기기 AI 스타트업 BioticsAI, FDA 승인으로 병원 배포 시작",
+      "summary": "산부인과 초음파 영상 분석 AI를 개발한 BioticsAI는 10만 달러 미만의 저비용 프로토타입으로 2023년 TechCrunch Startup Battlefield를 우승했고, 2026년 1월 FDA 승인을 획득했다. 제품 개발 초기부터 FDA 승인을 염두에 두고 임상 검증, 규제 전략, 제품 개발을 단일 프로세스로 통합했으며, 규제자와의 사전 면담을 통해 임상 시험 설계와 기대값을 사전에 조율했다. 장기 프로젝트 속에서 엔지니어, 임상의, 연구원 간의 일관된 커뮤니케이션으로 팀 동기를 유지했고, 이제 FDA 승인을 확보한 후 병원 배포 단계에 진입했으며 산부인과를 넘어 생식 건강 분야로 확장할 계획이다.",
+      "keywords": [
+        "BioticsAI",
+        "FDA 승인",
+        "의료기기 AI",
+        "초음파"
+      ],
+      "link": "",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "cPanel 보안 취약점 CVE-2026-41940, 수천만 웹사이트 위협",
+      "summary": "웹 서버 관리 소프트웨어 cPanel과 WHM에서 새로운 보안 취약점이 발견됐다. 해커가 이 버그를 악용하면 영향받는 서버를 완전히 제어할 수 있으며, 전 세계 수천만 개 웹사이트가 위험에 노출됐다. cPanel 제조사는 모든 지원 버전에 영향을 미친다며 고객에게 즉시 패치를 적용할 것을 강력히 권고했다. cPanel과 WHM은 웹 호스팅, 이메일 관리, 도메인 설정 및 데이터베이스를 관리하는 서버 관리 도구다.",
+      "keywords": [
+        "cPanel",
+        "보안 취약점",
+        "CVE-2026-41940",
+        "서버 침해"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/hackers-are-actively-exploiting-a-bug-in-cpanel-used-by-millions-of-websites/?utm_campaign=daily_pm",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "cPanel·WHM의 치명적 원격 인증 우회 취약점 발견",
+      "summary": "cPanel 및 WHM 소프트웨어에 원격 인증 우회 취약점(CVE-2026-41940)이 발견됐다. 이 취약점은 악의적 해커가 로그인 화면을 우회하고 소프트웨어의 관리자 패널에 전체 접근할 수 있게 한다. 웹 호스팅 업계 전반에서 광범위하게 사용되는 소프트웨어인 만큼, 패치하지 않은 많은 웹사이트가 침해될 수 있다. 캐나다 국가 사이버보안청은 공동 호스팅 서버의 웹사이트 침해 위험을 지적하며 \"이용 가능성이 매우 높다\"고 경고했다. Namecheap, HostGator, KnownHost 등 주요 호스팅업체들이 긴급 대응에 나섰으며, KnownHost CEO는 이미 2월 23일부터 악용 시도가 기록되었다고 밝혔다.",
+      "keywords": [
+        "cPanel",
+        "WHM",
+        "보안취약점",
+        "CVE-2026-41940",
+        "원격인증우회"
+      ],
+      "link": "https://support.cpanel.net/hc/en-us/articles/40073787579671-Security-CVE-2026-41940-cPanel-WHM-WP2-Security-Update-04-28-2026",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Rivian, 조지아 공장 건설 대출을 45억 달러로 축소",
+      "summary": "Rivian이 조지아 새 공장 건설을 위한 미국 에너지부(DOE) 대출금을 원래 66억 달러에서 45억 달러로 조정했다. 대출금 감소에도 불구하고 초기 생산 단계의 공장 용량을 20만 대에서 30만 대로 50% 증대했으며, 이는 단위당 원가를 낮추고 향후 확장의 여유를 제공할 예정이다. Rivian은 2027년 초 대출금을 먼저 실행할 예정이며, 전체 공장 용량 계획은 원래 40만 대에서 51만 5천 대로 조정되었다(100만 대 감소). 우버와의 거래에 따라 조지아 공장의 일부 생산 능력은 R2 로봇택시 제조에 사용되며, 우버는 2028년 샌프란시스코와 마이애미에서 출시될 완전 자율주행 R2 로봇택시 1만 대를 먼저 구매할 계획이다.",
+      "keywords": [
+        "Rivian",
+        "에너지부",
+        "조지아공장",
+        "전기차",
+        "로봇택시"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/rivian-downsizes-doe-loan-to-4-5b-of-georgia-factory/",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Uber, Rivian에 $1.25B 투자 계획... 자율주행 R2 SUV 40,000대 구매 옵션",
+      "summary": "Uber가 Rivian에 초기 $300M 투자(2분기 마감 예정)와 추가 $250M 투자를 계획 중이다. 2030년부터 자율주행 R2 SUV를 최대 40,000대 구매할 옵션을 보유하며, Rivian이 마일스톤을 달성할 경우 2031년까지 총 $1.25B을 투자할 예정이다. Rivian은 조지아주 애틀랜타 외곽에 공장을 건설 중이며, 2028년 말까지 차량 생산을 시작할 계획이다.",
+      "keywords": [
+        "Uber",
+        "Rivian",
+        "R2 SUV",
+        "자율주행 투자",
+        "전략적 파트너십"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    },
+    {
+      "title": "Anthropic 비판했던 OpenAI, 사이버 보안 도구 Cyber도 접근 제한",
+      "summary": "Sam Altman이 OpenAI의 사이버 보안 도구 Cyber 접근을 critical cyber defenders에게만 제한하기로 발표했다. 이는 앞서 Altman이 Anthropic의 유사한 조치(Mythos)를 '공포 기반 마케팅'이라고 비판했던 것과 상반된다. GPT-5.5-Cyber는 침투 테스트, 취약점 식별 및 악용, 악성코드 리버스 엔지니어링 등을 수행할 수 있다. OpenAI는 Trusted Access for Cyber(TAC) 프로그램으로 자격을 검증하며, 현재 수천 명의 검증된 방어자와 수백 개 팀이 이를 이용 중이다. 접근은 계층화되어 정당한 방어 목적의 defenders는 GPT-5.4-Cyber, GPT-5.5-Cyber 등 제약이 적은 모델에 접근할 수 있다.",
+      "keywords": [
+        "OpenAI",
+        "Cyber",
+        "보안 도구",
+        "접근 제한",
+        "Sam Altman"
+      ],
+      "link": "https://techcrunch.com/2026/04/30/after-dissing-anthropic-for-limiting-mythos-openai-restricts-access-to-cyber-too/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19de068cf961958d"
+    }
+  ]
+}

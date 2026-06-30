@@ -1,0 +1,346 @@
+{
+  "items": [
+    {
+      "title": "AI 에이전트 스타트업 Parallel, 5개월 만에 20억 달러 평가액 달성",
+      "summary": "전 트위터 CEO 파라그 아그라왈이 창업한 AI 에이전트 도구 스타트업 Parallel Web Systems가 Sequoia 주도로 1억 달러 투자를 유치했다. 이는 5개월 전 진행된 1억 달러 투자에 이은 후속 투자로, 회사의 기업 가치가 20억 달러에 도달했음을 의미한다.",
+      "keywords": [
+        "Parallel Web Systems",
+        "AI 에이전트",
+        "파라그 아그라왈",
+        "Sequoia"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/parallel-web-systems-hits-2b-valuation-five-months-after-its-last-big-raise/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "구글 포토, AI로 영화 속 옷장 현실화하는 기능 추가",
+      "summary": "구글이 Google Photos에 새로운 AI 기능을 추가했다. 이 기능은 사용자의 Google Photos 라이브러리에 저장된 의류 사진을 기반으로 자동으로 가상 옷장을 생성한다. 영화 '클루엘리스'의 상징적인 옷장 개념을 AI 기술로 구현한 것이다.",
+      "keywords": [
+        "Google Photos",
+        "AI",
+        "가상 옷장",
+        "의류 관리"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-photos-uses-ai-to-make-the-iconic-closet-from-clueless-a-reality/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "핵융합 스타트업 Zap Energy, 핵분열 개발로 전략 전환",
+      "summary": "핵융합 에너지 스타트업 Zap Energy가 사업 전략을 조정했다. 기존 핵융합 장치 개발에만 집중하던 것에서 벗어나 핵분열 반응로도 함께 개발할 계획이다. 부분적인 사업 방향 전환으로, 다양한 원자력 발전 기술을 추진한다.",
+      "keywords": [
+        "Zap Energy",
+        "핵융합",
+        "핵분열",
+        "반응로"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/fusion-power-startup-zap-energy-pulls-a-partial-pivot-adding-nuclear-fission-to-the-mix/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "우버, 새로운 기능으로 호텔 사업 진출",
+      "summary": "우버가 연례 행사에서 여러 새로운 기능을 공개했다. 이들 기능은 회사의 원래 사업인 라이드셰어링을 크게 벗어나 사용자들의 일상생활 깊숙이 침투한다. 특히 AI 기술을 활용하여 호텔 사업으로 사업 영역을 확장한다.",
+      "keywords": [
+        "우버",
+        "AI",
+        "호텔",
+        "새로운 기능"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/uber-is-in-the-hotel-business-now-thanks-in-part-to-ai/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "구글, 1분기 구독자 2500만 명 증가해 3억5000만 명 달성",
+      "summary": "구글이 2026년 1분기에 2500만 명의 유료 구독자를 추가하여 총 구독자 수 3억 5000만 명에 도달했다. 이 성장은 YouTube와 Google One 서비스의 수요 증가에 의해 견인되었다.",
+      "keywords": [
+        "구글",
+        "YouTube",
+        "Google One",
+        "유료 구독"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google, Q1에 2,500만 구독 확보",
+      "summary": "구글이 2026년 1분기에 2,500만 개의 새로운 구독자를 확보했다. 유튜브 프리미엄과 Google One 구독 서비스가 주요 성장 동력이다.",
+      "keywords": [
+        "Google",
+        "구독",
+        "Q1"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-gains-25m-subscriptions-in-q1-driven-by-youtube-and-google-one/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Divine, 50만 개 Vine 영상 복구 후 공개 론칭",
+      "summary": "Jack Dorsey가 후원하는 Vine 부활 프로젝트 Divine이 공개 론칭되었다. 원본 Vine 서비스 백업에서 약 50만 개의 영상을 복구했으며, 크리에이터들이 새로운 Vine 영상을 직접 업로드할 수 있다.",
+      "keywords": [
+        "Vine",
+        "Divine",
+        "Jack Dorsey",
+        "영상 복구"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/jack-dorsey-backed-vine-reboot-divine-launches-to-public/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Roku Howdy, 월 $2.99로 100만 구독 달성",
+      "summary": "Roku의 초저가 스트리밍 서비스 Howdy가 100만 구독자를 넘었다. 월 $2.99의 저렴한 가격과 낮은 구독 약정으로 고가 스트리밍 서비스의 대안을 원하는 사용자 수요를 충족하고 있다.",
+      "keywords": [
+        "Roku",
+        "Howdy",
+        "스트리밍",
+        "저가"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/roku-3-streaming-service-howdy-reaches-1m-subs-per-recent-report/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google Translate, 발음 연습 기능 추가",
+      "summary": "Google Translate에 발음 연습 기능이 추가되었다. 단어, 문장, 구를 번역한 후 '연습' 메뉴에서 '발음' 버튼을 클릭하면 음성 기호를 확인할 수 있으며, 직접 발음을 따라 말하며 연습할 수 있다.",
+      "keywords": [
+        "Google Translate",
+        "발음",
+        "연습",
+        "언어학습"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-translate-now-lets-you-practice-pronunciation/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Scout AI, 1억 달러 펀딩으로 군용 AI 에이전트 개발",
+      "summary": "Colby Adcock이 창업한 Scout AI가 1억 달러 펀딩을 확보했다. 개별 군인이 자율주행 차량 함대를 제어할 수 있도록 지원하는 AI 에이전트 개발에 집중하고 있으며, TechCrunch가 부트캠프를 방문 취재했다.",
+      "keywords": [
+        "Scout AI",
+        "군사",
+        "AI 에이전트",
+        "자율주행"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/coby-adcocks-scout-ai-raises-100-million-to-train-models-for-war-we-visited-its-bootcamp/",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Parallel Web Systems, Sequoia 주도로 $100M Series B 펀딩 받아 $2B 밸류에이션 달성",
+      "summary": "AI 에이전트 도구 개발 스타트업 Parallel Web Systems가 Sequoia 주도로 1억 달러의 Series B 펀딩을 완료했다. 전 Twitter CEO Parag Agrawal이 설립한 이 회사의 밸류에이션이 20억 달러에 도달했으며, 5개월 전에 진행한 이전 1억 달러 펀딩에 이어 추가 자금을 확보했다.",
+      "keywords": [
+        "Parallel Web Systems",
+        "AI 에이전트",
+        "Series B",
+        "Sequoia"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/parallel-web-systems-hits-2b-valuation-five-months-after-its-last-big-raise/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google Photos, AI 기술으로 의류 디지털 옷장 자동 생성 기능 추가",
+      "summary": "Google이 Google Photos 라이브러리에 나타난 의류 사진을 분석하여 사용자의 가상 옷장을 자동으로 생성하는 AI 기능을 선보였다. 이 새로운 기능은 영화 '클루엘리스'의 아이콘적인 의류 관리 시스템을 현실화하는 것을 목표로 한다.",
+      "keywords": [
+        "Google Photos",
+        "AI",
+        "의류 관리",
+        "패션"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-photos-uses-ai-to-make-the-iconic-closet-from-clueless-a-reality/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "핵융합 스타트업 Zap Energy, 핵분열 원자로 개발도 추진하는 방향 전환",
+      "summary": "핵융합 에너지 개발 스타트업 Zap Energy가 기존의 핵융합 장치 개발과 병행하여 핵분열 원자로도 개발할 예정이라고 발표했다.",
+      "keywords": [
+        "Zap Energy",
+        "핵융합",
+        "핵분열",
+        "에너지"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/fusion-power-startup-zap-energy-pulls-a-partial-pivot-adding-nuclear-fission-to-the-mix/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Parag Agrawal의 Parallel, Series B로 2억 3천만 달러 모금",
+      "summary": "전 Twitter CEO 파라그 아그라왈(Parag Agrawal)이 설립한 AI 에이전트 전용 웹 검색 및 리서치 API 플랫폼 Parallel Web Systems가 Series B 펀딩을 발표했다. 클라이너 퍼킨스(Kleiner Perkins), 인덱스 벤처(Index Ventures), 코슬라 벤처(Khosla Ventures), 퍼스트라운드 캐피탈(First Round Capital), 스파크 캐피탈(Spark Capital), 테레인 캐피탈(Terrain Capital) 등 기존 투자자들이 참여했다. 이는 5개월 전 Series A($1억 달러, 7억 4천만 달러 밸류에이션) 이후의 펀딩으로, 누적 모금액은 2억 3천만 달러에 이른다. 클레이(Clay), 하비(Harvey), 노션(Notion), 오픈도어(Opendoor) 등 주요 기업들이 고객으로 이름을 올렸으며, 은행과 헤지펀드도 포함되어 있다(구체적 고객명 미공개). 10만 명 이상의 개발자가 플래러럴 제품을 사용 중이다.",
+      "keywords": [
+        "Parallel Web Systems",
+        "Series B 펀딩",
+        "AI 에이전트",
+        "웹 검색 API",
+        "파라그 아그라왈"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google Photos, AI로 Clueless 영감 받은 디지털 옷장 공개",
+      "summary": "구글이 Google Photos에 AI 기반 디지털 옷장 기능을 추가한다고 발표했다. 이 기능은 Google Photos 라이브러리에 있는 의류 사진을 AI가 자동으로 인식하고 분석하여 사용자의 전체 옷장을 디지털화한다. 사용자는 상의, 하의, 주얼리 등 카테고리로 옷을 필터링할 수 있으며, 서로 다른 아이템들을 조합하여 다양한 코디를 만들고 미리보기할 수 있다. 이 개념은 1995년 영화 '클루리스(Clueless)'에서 주인공 셰르(Cher)가 버튼 하나로 모든 옷을 한눈에 보며 조합할 수 있는 가상 옷장을 사용하는 장면에서 직접 영감을 받았다. 패션 업계와 여러 스타트업들이 이처럼 직관적이고 편리한 옷 조합 생성 경험을 오랫동안 재현하려고 노력해왔다.",
+      "keywords": [
+        "Google Photos",
+        "AI",
+        "디지털 옷장",
+        "가상 피팅",
+        "패션"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-photos-uses-ai-to-make-the-iconic-closet-from-clueless-a-reality/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google Photos에 AI 패션 스타일링 기능 추가",
+      "summary": "Google이 Google Photos에 AI 기반 패션 스타일링 기능을 추가합니다. 사용자의 옷장 사진을 AI가 인식하여 의상 조합을 제안하고, 생성된 아이디어는 친구와 공유하거나 여행, 이벤트, 데이트, 업무 등 상황별 디지털 무드보드에 저장할 수 있습니다. 또한 가상 피팅 기능으로 의상 조합을 미리 확인할 수 있습니다. 이 기능은 Android에서 올여름 출시되며, iOS에서는 이후 Collections 메뉴에서 이용 가능합니다. Acloset, Combyne, Pureple, Whering 등 기존 패션 앱들과 경쟁하게 됩니다.",
+      "keywords": [
+        "Google Photos",
+        "AI 패션",
+        "의상 추천",
+        "스타일링"
+      ],
+      "link": "",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Zap Energy, AI 전력 수요 충족 위해 핵분열 원자로 개발 추진",
+      "summary": "핵융합 스타트업 Zap Energy가 경영 전략을 수정합니다. CEO Zabrina Johal은 AI 데이터센터의 에너지 수요가 2030년까지 거의 3배 증가할 것으로 예상되는 가운데, 핵융합 기술의 상용화가 10년 이상 걸릴 것으로 판단하여 먼저 핵분열 원자로를 구축하기로 결정했습니다. $300M 이상의 자금을 조달한 Zap는 분열과 융합이 많은 기술적 과제를 공유한다고 설명하며, 소형 모듈식 원자로(SMR) 기술로 비용을 절감할 계획입니다. 회사는 1년 내에 분열 사업에서 수익 창출이 가능할 것으로 예상하고 있습니다.",
+      "keywords": [
+        "Zap Energy",
+        "핵분열",
+        "원자력",
+        "AI 데이터센터"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/fusion-power-startup-zap-energy-pulls-a-partial-pivot-adding-nuclear-fission-to-the-mix/?utm_campaign=daily_pm",
+      "source": "TechCrunch",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "에너지 스타트업 Zap, 전력 생산 불의존 비즈니스 모델 추진",
+      "summary": "Zap과 다른 에너지 스타트업들이 전력 생산에 의존하지 않는 비즈니스 모델을 개발 중이다. 국방부(DoD)와 에너지부(DoE) 연방 프로그램, Milestone payments, 그리고 대규모 전력이 필요한 기업들의 생산 용량 예약을 통해 수익을 창출할 계획이다.",
+      "keywords": [
+        "Zap",
+        "에너지 스타트업",
+        "비즈니스 모델",
+        "Milestone payments"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "우버, AI로 호텔 예약 기능 6개월만에 출시…슈퍼앱 전략 가속화",
+      "summary": "우버가 호텔 직접 예약 기능을 미국 시장에 출시했다. Expedia와의 파트너십을 통해 70만 개 호텔에 접근할 수 있으며, Vrbo 렌탈 숙박도 올해 안에 추가될 예정이다. Uber One 구독 멤버는 1만 개 호텔에서 20% 할인을 받으며 모든 예약에 10% 우버 크레딧을 환급받는다. 주목할 점은 개발 속도다. CTO에 따르면 이 기능은 Cursor 같은 agentic AI 도구를 활용해 기존 1년 걸릴 작업을 6개월로 단축했다. Uber는 AI 기반 음성 예약 기능과 검색 도구도 함께 출시했으며, 여행 모드(관광지·로컬 음식점 정보), Uber Eats의 '룸 서비스' 허브도 추가했다. CEO는 \"Uber는 이제 이동·배달·여행을 위한 앱\"이라고 선언하며, agentic AI가 소프트웨어 개발 방식을 근본적으로 변화시키고 있다고 평했다.",
+      "keywords": [
+        "Uber",
+        "호텔 예약",
+        "Agentic AI",
+        "슈퍼앱"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/uber-is-in-the-hotel-business-now-thanks-in-part-to-ai/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Google, Q1에 2,500만 신규 구독 추가...YouTube와 Google One 주도",
+      "summary": "Google이 Q1에 2,500만 개의 새로운 유료 구독을 추가해 총 3억 5천만 개의 구독을 보유하게 됐다. YouTube와 Google One의 성장이 이를 주도했으며, Google One에는 고급 Gemini 기능이 번들로 포함되어 있다. Gemini는 여전히 7억 5천만 이상의 월간 활성 사용자를 유지하고 있으며, 엔터프라이즈 부문에서는 전분기 대비 40% 성장했다. YouTube 광고 수익은 $9.88 billion으로 Wall Street의 $9.99 billion 예상을 미달했으나 전년도 대비 11% 성장했다. Alphabet의 전체 Q1 수익은 $109.9 billion으로 Wall Street 예상을 초과했고, Cloud 사업만으로 $20 billion을 달성했다.",
+      "keywords": [
+        "Google",
+        "구독",
+        "YouTube",
+        "Gemini",
+        "Cloud"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/google-gains-25m-subscriptions-in-q1-driven-by-youtube-and-google-one/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Divine, Jack Dorsey 지원 Vine 복귀 플랫폼 공개",
+      "summary": "Jack Dorsey 전 Twitter 최고경영자가 설립한 비영리단체 '앤드 어더 스터프(and Other Stuff)'의 지원을 받은 Divine이 App Store와 Google Play에서 공개 출시됐다. Divine은 폐지된 동영상 공유 플랫폼 Vine의 리부트로, 원본 서비스 백업에서 복구한 약 500,000개의 Vine 영상에 접근할 수 있으며 크리에이터들은 새로운 6초 루핑 영상을 게시할 수 있다. '앤드 어더 스터프'는 2025년 5월 설립됐으며 사회 미디어 환경을 변혁할 수 있는 실험적 오픈소스 프로젝트들을 자금 지원하는 데 집중하고 있다.",
+      "keywords": [
+        "Vine",
+        "Divine",
+        "Jack Dorsey",
+        "소셜 미디어",
+        "오픈소스"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/jack-dorsey-backed-vine-reboot-divine-launches-to-public/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Jack 도로시의 Vine 복원 프로젝트, Divine 앱 출시",
+      "summary": "Jack Dorsey의 전 CEO 시절 Vine을 종료한 실수를 바로잡기 위해 초기 Twitter 직원인 Evan Henshaw-Plath(온라인명 Rabble)가 Divine 앱을 개발했다. Archive Team이 보존한 Vine 아카이브를 40~50GB 규모의 바이너리 파일에서 복구 스크립트로 처리하여 원본 영상의 조회수, 좋아요, 댓글 등의 메타데이터까지 복원했다. 작년 11월 베타 런칭(10만 개)에서 시작해 최근 300만 개를 거쳐 현재 50만 개의 영상으로 성장했으며, 약 10만 명의 원래 Vine 창작자들의 영상을 호스팅하고 있다. Lele Pons, JimmyHere, MightyDuck, Jack and Jack 등 초기 창작자들의 관심을 끌고 있으며, 개발팀은 단순한 향수를 넘어 소셜미디어를 재설정하는 것을 목표로 하고 있다.",
+      "keywords": [
+        "Divine",
+        "Vine",
+        "비디오 아카이브",
+        "복구",
+        "Jack Dorsey"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Roku의 저가 스트리밍 Howdy, 100만 구독자 달성",
+      "summary": "Roku의 저가 구독 스트리밍 서비스 Howdy가 100만 구독자를 달성했다. 2025년 8월 출시한 Howdy는 월 $2.99의 가격으로 광고 없는 스트리밍을 제공하며, Lionsgate와 Warner Bros. Discovery의 거래를 통해 약 1만 시간의 콘텐츠(영화 및 드라마)를 보유하고 있다. 라인업에는 'The Blind Side', 'Mad Max: Fury Road', 'Weeds' 같은 타이틀이 포함된다. 모바일 앱 출시와 Amazon Prime Video를 통한 배포 확장으로 접근성을 높였다. 첫 달에 약 30만 명을 획득했으며, 이후 매달 최소 10만 명씩 증가했다. 2025년 8~9월 가입자 중 51%가 6개월 후에도 여전히 구독 중이며, 이는 일반 SVOD 서비스의 47% 평균 유지율을 상회하고 전문 플랫폼의 38%를 훨씬 초과한다.",
+      "keywords": [
+        "Roku",
+        "Howdy",
+        "스트리밍",
+        "저가 구독",
+        "100만 구독자"
+      ],
+      "link": "https://techcrunch.com/2026/04/29/rokus-3-streaming-service-howdy-reaches-1m-subs-per-recent-report/?utm_campaign=daily_pm",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    },
+    {
+      "title": "Roku Howdy, 저가 광고 없는 스트리밍으로 시장 진입",
+      "summary": "Roku는 Howdy가 스트리밍 강자들과 경쟁하지 않고 다른 구독 서비스를 보완하는 저렴하고 광고 없는 옵션으로 위치하고 있다. Antenna의 새로운 데이터에 따르면, 단순하고 낮은 약정의 제공이 특히 가격이 올라가는 시기에 시청자들에게 어필할 수 있을 것으로 보인다.",
+      "keywords": [
+        "Roku",
+        "Howdy",
+        "스트리밍",
+        "저가격",
+        "광고 제거"
+      ],
+      "link": "",
+      "source": "TechCrunch Daily News",
+      "source_email": "newsletters@techcrunch.com",
+      "message_id": "19ddb41f5b371280"
+    }
+  ]
+}

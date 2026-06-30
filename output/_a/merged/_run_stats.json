@@ -1,0 +1,15 @@
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "usage": {
+    "totalPromptTokens": 838,
+    "totalCompletionTokens": 511020,
+    "totalCachedPromptTokens": 1832937,
+    "totalCalls": 83,
+    "claudeCostUsd": 5.736989699999998
+  },
+  "cost": {
+    "input_usd": 0.0066,
+    "output_usd": 0.4446,
+    "total_usd": 0.4512
+  }
+}
