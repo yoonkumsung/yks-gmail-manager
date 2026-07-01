@@ -85,6 +85,77 @@ module.exports = async function () {
       // 키워드는 다르지만 제목 겹침이 높음
       assert.ok(candidates.size >= 0); // 크래시 안 나면 OK
     });
+
+    // ---- link 결손 쌍 fallback (문제2: 같은 기사 이중추출 사각지대) ----
+
+    await it('fallback: link 한쪽만 있는 같은 기사 이중추출 → 병합 후보', () => {
+      // 실제 요즘IT 사례: 본문 상세(major, link 누락) + "이번 주 소식" 목록(brief, link 있음)
+      const items = [
+        {
+          title: 'Claude Code 소스 유출에서 본 에이전트 실행 구조의 중요성',
+          keywords: ['Claude Code', '에이전트 아키텍처', 'AI 도구', '구조 설계'],
+          link: '', source_email: 'yozm@yozm.co.kr',
+        },
+        {
+          title: '클로드 코드 소스 유출로 본 에이전트 아키텍처 설계',
+          keywords: ['클로드코드', '에이전트', '아키텍처'],
+          link: 'https://yozm.wishket.com/magazine/detail/3730/', source_email: 'yozm@yozm.co.kr',
+        },
+      ];
+      const candidates = findMergeCandidates(items);
+      assert.ok(candidates.has(0) && candidates.get(0).has(1), '이중추출 쌍이 병합 후보로 surface');
+      assert.ok(candidates.has(1) && candidates.get(1).has(0), '양방향 후보 등록');
+    });
+
+    await it('fallback: link 한쪽만 있어도 다른 기사면 병합 후보 아님 (오병합 방지)', () => {
+      // 같은 라벨의 서로 다른 기사(공유 유의어 부족) → 절대 후보로 묶지 않음
+      const items = [
+        {
+          title: 'Amazon, AWS에서 OpenAI 신제품 및 에이전트 서비스 출시',
+          keywords: ['Amazon', 'AWS', 'OpenAI', '에이전트'],
+          link: '', source_email: 'itnews@x.com',
+        },
+        {
+          title: 'Stripe의 Link, 자율 AI 에이전트도 사용 가능한 디지털 지갑 출시',
+          keywords: ['Stripe', 'Link', '디지털 지갑', 'AI 에이전트'],
+          link: 'https://techcrunch.com/stripe-link', source_email: 'itnews@x.com',
+        },
+      ];
+      const candidates = findMergeCandidates(items);
+      const has0in1 = candidates.has(0) && candidates.get(0).has(1);
+      assert.notOk(has0in1, '다른 기사(에이전트/출시만 공유)는 병합 후보 아님');
+    });
+
+    await it('fallback: 둘 다 link 있는 다른 기사는 fallback이 묶지 않음', () => {
+      // fallback은 link가 한쪽이라도 없는 쌍만 대상. 둘 다 link 있으면 관여 안 함.
+      const items = [
+        {
+          title: 'Claude Code 소스 유출에서 본 에이전트 실행 구조의 중요성',
+          keywords: ['Claude Code', '에이전트 아키텍처', 'AI 도구', '구조 설계'],
+          link: 'https://a.example.com/1', source_email: 'a@a.com',
+        },
+        {
+          title: '클로드 코드 소스 유출로 본 에이전트 아키텍처 설계',
+          keywords: ['클로드코드', '에이전트', '아키텍처'],
+          link: 'https://b.example.com/2', source_email: 'a@a.com',
+        },
+      ];
+      const candidates = findMergeCandidates(items);
+      const has0in1 = candidates.has(0) && candidates.get(0).has(1);
+      assert.notOk(has0in1, '둘 다 link(서로 다름)면 fallback 미적용 → 후보 아님');
+    });
+
+    await it('fallback: 공유 유의어 3개면 후보 아님 (임계 하한, 4개 필요)', () => {
+      // 공유 토큰 정확히 3개(가가/나나/다다) + 키워드 disjoint → Jaccard·fallback 모두 미달.
+      // (합성 토큰: fallback 임계만 고립 검증)
+      const items = [
+        { title: '가가 나나 다다 라라 카카', keywords: ['마마', '바바'], link: '', source_email: 'a@a.com' },
+        { title: '가가 나나 다다 사사 아아 자자', keywords: ['타타', '파파'], link: 'https://x.com/y', source_email: 'a@a.com' },
+      ];
+      const candidates = findMergeCandidates(items);
+      const has0in1 = candidates.has(0) && candidates.get(0).has(1);
+      assert.notOk(has0in1, '공유 유의어 3개(<4) → 후보 아님');
+    });
   });
 
   // ============================================

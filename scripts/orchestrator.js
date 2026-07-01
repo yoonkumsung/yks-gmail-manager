@@ -382,6 +382,28 @@ function normalizeUrl(rawUrl) {
   return `${host}${port}${pathName}${query}`.toLowerCase();
 }
 
+// ---------------------------------------------------------------------------
+// link 결손 쌍 fallback 병합후보 (문제2: 같은 기사 이중추출 사각지대)
+//   근본원인: 같은 기사가 본문 상세(major, link 누락)와 "이번 주 소식" 목록(brief, link 있음)
+//   두 위치에서 이중 추출되면 ①link-dedup(둘 다 link 필요)도 ②키워드 Jaccard(제목 표현
+//   차이로 임계 미달)도 못 잡아 중복이 남는다.
+//   → link가 한쪽이라도 없는 쌍만, title+keywords 토큰의 "공유 유의어 다수 + 작은 쪽의
+//     절반 이상 공유"일 때에만 후보로 surface한다(실제 병합 여부는 병합 LLM이 결정).
+//   [오병합 방지 최우선] 전수 대조 데이터 calibration 결과 실제 중복쌍만 아래 임계를 넘고,
+//   서로 다른 기사쌍은 전부 미달(다음 후보 contain 0.38). 임계를 낮추면 오병합 위험 → 유지.
+const FALLBACK_MIN_SHARED = 4;         // 공유 유의어 토큰 최소 개수
+const FALLBACK_MIN_CONTAINMENT = 0.5;  // 공유 토큰 / 작은 쪽 토큰수
+
+// title + keywords에서 유의어 토큰 집합 추출(요약 전문은 제외 → 일반 단어 노이즈로 희석 방지).
+function titleKeywordTokens(item) {
+  const parts = [item && item.title ? String(item.title) : ''];
+  if (item && Array.isArray(item.keywords)) parts.push(item.keywords.join(' '));
+  const s = parts.join(' ').toLowerCase();
+  return new Set(
+    s.split(/[\s,.;:·/()[\]"“”‘’—\-]+/).filter(w => w.length >= 2)
+  );
+}
+
 /**
  * 병합 사전 필터링 - 코드 기반 유사도 계산으로 LLM 호출 최적화
  * 유사한 아이템만 LLM에 보내고, 유사도 없는 아이템은 바로 통과
@@ -390,6 +412,7 @@ function normalizeUrl(rawUrl) {
  * 무관하게 무조건 병합 후보로 묶는다. 서로 다른 뉴스레터가 같은 기사를 다뤄 같은 link를
  * 공유하면 청킹/유사도와 무관하게 견고하게 잡힌다.
  * link가 다르면 절대 묶지 않으므로 오병합 위험은 없다.
+ * (link가 한쪽이라도 없는 쌍은 아래 fallback이 title+keywords 유사도로 보강)
  */
 function findMergeCandidates(items) {
   const candidateMap = new Map(); // idx -> Set<idx>
@@ -445,6 +468,29 @@ function findMergeCandidates(items) {
         candidateMap.get(i).add(j);
         candidateMap.get(j).add(i);
       }
+    }
+  }
+
+  // 2) link 결손 쌍 fallback: link가 한쪽이라도 없는 쌍만 title+keywords 유사도로 보강.
+  //    (양쪽 link 있으면 위 link/Jaccard 로직이 담당하므로 건드리지 않음)
+  const tokenCache = items.map(titleKeywordTokens);
+  const normCache = items.map(it => normalizeUrl(it && it.link));
+  for (let i = 0; i < items.length; i++) {
+    const tokA = tokenCache[i];
+    if (tokA.size === 0) continue;
+    for (let j = i + 1; j < items.length; j++) {
+      if (normCache[i] && normCache[j]) continue;       // 둘 다 link 있음 → 기존 로직 담당
+      if (candidateMap.get(i) && candidateMap.get(i).has(j)) continue; // 이미 후보
+      const tokB = tokenCache[j];
+      if (tokB.size === 0) continue;
+      const shared = [...tokA].filter(x => tokB.has(x)).length;
+      if (shared < FALLBACK_MIN_SHARED) continue;
+      const containment = shared / Math.min(tokA.size, tokB.size);
+      if (containment < FALLBACK_MIN_CONTAINMENT) continue;
+      if (!candidateMap.has(i)) candidateMap.set(i, new Set());
+      if (!candidateMap.has(j)) candidateMap.set(j, new Set());
+      candidateMap.get(i).add(j);
+      candidateMap.get(j).add(i);
     }
   }
 
